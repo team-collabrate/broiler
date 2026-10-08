@@ -1,0 +1,16 @@
+{
+  "name": "broiler",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "pos": "npm run start -w @broiler/pos",
+    "admin": "npm run start -w @broiler/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test -w @broiler/shared",
+    "seed": "node --env-file=apps/pos/.env scripts/seed-menu.mjs"
+  }
+}

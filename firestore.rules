@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// v1 rules. Both apps sign in anonymously, so "signed in" only means "is one of our
+// apps"; it does NOT separate the POS from the owner. Before going live, add real owner
+// login and restrict menu writes and order reads to the owner's account.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /menu/{itemId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Orders are append-only: they can be created and read, never edited or deleted.
+    match /orders/{orderId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.orderNo is int
+        && request.resource.data.totalMinor is int
+        && request.resource.data.totalMinor >= 0
+        && request.resource.data.totalGrams is int
+        && request.resource.data.lines is list
+        && request.resource.data.lines.size() > 0
+        && request.resource.data.paymentMethod in ['cash', 'upi', 'card'];
+      allow update, delete: if false;
+    }
+
+    // Per-day order number counters, bumped inside the order transaction.
+    match /counters/{dayKey} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

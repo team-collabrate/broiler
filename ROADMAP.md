@@ -1,0 +1,101 @@
+# Broiler roadmap
+
+A weight-based POS for the counter, plus an admin app for the owner to inspect sales. Both are
+React Native (Expo) + TypeScript apps in this monorepo, sharing one Firebase project and the
+`@broiler/shared` package. The scope follows the existing Kumbakonam project's architecture
+(worker checkout, owner operations, sales reporting, receipt printing, shared services).
+
+| Phase | Name | Status |
+| --- | --- | --- |
+| 0 | Foundation | Done |
+| 1 | Core POS + sales inspection | Built, needs Firebase setup and a device test |
+| 2 | Access and security (go-live gate) | Next |
+| 3 | Receipt printing | Planned |
+| 4 | Admin management | Planned |
+| 5 | Credit and expenses | Planned |
+| 6 | Reliability and release | Planned |
+
+Each phase should leave both apps working and usable on its own. The order is a recommendation:
+Phase 2 comes before printing because real sales data shouldn't sit behind v1's placeholder
+security. If receipts matter more to you on day one, swap 2 and 3.
+
+---
+
+## Phase 0: Foundation (done)
+
+- npm-workspaces monorepo: `apps/pos`, `apps/admin`, `packages/shared`
+- Shared money and weight maths (integer paise and grams), date ranges, sales summaries, with unit tests
+- Firebase wiring (Firestore, anonymous auth with persisted session), Firestore rules, menu seed script
+- Git repo connected to `team-collabrate/broiler`
+
+## Phase 1: Core POS + sales inspection
+
+**Goal:** a sale made on the POS shows up in the admin app within seconds.
+
+- **POS:** menu grid, weight keypad (kg), cart, payment method (cash/UPI/card), charge, daily sequential order number
+- **Admin:** dashboard (total, orders, kg sold, average, split by payment and by item), orders list, order detail, date presets (today, yesterday, last 7 days)
+- **To finish this phase** (see README): create the Firebase project, enable Firestore and anonymous sign-in, deploy the rules, seed the menu, run both apps on a real Android device
+
+**Done when:** you make three sales on the POS and the admin totals match what you rang up.
+
+## Phase 2: Access and security (go-live gate)
+
+**Goal:** only the right people can do the right things.
+
+- Owner login for the admin app (email/password, or PIN as in the Kumbakonam project)
+- Staff PIN or shift name at the POS, stored on every order, so sales are attributable
+- Roles: the POS can only create orders; only the owner can read all orders or change the menu
+- Tighten `firestore.rules` to match, and remove the anonymous-auth placeholder
+
+**Done when:** the POS device can't read other days' sales, and the admin app is unusable without the owner's login.
+
+## Phase 3: Receipt printing
+
+**Goal:** print a receipt on charge.
+
+- Receipt layout (shop name, order number, lines with weight × rate, total, payment, date/time)
+- Bluetooth thermal printer support (ESC/POS), with a classic-printer fallback and a retry button
+- Printer selection and test print
+- **Note:** this needs a native module, so the apps move from Expo Go to a development build (`expo run:android` or EAS)
+
+**Done when:** a charged sale prints a correct receipt, and a failed print can be retried without re-charging.
+
+## Phase 4: Admin management
+
+**Goal:** the owner runs the shop from the admin app without opening the Firebase console.
+
+- Menu management: add, edit, deactivate and reorder items, change per-kg prices
+- Custom date ranges, plus weekly and monthly reports
+- Void/refund an order with a reason and an audit trail (orders are append-only in v1)
+- Daily summaries and CSV export
+
+**Done when:** the owner can change a price in the admin app and the POS shows it immediately.
+
+## Phase 5: Credit and expenses
+
+**Goal:** track money that isn't a cash sale.
+
+- Customers and credit (loan) sales: balance per customer, partial payments, settlement
+- Expenses with categories, shown beside sales
+- Profit view (sales minus expenses) and a credit/loan report
+
+**Done when:** a credit sale raises the customer's balance, a payment lowers it, and the reports agree.
+
+## Phase 6: Reliability and release
+
+**Goal:** safe to rely on every day.
+
+- Offline-tolerant sales: queue orders locally and sync later. The v1 order number needs a connection; this phase moves to device-prefixed numbers or a reconciliation step
+- Optional Bluetooth weighing-scale input, so the weight isn't typed by hand
+- Crash reporting, Firestore backups, and a signed release (EAS build, APK distribution)
+
+**Done when:** a sale made with the internet off appears in the admin app once the connection returns, with no duplicate or missing numbers.
+
+---
+
+## Decisions that will shape later phases
+
+- **Phase 2:** owner login by email or by PIN? Does each staff member get a PIN?
+- **Phase 3:** which printer model and paper width? This affects the receipt layout.
+- **Phase 5:** are credit customers named accounts, or just a phone number plus a running balance?
+- **Phase 6:** how reliable is the shop's internet? If it drops often, offline sales should move up the list.

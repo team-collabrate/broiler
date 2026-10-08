@@ -1,0 +1,64 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
+import {
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+  signInAnonymously,
+  type Auth,
+  type Persistence,
+} from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+
+// firebase/auth lists a generic "types" entry ahead of its "react-native" condition, so
+// TypeScript only ever sees the web typings, which omit this React Native export. Metro
+// still bundles the React Native build, so declare the missing function here.
+declare module 'firebase/auth' {
+  export function getReactNativePersistence(storage: {
+    getItem(key: string): Promise<string | null>;
+    setItem(key: string, value: string): Promise<void>;
+    removeItem(key: string): Promise<void>;
+  }): Persistence;
+}
+
+export interface FirebaseServices {
+  app: FirebaseApp;
+  auth: Auth;
+  db: Firestore;
+}
+
+let services: FirebaseServices | null = null;
+
+/** Safe to call more than once (Fast Refresh re-runs module code). */
+export function initFirebase(config: FirebaseOptions): FirebaseServices {
+  if (services) return services;
+
+  const app = getApps().length ? getApp() : initializeApp(config);
+
+  let auth: Auth;
+  try {
+    auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+  } catch (e) {
+    if ((e as { code?: string }).code !== 'auth/already-initialized') throw e;
+    auth = getAuth(app);
+  }
+
+  services = { app, auth, db: getFirestore(app) };
+  return services;
+}
+
+export function getServices(): FirebaseServices {
+  if (!services) throw new Error('initFirebase() must be called before using Firebase services');
+  return services;
+}
+
+/**
+ * Both apps sign in anonymously so Firestore rules can require `request.auth != null`.
+ * This is a placeholder: it keeps drive-by traffic out but does not tell the POS and
+ * the owner apart. Replace it with real owner login before going live.
+ */
+export async function ensureSignedIn(): Promise<void> {
+  const { auth } = getServices();
+  await auth.authStateReady();
+  if (!auth.currentUser) await signInAnonymously(auth);
+}
