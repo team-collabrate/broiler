@@ -22,10 +22,9 @@ floating-point drift. A line costs `round(pricePerKgMinor × grams / 1000)`.
    npm install
    ```
 
-2. **Create a Firebase project** at https://console.firebase.google.com, then:
-   - Build → **Firestore Database** → create a database
-   - Build → **Authentication** → Sign-in method → enable **Anonymous**
-   - Project settings → Your apps → add a **Web app** and copy its config
+2. **Firebase project.** This repo uses its own project, **`broiler-pos`** (Firestore in Mumbai, `asia-south1`, anonymous sign-in on), pinned in `.firebaserc`. It is separate from the live Kumbakonam POS project, which these apps must never be pointed at: they share collection names (`menu`, `orders`) and deploying these rules to that project would replace its rules.
+
+   To set up a fresh project instead (a second shop, or a staging copy), create it in the [Firebase console](https://console.firebase.google.com), register a **Web app**, and put its id in `.firebaserc`.
 
 3. **Add the config to both apps** (they must use the same project):
 
@@ -34,20 +33,24 @@ floating-point drift. A line costs `round(pricePerKgMinor × grams / 1000)`.
    cp apps/admin/.env.example apps/admin/.env
    ```
 
-   Fill in the `EXPO_PUBLIC_FIREBASE_*` values in each `.env`. On Windows PowerShell use `copy` instead of `cp`.
+   Fill in the `EXPO_PUBLIC_FIREBASE_*` values from Project settings → Your apps → Web app. On Windows PowerShell use `copy` instead of `cp`. The `.env` files are gitignored.
 
-4. **Deploy the rules**
+4. **Deploy the rules and the sign-in setting** (only needed after changing `firestore.rules` or `firebase.json`):
 
    ```bash
    npx firebase-tools login
-   npx firebase-tools deploy --only firestore:rules --project <your-project-id>
+   npx firebase-tools deploy --only firestore,auth
    ```
 
-5. **Seed a starter menu** (sample prices; edit them in the console afterwards):
+   The project comes from `.firebaserc`, so no `--project` flag is needed. Keep it that way; don't add `--project kumbakonam-pos`.
+
+5. **Seed a starter menu** (sample prices):
 
    ```bash
    npm run seed
    ```
+
+   Set the real rates with the **Today's rate** button at the top right of the POS, which also reminds you each day until the rates are set.
 
 6. **Run the apps** (in separate terminals):
 
@@ -57,6 +60,17 @@ floating-point drift. A line costs `round(pricePerKgMinor × grams / 1000)`.
    ```
 
    After editing a `.env`, restart with `npx expo start --clear` from that app's folder, since Expo reads it at bundle time.
+
+### Run in the browser
+
+To try the apps on your computer without a phone, run either of these (each needs its `.env` from step 3):
+
+```bash
+npm run pos:web     # POS   → http://localhost:8081
+npm run admin:web   # Admin → http://localhost:8082
+```
+
+Both can run at the same time. The browser view is for looking at layout and trying the flow; check touch behavior, the slider and anything hardware-related on a real Android device.
 
 ## Checks
 
@@ -69,5 +83,6 @@ npm test            # shared package unit tests
 
 - **Security is a placeholder.** Both apps sign in anonymously, so the rules can't tell the POS from the owner. Don't put real sales data behind it until Phase 2.
 - **Saving a sale needs an internet connection** (the order number comes from a Firestore transaction). Offline sales are Phase 6.
-- **No printing yet**, and weight is typed in by hand.
+- **No printing yet**, and no weighing-scale input: weight is entered on screen (meter, presets or keypad).
+- **Any POS user can change today's rate.** Restricting it to the owner is part of Phase 2.
 - Not yet run on a physical device or against a live Firebase project. It typechecks, the shared logic is unit-tested, and both apps bundle with Metro.

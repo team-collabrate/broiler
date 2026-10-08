@@ -32,7 +32,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 
 **Goal:** a sale made on the POS shows up in the admin app within seconds.
 
-- **POS:** menu grid, weight keypad (kg), cart, payment method (cash/UPI/card), charge, daily sequential order number
+- **POS (Redmi Pad 2, landscape):** item cards with a default weight each; all three ways to sell on screen at once with no tabs: a touch **weight meter** (64dp handle, tap-to-seek, 50 g steps, −/+ with hold-to-repeat), six **presets** with prices, and **By amount (₹)** with a keypad and ₹100 / ₹200 / ₹500; bills exactly the amount asked for. A **Today's rate** view, cart, payment method, charge, daily order number. **No popups**: confirmations, errors and the rate editor are all on the page. See [DESIGN.md](DESIGN.md)
 - **Admin:** dashboard (total, orders, kg sold, average, split by payment and by item), orders list, order detail, date presets (today, yesterday, last 7 days)
 - **To finish this phase** (see README): create the Firebase project, enable Firestore and anonymous sign-in, deploy the rules, seed the menu, run both apps on a real Android device
 
@@ -45,6 +45,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 - Owner login for the admin app (email/password, or PIN as in the Kumbakonam project)
 - Staff PIN or shift name at the POS, stored on every order, so sales are attributable
 - Roles: the POS can only create orders; only the owner can read all orders or change the menu
+- Decide who may set **Today's rate**: today any POS user can, which is a price change. Options are an owner PIN on the sheet, or a rule that lets the POS update only the rate fields
 - Tighten `firestore.rules` to match, and remove the anonymous-auth placeholder
 
 **Done when:** the POS device can't read other days' sales, and the admin app is unusable without the owner's login.
@@ -64,7 +65,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 
 **Goal:** the owner runs the shop from the admin app without opening the Firebase console.
 
-- Menu management: add, edit, deactivate and reorder items, change per-kg prices
+- Menu management: add, edit, deactivate and reorder items, change per-kg prices and each item's default weight (v1 edits default weights in the Firebase console), and see the history of daily rates (v1 keeps only the current rate and when it was set)
 - Custom date ranges, plus weekly and monthly reports
 - Void/refund an order with a reason and an audit trail (orders are append-only in v1)
 - Daily summaries and CSV export
@@ -95,7 +96,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 
 ## Decisions that will shape later phases
 
-- **Phase 2:** owner login by email or by PIN? Does each staff member get a PIN?
+- **Phase 2:** owner login by email or by PIN? Does each staff member get a PIN? Should the counter be allowed to set today's rate, or only the owner?
 - **Phase 3:** which printer model and paper width? This affects the receipt layout.
 - **Phase 5:** are credit customers named accounts, or just a phone number plus a running balance?
 - **Phase 6:** how reliable is the shop's internet? If it drops often, offline sales should move up the list.

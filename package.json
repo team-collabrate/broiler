@@ -9,6 +9,8 @@
   "scripts": {
     "pos": "npm run start -w @broiler/pos",
     "admin": "npm run start -w @broiler/admin",
+    "pos:web": "npm run web -w @broiler/pos -- --port 8081",
+    "admin:web": "npm run web -w @broiler/admin -- --port 8082",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test -w @broiler/shared",
     "seed": "node --env-file=apps/pos/.env scripts/seed-menu.mjs"

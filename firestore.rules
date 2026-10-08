@@ -2,12 +2,17 @@ rules_version = '2';
 
 // v1 rules. Both apps sign in anonymously, so "signed in" only means "is one of our
 // apps"; it does NOT separate the POS from the owner. Before going live, add real owner
-// login and restrict menu writes and order reads to the owner's account.
+// login and restrict menu writes (including the daily rate) and order reads to the owner.
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // The POS sets today's per-kg rate here, so signed-in apps can write for now.
     match /menu/{itemId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.pricePerKgMinor is int
+        && request.resource.data.pricePerKgMinor > 0;
+      allow delete: if request.auth != null;
     }
 
     // Orders are append-only: they can be created and read, never edited or deleted.

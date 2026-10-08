@@ -1,5 +1,6 @@
-import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, onSnapshot, runTransaction, Timestamp, type Unsubscribe } from 'firebase/firestore';
 import { getServices } from './firebase';
+import { normalizeDefaultGrams } from './sale';
 import type { MenuItem } from './types';
 
 /**
@@ -18,6 +19,8 @@ export function subscribeMenu(onData: (items: MenuItem[]) => void, onError: (err
             id: d.id,
             name: String(data.name ?? ''),
             pricePerKgMinor: Number(data.pricePerKgMinor ?? 0),
+            defaultGrams: normalizeDefaultGrams(data.defaultGrams),
+            rateUpdatedAt: data.rateUpdatedAt instanceof Timestamp ? data.rateUpdatedAt.toDate() : null,
             active: data.active !== false,
             sortOrder: Number(data.sortOrder ?? 0),
           };
@@ -28,4 +31,29 @@ export function subscribeMenu(onData: (items: MenuItem[]) => void, onError: (err
     },
     onError,
   );
+}
+
+export interface RateUpdate {
+  id: string;
+  pricePerKgMinor: number;
+}
+
+/**
+ * Sets today's per-kg rate for the given items and stamps each with the time, all or
+ * nothing. Pass every item whose rate was confirmed, changed or not: confirming an
+ * unchanged rate still marks it as set today. Needs a connection: Firestore
+ * transactions fail while offline, so a dropped connection shows an error rather than
+ * leaving the save hanging.
+ */
+export async function setMenuRates(rates: RateUpdate[]): Promise<void> {
+  for (const r of rates) {
+    if (!Number.isInteger(r.pricePerKgMinor) || r.pricePerKgMinor <= 0) throw new Error('Every rate must be above zero');
+  }
+  const { db } = getServices();
+  const stamp = Timestamp.fromDate(new Date());
+  await runTransaction(db, async (tx) => {
+    for (const r of rates) {
+      tx.update(doc(db, 'menu', r.id), { pricePerKgMinor: r.pricePerKgMinor, rateUpdatedAt: stamp });
+    }
+  });
 }

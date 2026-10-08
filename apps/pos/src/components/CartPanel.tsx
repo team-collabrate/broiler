@@ -1,14 +1,21 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
+  describeLine,
   formatMoney,
   formatWeight,
-  lineTotalMinor,
+  orderLineTotalMinor,
   PAYMENT_LABELS,
   PAYMENT_METHODS,
+  type CartLine,
   type PaymentMethod,
 } from '@broiler/shared';
-import type { CartLine } from '../hooks/useCart';
 import { colors, spacing } from '../theme';
+
+/** A message shown in the cart column in place of a popup. */
+export interface Notice {
+  kind: 'saved' | 'error';
+  text: string;
+}
 
 interface Props {
   lines: CartLine[];
@@ -16,6 +23,8 @@ interface Props {
   totalGrams: number;
   paymentMethod: PaymentMethod;
   submitting: boolean;
+  notice: Notice | null;
+  onDismissNotice: () => void;
   onPaymentChange: (method: PaymentMethod) => void;
   onRemove: (itemId: string) => void;
   onCharge: () => void;
@@ -27,6 +36,8 @@ export function CartPanel({
   totalGrams,
   paymentMethod,
   submitting,
+  notice,
+  onDismissNotice,
   onPaymentChange,
   onRemove,
   onCharge,
@@ -37,35 +48,54 @@ export function CartPanel({
     <View style={styles.panel}>
       <Text style={styles.heading}>Current sale</Text>
 
-      <FlatList
-        style={styles.list}
-        data={lines}
-        keyExtractor={(l) => l.itemId}
-        ListEmptyComponent={<Text style={styles.empty}>Tap an item to weigh it.</Text>}
-        renderItem={({ item }) => (
-          <View style={styles.line}>
-            <View style={styles.lineInfo}>
-              <Text style={styles.lineName} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text style={styles.lineDetail}>
-                {formatWeight(item.grams)} × {formatMoney(item.pricePerKgMinor)}/kg
-              </Text>
-            </View>
-            <Text style={styles.lineTotal}>{formatMoney(lineTotalMinor(item.pricePerKgMinor, item.grams))}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${item.name}`}
-              disabled={submitting}
-              hitSlop={8}
-              onPress={() => onRemove(item.itemId)}
-              style={styles.remove}
-            >
-              <Text style={styles.removeText}>✕</Text>
+      {notice && (
+        <View
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={[styles.notice, notice.kind === 'saved' ? styles.noticeSaved : styles.noticeError]}
+        >
+          <Text style={styles.noticeText}>
+            {notice.kind === 'saved' ? '✓ ' : 'Could not save the sale: '}
+            {notice.text}
+          </Text>
+          {notice.kind === 'error' && (
+            <Pressable accessibilityRole="button" onPress={onCharge} disabled={!canCharge} style={styles.noticeAction}>
+              <Text style={styles.noticeActionText}>Retry</Text>
             </Pressable>
-          </View>
+          )}
+          <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" hitSlop={8} onPress={onDismissNotice} style={styles.noticeClose}>
+            <Text style={styles.noticeCloseText}>✕</Text>
+          </Pressable>
+        </View>
+      )}
+
+      <ScrollView style={styles.list} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+        {lines.length === 0 ? (
+          <Text style={styles.empty}>Add an item to start a sale.</Text>
+        ) : (
+          lines.map((line) => (
+            <View key={line.itemId} style={styles.line}>
+              <View style={styles.lineInfo}>
+                <Text style={styles.lineName} numberOfLines={1}>
+                  {line.name}
+                </Text>
+                <Text style={styles.lineDetail}>{describeLine(line)}</Text>
+              </View>
+              <Text style={styles.lineTotal}>{formatMoney(orderLineTotalMinor(line))}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${line.name}`}
+                disabled={submitting}
+                hitSlop={8}
+                onPress={() => onRemove(line.itemId)}
+                style={styles.remove}
+              >
+                <Text style={styles.removeText}>✕</Text>
+              </Pressable>
+            </View>
+          ))
         )}
-      />
+      </ScrollView>
 
       <View style={styles.payments}>
         {PAYMENT_METHODS.map((method) => {
@@ -106,6 +136,21 @@ export function CartPanel({
 const styles = StyleSheet.create({
   panel: { flex: 1, backgroundColor: colors.surface, padding: spacing.lg, gap: spacing.md },
   heading: { fontSize: 18, fontWeight: '700', color: colors.text },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: 12 },
+  noticeSaved: { backgroundColor: '#E4F3EA' },
+  noticeError: { backgroundColor: colors.primarySoft },
+  noticeText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  noticeAction: {
+    height: 40,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  noticeActionText: { fontSize: 15, fontWeight: '700', color: colors.onPrimary },
+  noticeClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  noticeCloseText: { fontSize: 16, color: colors.muted },
   list: { flex: 1 },
   empty: { color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
   line: {
@@ -120,12 +165,12 @@ const styles = StyleSheet.create({
   lineName: { fontSize: 16, fontWeight: '600', color: colors.text },
   lineDetail: { fontSize: 13, color: colors.muted },
   lineTotal: { fontSize: 16, fontWeight: '600', color: colors.text },
-  remove: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  removeText: { fontSize: 16, color: colors.muted },
+  remove: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  removeText: { fontSize: 18, color: colors.muted },
   payments: { flexDirection: 'row', gap: spacing.sm },
   chip: {
     flex: 1,
-    height: 44,
+    height: 48,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',

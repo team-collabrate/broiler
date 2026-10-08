@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { dayKey, type DateRange } from './dateRange';
 import { getServices } from './firebase';
-import { lineTotalMinor } from './money';
+import { orderLineTotalMinor } from './sale';
 import { PAYMENT_METHODS, type Order, type OrderLine, type OrderLineInput, type PaymentMethod } from './types';
 
 export interface CreateOrderInput {
@@ -38,10 +38,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   for (const l of lines) {
     if (!Number.isInteger(l.grams) || l.grams <= 0) throw new Error(`Invalid weight for ${l.name}`);
     if (!Number.isInteger(l.pricePerKgMinor) || l.pricePerKgMinor < 0) throw new Error(`Invalid price for ${l.name}`);
+    if (l.amountMinor !== undefined && (!Number.isInteger(l.amountMinor) || l.amountMinor <= 0)) {
+      throw new Error(`Invalid amount for ${l.name}`);
+    }
   }
 
   // Totals are computed here, not by the caller, so every order is priced the same way.
-  const orderLines: OrderLine[] = lines.map((l) => ({ ...l, lineTotalMinor: lineTotalMinor(l.pricePerKgMinor, l.grams) }));
+  // `amountMinor` is only written when set: Firestore rejects `undefined` field values.
+  const orderLines: OrderLine[] = lines.map(({ amountMinor, ...l }) => ({
+    ...l,
+    ...(amountMinor !== undefined && { amountMinor }),
+    lineTotalMinor: orderLineTotalMinor({ ...l, amountMinor }),
+  }));
   const totalMinor = orderLines.reduce((sum, l) => sum + l.lineTotalMinor, 0);
   const totalGrams = orderLines.reduce((sum, l) => sum + l.grams, 0);
 

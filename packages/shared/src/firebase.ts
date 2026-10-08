@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
 import {
   getAuth,
@@ -35,16 +36,21 @@ export function initFirebase(config: FirebaseOptions): FirebaseServices {
 
   const app = getApps().length ? getApp() : initializeApp(config);
 
-  let auth: Auth;
+  services = { app, auth: initAuth(app), db: getFirestore(app) };
+  return services;
+}
+
+function initAuth(app: FirebaseApp): Auth {
+  // The browser build of firebase/auth has no React Native persistence and keeps the
+  // session in the browser's own storage, so a plain getAuth is right for `expo start --web`.
+  if (Platform.OS === 'web') return getAuth(app);
+
   try {
-    auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+    return initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
   } catch (e) {
     if ((e as { code?: string }).code !== 'auth/already-initialized') throw e;
-    auth = getAuth(app);
+    return getAuth(app);
   }
-
-  services = { app, auth, db: getFirestore(app) };
-  return services;
 }
 
 export function getServices(): FirebaseServices {
