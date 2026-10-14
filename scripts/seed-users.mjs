@@ -22,8 +22,10 @@ const roles = [
   { role: 'counter', label: 'Counter PIN (4-6 digits)', env: 'COUNTER_PIN' },
 ];
 
+// `--only=owner` (or counter) creates just that account.
+const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
 let failed = false;
-for (const { role, label, env } of roles) {
+for (const { role, label, env } of roles.filter((r) => !only || r.role === only)) {
   const pin = await askPin(label, env);
   if (!isValidPin(pin)) {
     console.error(`${role}: the PIN must be 4 to 6 digits. Skipped.`);
