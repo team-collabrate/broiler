@@ -62,6 +62,10 @@ export function OrdersScreen({ orders, preset }: Props) {
                 <Text style={styles.detailMeta}>
                   {formatDateTime(order.createdAt)} · {PAYMENT_LABELS[order.paymentMethod]}
                 </Text>
+                {order.paymentMethod === 'split' && order.cashAmountMinor !== undefined && order.upiAmountMinor !== undefined && (
+                  <Text style={styles.detailMeta}>{t.splitDetail(formatMoney(order.cashAmountMinor), formatMoney(order.upiAmountMinor))}</Text>
+                )}
+                {order.paymentMethod === 'credit' && order.customerName && <Text style={styles.detailMeta}>{t.customerLine(order.customerName)}</Text>}
                 {order.lines.map((line, index) => (
                   <View key={`${line.itemId}-${index}`} style={styles.line}>
                     <View style={styles.lineInfo}>

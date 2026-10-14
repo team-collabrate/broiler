@@ -323,6 +323,48 @@ export function applyRupeesKey(prev: string, key: string): string {
   return isValidRupeesInput(next) ? next : prev;
 }
 
+// --- Split payment and credit ---------------------------------------------------------------
+
+/**
+ * Divides a bill between GPay and cash. Only the GPay figure is ever stored; cash is whatever is left,
+ * so the two can never drift out of step with the bill. A GPay amount outside 0..total is held inside it.
+ */
+export function splitPayment(totalMinor: number, upiMinor: number): { upiMinor: number; cashMinor: number } {
+  const upi = Math.min(Math.max(Number.isFinite(upiMinor) ? Math.round(upiMinor) : 0, 0), Math.max(totalMinor, 0));
+  return { upiMinor: upi, cashMinor: Math.max(totalMinor, 0) - upi };
+}
+
+/** True when both halves are real: a "split" with nothing on one side is just cash or UPI. */
+export function isRealSplit(totalMinor: number, upiMinor: number): boolean {
+  const { upiMinor: upi, cashMinor } = splitPayment(totalMinor, upiMinor);
+  return upi > 0 && cashMinor > 0;
+}
+
+/** Match key for a returning customer: trimmed, collapsed spaces, lower-cased. "Ravi Stores" and "ravi  stores" are one person. */
+export function customerNameKey(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** The customer's tidy display name: trimmed, with runs of spaces collapsed. */
+export function tidyCustomerName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ');
+}
+
+/** A document id for a customer, derived from the name so the same name always finds the same record. */
+export function customerIdFromName(name: string): string {
+  return encodeURIComponent(customerNameKey(name)).replace(/\./g, '%2E').slice(0, 300);
+}
+
+/** Longest customer name accepted. */
+export const MAX_CUSTOMER_NAME = 120;
+
+/** Why a payment against a balance is refused, or null when it is fine. Overpaying would push the balance below zero and drop the customer off the list with debt still owed. */
+export function paymentProblem(amountMinor: number, balanceMinor: number): 'none' | 'zero' | 'tooMuch' | null {
+  if (!Number.isInteger(amountMinor) || amountMinor <= 0) return 'zero';
+  if (amountMinor > balanceMinor) return 'tooMuch';
+  return null;
+}
+
 // --- Cart -----------------------------------------------------------------------------
 
 /** The most lines one order can hold. The Firestore rules check lines at fixed positions, so they have the same limit. */

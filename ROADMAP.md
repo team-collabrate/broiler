@@ -12,7 +12,7 @@ React Native (Expo) + TypeScript apps in this monorepo, sharing one Firebase pro
 | 2 | Access and security (go-live gate) | Next |
 | 3 | Receipt printing | Planned |
 | 4 | Admin management | Planned |
-| 5 | Credit and expenses | Planned |
+| 5 | Credit and expenses | Credit (kadan), split payment and the credit book are built; expenses still planned |
 | 6 | Reliability and release | Planned |
 
 Each phase should leave both apps working and usable on its own. The order is a recommendation:
@@ -77,7 +77,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 
 **Goal:** track money that isn't a cash sale.
 
-- Customers and credit (loan) sales: balance per customer, partial payments, settlement
+- Customers and credit (loan) sales: balance per customer, partial payments, settlement. **Built:** credit bills, the counter's credit book for taking payments (cash or UPI), a GPay + cash split payment, and the owner's credit tab. Not yet: a customer history view and a loan report by day
 - Expenses with categories, shown beside sales
 - Profit view (sales minus expenses) and a credit/loan report
 

@@ -45,9 +45,15 @@ export function DashboardScreen({ orders }: { orders: Order[] }) {
         <Stat label={t.avgOrder} value={formatMoney(average)} />
       </View>
 
+      <View style={styles.statRow}>
+        <Stat label={t.cashCollected} value={formatMoney(summary.cashCollectedMinor)} />
+        <Stat label={t.upiCollected} value={formatMoney(summary.upiCollectedMinor)} />
+        <Stat label={t.creditGiven} value={formatMoney(summary.creditGivenMinor)} />
+      </View>
+
       <Text style={styles.sectionTitle}>{t.byPayment}</Text>
       <View style={styles.card}>
-        {PAYMENT_METHODS.map((method) => (
+        {PAYMENT_METHODS.filter((m) => m !== 'card' || summary.byPayment.card > 0).map((method) => (
           <View key={method} style={styles.row}>
             <Text style={styles.rowLabel}>{PAYMENT_LABELS[method]}</Text>
             <Text style={styles.rowValue}>{formatMoney(summary.byPayment[method])}</Text>

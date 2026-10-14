@@ -112,6 +112,7 @@ export function BillPrint({ bill }: { bill: BillData | null }) {
         <span>{t.billPaid}</span>
         <span>{totals.payment}</span>
       </div>
+      {totals.paymentDetail && <div style={{ textAlign: 'right', fontSize: '12px' }}>{totals.paymentDetail}</div>}
       {rule}
       <div style={{ textAlign: 'center', fontWeight: 700 }}>{t.billThanks}</div>
     </div>,

@@ -11,6 +11,7 @@ export const t = {
 
   tabDashboard: 'டாஷ்போர்டு',
   tabOrders: 'ஆர்டர்கள்',
+  tabCredit: 'கடன்',
 
   loadError: (message: string) => `விற்பனையை ஏற்ற முடியவில்லை. ${message}`,
   noSales: 'இந்தக் காலத்தில் இதுவரை விற்பனை இல்லை.',
@@ -22,6 +23,19 @@ export const t = {
   piecesSold: 'விற்ற எண்ணிக்கை',
   avgOrder: 'சராசரி ஆர்டர்',
   byPayment: 'பணம் செலுத்தும் முறை',
+  cashCollected: 'ரொக்கம் வந்தது',
+  upiCollected: 'GPay / UPI வந்தது',
+  creditGiven: 'கடனாக கொடுத்தது',
+  splitDetail: (cash: string, gpay: string) => `ரொக்கம் ${cash} + GPay ${gpay}`,
+  customerLine: (name: string) => `வாடிக்கையாளர்: ${name}`,
+
+  // Credit (kadan)
+  totalOwed: 'மொத்த கடன்',
+  owingNow: 'தற்போது கடன் உள்ளவர்கள்',
+  nobodyOwes: 'தற்போது யாருக்கும் கடன் இல்லை.',
+  paymentsReceived: 'இந்தக் காலத்தில் பெற்ற பணம்',
+  noPayments: 'இந்தக் காலத்தில் எந்தப் பணமும் பெறப்படவில்லை.',
+  receivedTotal: 'பெற்ற மொத்தம்',
   itemsSold: 'விற்ற பொருட்கள்',
   byCategory: 'வகைவாரி விற்பனை',
   priceChanges: 'விலை மாற்றிய விற்பனை',

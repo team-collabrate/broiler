@@ -81,11 +81,22 @@ service cloud.firestore {
       let d = request.resource.data;
       let maxAdj = maxAdjust();
       let L = d.lines;
-      return d.keys().hasOnly(['orderNo', 'dayKey', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod'])
+      return d.keys().hasOnly(['orderNo', 'dayKey', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
         && d.orderNo is int && d.orderNo >= 1
         && d.dayKey is string && d.dayKey.size() == 10
         && d.createdAt == request.time
-        && d.paymentMethod in ['cash', 'upi', 'card']
+        && d.paymentMethod in ['cash', 'upi', 'card', 'split', 'credit']
+        // A split has money on both sides and the two halves add up to the bill; no other bill has them.
+        && (d.paymentMethod == 'split'
+          ? (d.get('cashAmountMinor', 0) is int && d.get('upiAmountMinor', 0) is int
+            && d.get('cashAmountMinor', 0) >= 1 && d.get('upiAmountMinor', 0) >= 1
+            && d.get('cashAmountMinor', 0) + d.get('upiAmountMinor', 0) == d.totalMinor)
+          : (!('cashAmountMinor' in d) && !('upiAmountMinor' in d)))
+        // A credit bill names who owes it; no other bill does.
+        && (d.paymentMethod == 'credit'
+          ? (d.get('customerId', 0) is string && d.get('customerId', '').size() > 0
+            && d.get('customerName', 0) is string && d.get('customerName', '').size() > 0 && d.get('customerName', '').size() <= 120)
+          : (!('customerId' in d) && !('customerName' in d)))
         && L is list && L.size() >= 1 && L.size() <= 20
         && lineOk(L, 0, maxAdj) && lineOk(L, 1, maxAdj) && lineOk(L, 2, maxAdj) && lineOk(L, 3, maxAdj)
         && lineOk(L, 4, maxAdj) && lineOk(L, 5, maxAdj) && lineOk(L, 6, maxAdj) && lineOk(L, 7, maxAdj)
@@ -117,6 +128,58 @@ service cloud.firestore {
       allow get: if isOwner()
         || (isCounter() && (resource == null || resource.data.createdAt > request.time - duration.value(2, 'h')));
       allow create: if isStaff() && validOrder();
+      allow update, delete: if false;
+    }
+
+    // Credit (கடன்). A customer's balance only moves together with the document that explains the move,
+    // written in the same transaction: a credit order raises it by exactly that order's total, a payment
+    // lowers it by exactly that receipt's amount. `createdAt == request.time` proves the order or receipt is
+    // from this very transaction, not an old one being replayed. The name never changes, and a customer is
+    // never deleted (a settled one is history). The counter reads the list to pick who owes.
+    function orderAfter(id) { return getAfter(/databases/$(database)/documents/orders/$(id)).data; }
+    function paymentAfter(id) { return getAfter(/databases/$(database)/documents/customerPayments/$(id)).data; }
+
+    match /customers/{customerId} {
+      allow read: if isStaff();
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['name', 'nameKey', 'balanceMinor', 'lastOrderId', 'createdAt', 'updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.lastOrderId is string
+        && orderAfter(request.resource.data.lastOrderId).paymentMethod == 'credit'
+        && orderAfter(request.resource.data.lastOrderId).customerId == customerId
+        && orderAfter(request.resource.data.lastOrderId).createdAt == request.time
+        && request.resource.data.balanceMinor == orderAfter(request.resource.data.lastOrderId).totalMinor;
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balanceMinor', 'lastOrderId', 'lastPaymentId', 'updatedAt'])
+        && request.resource.data.balanceMinor is int
+        && request.resource.data.balanceMinor >= 0
+        && (
+          (request.resource.data.get('lastOrderId', '') != resource.data.get('lastOrderId', '')
+            && orderAfter(request.resource.data.lastOrderId).paymentMethod == 'credit'
+            && orderAfter(request.resource.data.lastOrderId).customerId == customerId
+            && orderAfter(request.resource.data.lastOrderId).createdAt == request.time
+            && request.resource.data.balanceMinor == resource.data.balanceMinor + orderAfter(request.resource.data.lastOrderId).totalMinor)
+          ||
+          (request.resource.data.get('lastPaymentId', '') != resource.data.get('lastPaymentId', '')
+            && paymentAfter(request.resource.data.lastPaymentId).customerId == customerId
+            && paymentAfter(request.resource.data.lastPaymentId).createdAt == request.time
+            && request.resource.data.balanceMinor == resource.data.balanceMinor - paymentAfter(request.resource.data.lastPaymentId).amountMinor)
+        );
+      allow delete: if false;
+    }
+
+    // Receipts for money taken against a balance. Append-only: one that can be edited is not an audit
+    // trail. Only the owner reads them back; the counter writes them.
+    match /customerPayments/{paymentId} {
+      allow read: if isOwner();
+      allow create: if isStaff()
+        && request.resource.data.keys().hasOnly(['customerId', 'customerName', 'amountMinor', 'method', 'dayKey', 'createdAt'])
+        && request.resource.data.customerId is string
+        && request.resource.data.customerName is string && request.resource.data.customerName.size() <= 120
+        && request.resource.data.amountMinor is int && request.resource.data.amountMinor > 0
+        && request.resource.data.method in ['cash', 'upi']
+        && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
 

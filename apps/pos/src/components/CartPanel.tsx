@@ -14,17 +14,8 @@ import { LOGO } from '../images.generated';
 import { t } from '../strings';
 import { colors, spacing } from '../theme';
 
-/**
- * The four payment buttons in the order of the counter sketch: cash and UPI, then kadan (credit)
- * and split. Cash and UPI work today; kadan and split need customer accounts and a two-way amount
- * entry that are not built yet, so they are drawn but switched off.
- */
-const PAYMENT_GRID: { method: PaymentMethod | null; label: string }[] = [
-  { method: 'cash', label: PAYMENT_LABELS.cash },
-  { method: 'upi', label: PAYMENT_LABELS.upi },
-  { method: null, label: t.payCredit },
-  { method: null, label: t.paySplit },
-];
+/** The four payment buttons, in the order of the counter sketch: cash and UPI, then kadan (credit) and split. */
+const PAYMENT_GRID: PaymentMethod[] = ['cash', 'upi', 'credit', 'split'];
 
 interface Props {
   lines: CartLine[];
@@ -32,6 +23,8 @@ interface Props {
   totalGrams: number;
   totalPieces: number;
   paymentMethod: PaymentMethod;
+  /** What a split or credit choice came to, shown on its button (null until chosen). */
+  paymentDetail: { split: string | null; credit: string | null };
   onPaymentChange: (method: PaymentMethod) => void;
   submitting: boolean;
   /** A short message above the list: the order is full, or the last save failed. */
@@ -54,6 +47,7 @@ export function CartPanel({
   totalGrams,
   totalPieces,
   paymentMethod,
+  paymentDetail,
   onPaymentChange,
   submitting,
   notice,
@@ -132,20 +126,24 @@ export function CartPanel({
       </Pressable>
 
       <View style={styles.payments} accessibilityRole="radiogroup" accessibilityLabel={t.payWith}>
-        {PAYMENT_GRID.map(({ method, label }) => {
-          const available = method !== null;
-          const selected = available && method === paymentMethod;
+        {PAYMENT_GRID.map((method) => {
+          const selected = method === paymentMethod;
+          const detail = method === 'split' ? paymentDetail.split : method === 'credit' ? paymentDetail.credit : null;
           return (
             <Pressable
-              key={label}
+              key={method}
               accessibilityRole="radio"
-              accessibilityState={{ selected, disabled: !available || submitting }}
-              disabled={!available || submitting}
-              onPress={() => method && onPaymentChange(method)}
-              style={[styles.chip, selected && styles.chipSelected, !available && styles.chipOff]}
+              accessibilityState={{ selected, disabled: submitting }}
+              disabled={submitting}
+              onPress={() => onPaymentChange(method)}
+              style={[styles.chip, selected && styles.chipSelected]}
             >
-              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-              {!available && <Text style={styles.chipSoon}>{t.comingSoon}</Text>}
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{PAYMENT_LABELS[method]}</Text>
+              {selected && detail ? (
+                <Text style={styles.chipDetail} numberOfLines={1}>
+                  {detail}
+                </Text>
+              ) : null}
             </Pressable>
           );
         })}
@@ -185,8 +183,7 @@ const styles = StyleSheet.create({
   payments: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: { flexBasis: '47%', flexGrow: 1, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  chipOff: { opacity: 0.5 },
   chipText: { fontSize: 17, lineHeight: 24, fontWeight: '700', color: colors.muted },
   chipTextSelected: { color: colors.primary },
-  chipSoon: { fontSize: 11, lineHeight: 14, color: colors.muted },
+  chipDetail: { maxWidth: '92%', fontSize: 12, lineHeight: 16, fontWeight: '600', color: colors.primary },
 });

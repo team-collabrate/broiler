@@ -10,6 +10,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -22,6 +23,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { customerIdFromName } from '../packages/shared/src/sale.ts';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
 const app = initializeApp(firebaseConfig());
@@ -115,6 +117,62 @@ await allowed('can look the same order up again by its id (a safe retry)', () =>
 await allowed('can save a correctly adjusted order (within the limit)', () =>
   save(newId(), order([line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
 await denied('cannot edit an order', () => updateDoc(doc(db, 'orders', testId), { paymentMethod: 'upi' }));
+
+// ---- split and credit (கடன்) ----------------------------------------------------------------
+console.log('\nCounter, split and credit:');
+await allowed('can save a split bill whose halves add up to the total', () =>
+  save(newId(), order([line()], { paymentMethod: 'split', cashAmountMinor: 10000, upiAmountMinor: 14000 })));
+await denied('cannot save a split whose halves do not add up', () =>
+  save(newId(), order([line()], { paymentMethod: 'split', cashAmountMinor: 10000, upiAmountMinor: 10000 })));
+await denied('cannot save a split with nothing on one side', () =>
+  save(newId(), order([line()], { paymentMethod: 'split', cashAmountMinor: 0, upiAmountMinor: 24000 })));
+await denied('cannot put split amounts on a cash bill', () =>
+  save(newId(), order([line()], { cashAmountMinor: 10000, upiAmountMinor: 14000 })));
+await denied('cannot save a credit bill with nobody on it', () =>
+  save(newId(), order([line()], { paymentMethod: 'credit' })));
+
+const debtor = 'Check Access Debtor';
+const debtorId = customerIdFromName(debtor);
+const customerRef = doc(db, 'customers', debtorId);
+// A credit bill: the order and the customer's balance, in one transaction, as the till does it.
+const creditSale = (id, total) => runTransaction(db, async (tx) => {
+  const snap = await tx.get(customerRef);
+  const l = line({ rateMinor: total, listRateMinor: total, grams: 1000, lineTotalMinor: total });
+  tx.set(doc(db, 'orders', id), order([l], { paymentMethod: 'credit', customerId: debtorId, customerName: debtor }));
+  if (snap.exists()) {
+    tx.update(customerRef, { balanceMinor: snap.data().balanceMinor + total, lastOrderId: id, updatedAt: serverTimestamp() });
+  } else {
+    tx.set(customerRef, { name: debtor, nameKey: debtor.toLowerCase(), balanceMinor: total, lastOrderId: id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  }
+});
+const payment = (id, amount, newBalance) => runTransaction(db, async (tx) => {
+  tx.update(customerRef, { balanceMinor: newBalance, lastPaymentId: id, updatedAt: serverTimestamp() });
+  tx.set(doc(db, 'customerPayments', id), { customerId: debtorId, customerName: debtor, amountMinor: amount, method: 'cash', dayKey: '2000-01-01', createdAt: serverTimestamp() });
+});
+await allowed('can sell on credit to a new customer (order and balance together)', () => creditSale(newId(), 24000));
+await allowed('can sell on credit to the same customer again', () => creditSale(newId(), 12000));
+await denied('cannot change a balance with no order behind it', () => updateDoc(customerRef, { balanceMinor: 1, lastOrderId: 'nothing', updatedAt: serverTimestamp() }));
+await denied('cannot raise a balance by more than the credit order was for', () => runTransaction(db, async (tx) => {
+  const id = newId();
+  const snap = await tx.get(customerRef);
+  tx.set(doc(db, 'orders', id), order([line({ rateMinor: 5000, listRateMinor: 5000, lineTotalMinor: 5000 })], { paymentMethod: 'credit', customerId: debtorId, customerName: debtor }));
+  tx.update(customerRef, { balanceMinor: snap.data().balanceMinor + 999999, lastOrderId: id, updatedAt: serverTimestamp() });
+}));
+await denied('cannot delete a customer', () => deleteDoc(customerRef));
+await denied('cannot record a payment bigger than the balance', async () => {
+  const bal = (await getDoc(customerRef)).data().balanceMinor;
+  await payment(newId(), bal + 1, bal - (bal + 1));
+});
+await denied('cannot lower a balance by more than the receipt says', async () => {
+  const bal = (await getDoc(customerRef)).data().balanceMinor;
+  await payment(newId(), 1000, bal - 5000);
+});
+await allowed('can record a correct payment (receipt and balance together)', async () => {
+  const bal = (await getDoc(customerRef)).data().balanceMinor;
+  await payment(newId(), 1000, bal - 1000);
+});
+await allowed('can see who owes (the counter picks a customer)', () => getDocs(query(collection(db, 'customers'), limit(5))));
+await denied('cannot read the payment receipts', () => getDocs(query(collection(db, 'customerPayments'), limit(1))));
 await signOut(auth);
 
 // ---- Owner ---------------------------------------------------------------------------------
@@ -128,8 +186,13 @@ await allowed('can confirm a rate (unchanged)', async () => {
 });
 await denied('cannot edit an order either (orders are append-only)', () => updateDoc(doc(db, 'orders', testId), { paymentMethod: 'upi' }));
 await allowed('can set the price-adjustment limit', () => setDoc(doc(db, 'settings', 'pricing'), { maxAdjustMinor: 2000 }));
+await allowed('can read the payment receipts', () => getDocs(query(collection(db, 'customerPayments'), limit(1))));
+await denied('cannot edit a payment receipt', async () => {
+  const first = (await getDocs(query(collection(db, 'customerPayments'), limit(1)))).docs[0];
+  await updateDoc(first.ref, { amountMinor: 1 });
+});
 await signOut(auth);
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) FAILED.`);
-console.log('Remember: npm run reset-demo removes the test orders this saved.');
+console.log('Remember: npm run reset-demo removes the test orders this saved. Also delete the customer "Check Access Debtor" and its payments in the Firebase console (Firestore > customers, customerPayments).');
 process.exit(failures === 0 ? 0 : 1);

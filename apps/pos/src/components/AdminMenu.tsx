@@ -6,12 +6,13 @@ interface Props {
   /** Today's rates are not all set yet: the entry says so. */
   rateNeeded: boolean;
   onRates: () => void;
+  onKhata: () => void;
   onLock: () => void;
   onClose: () => void;
 }
 
 /** What the round Admin button opens: the owner's jobs at the counter, kept off the selling screen. */
-export function AdminMenu({ rateNeeded, onRates, onLock, onClose }: Props) {
+export function AdminMenu({ rateNeeded, onRates, onKhata, onLock, onClose }: Props) {
   return (
     <Modal transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t.dismiss}>
@@ -21,6 +22,9 @@ export function AdminMenu({ rateNeeded, onRates, onLock, onClose }: Props) {
           <Pressable accessibilityRole="button" onPress={onRates} style={styles.item}>
             <Text style={styles.itemText}>{t.todaysRate}</Text>
             {rateNeeded && <View style={styles.dot} />}
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={onKhata} style={styles.item}>
+            <Text style={styles.itemText}>{t.khataMenu}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={onLock} style={styles.item}>
             <Text style={styles.itemText}>{t.lockLabel}</Text>

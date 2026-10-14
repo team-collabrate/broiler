@@ -35,6 +35,12 @@ import {
   normalizeMethods,
   replaceLine,
   splitGrams,
+  splitPayment,
+  isRealSplit,
+  customerNameKey,
+  tidyCustomerName,
+  customerIdFromName,
+  paymentProblem,
   wheelIndexFromOffset,
   wheelMaxOffset,
   normalizeMaxAdjust,
@@ -452,4 +458,48 @@ test('a piece line billed by amount charges that amount and keeps its count', ()
   assert.equal(orderLineTotalMinor(masala), 2500);
   assert.equal(describeLine(masala), '3 எண் (தொகைப்படி)');
   assert.equal(cartTotals(cart(masala)).totalPieces, 3);
+});
+
+test('splitPayment stores the GPay half and leaves the rest as cash, held inside the bill', () => {
+  assert.deepEqual(splitPayment(50000, 30000), { upiMinor: 30000, cashMinor: 20000 });
+  assert.deepEqual(splitPayment(50000, 0), { upiMinor: 0, cashMinor: 50000 });
+  assert.deepEqual(splitPayment(50000, 70000), { upiMinor: 50000, cashMinor: 0 }); // more than the bill: all GPay
+  assert.deepEqual(splitPayment(50000, -5), { upiMinor: 0, cashMinor: 50000 });
+  assert.deepEqual(splitPayment(50000, NaN), { upiMinor: 0, cashMinor: 50000 });
+  assert.deepEqual(splitPayment(0, 100), { upiMinor: 0, cashMinor: 0 });
+  const { upiMinor, cashMinor } = splitPayment(33333, 12345);
+  assert.equal(upiMinor + cashMinor, 33333); // the two always add back to the bill
+});
+
+test('isRealSplit needs money on both sides', () => {
+  assert.equal(isRealSplit(50000, 30000), true);
+  assert.equal(isRealSplit(50000, 0), false);
+  assert.equal(isRealSplit(50000, 50000), false);
+  assert.equal(isRealSplit(50000, 90000), false);
+});
+
+test('customer names match whatever the spacing or case', () => {
+  assert.equal(customerNameKey('  Ravi   Stores '), 'ravi stores');
+  assert.equal(customerNameKey('RAVI stores'), customerNameKey('ravi  Stores'));
+  assert.equal(tidyCustomerName('  Ravi   Stores '), 'Ravi Stores');
+  assert.equal(customerIdFromName('Ravi Stores'), customerIdFromName(' ravi   stores'));
+  assert.notEqual(customerIdFromName('Ravi'), customerIdFromName('Ravi Stores'));
+});
+
+test('customer ids are valid Firestore document ids, including for Tamil names and awkward characters', () => {
+  for (const name of ['ரவி கடை', 'a/b', '.', '..', '__x__', 'Ravi & Sons (Main)']) {
+    const id = customerIdFromName(name);
+    assert.ok(id.length > 0 && id.length <= 300, name);
+    assert.ok(!id.includes('/'), name + ' has a slash');
+    assert.ok(id !== '.' && id !== '..', name);
+  }
+});
+
+test('paymentProblem refuses zero and overpayment, accepts anything up to the balance', () => {
+  assert.equal(paymentProblem(5000, 20000), null);
+  assert.equal(paymentProblem(20000, 20000), null); // paying it all off
+  assert.equal(paymentProblem(0, 20000), 'zero');
+  assert.equal(paymentProblem(-1, 20000), 'zero');
+  assert.equal(paymentProblem(1.5, 20000), 'zero');
+  assert.equal(paymentProblem(20001, 20000), 'tooMuch');
 });

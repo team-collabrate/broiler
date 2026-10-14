@@ -26,8 +26,14 @@ export interface SalesSummary {
   byItem: ItemSales[];
   /** Best-selling category first, by revenue. */
   byCategory: CategorySales[];
-  /** Revenue per payment method. */
+  /** Revenue per payment method. A credit sale is still a sale on the day it is made. */
   byPayment: Record<PaymentMethod, number>;
+  /** Cash that actually reached the till: cash bills plus the cash half of split bills. */
+  cashCollectedMinor: number;
+  /** What reached the GPay/UPI account: UPI bills plus the GPay half of split bills. A split bill's cash half never touches it. */
+  upiCollectedMinor: number;
+  /** Sold on credit (கடன்) in the period: no money moved, it is owed. */
+  creditGivenMinor: number;
   /** How many lines were sold at a rate other than the list rate. */
   adjustedLines: number;
   /**
@@ -41,7 +47,9 @@ export interface SalesSummary {
 export function summarizeOrders(orders: Order[]): SalesSummary {
   const items = new Map<string, ItemSales>();
   const categories = new Map<string, number>();
-  const byPayment: Record<PaymentMethod, number> = { cash: 0, upi: 0, card: 0 };
+  const byPayment: Record<PaymentMethod, number> = { cash: 0, upi: 0, card: 0, split: 0, credit: 0 };
+  let cashCollectedMinor = 0;
+  let upiCollectedMinor = 0;
   let totalMinor = 0;
   let totalGrams = 0;
   let totalPieces = 0;
@@ -53,6 +61,12 @@ export function summarizeOrders(orders: Order[]): SalesSummary {
     totalGrams += order.totalGrams;
     totalPieces += order.totalPieces;
     byPayment[order.paymentMethod] += order.totalMinor;
+    if (order.paymentMethod === 'cash') cashCollectedMinor += order.totalMinor;
+    else if (order.paymentMethod === 'upi') upiCollectedMinor += order.totalMinor;
+    else if (order.paymentMethod === 'split') {
+      cashCollectedMinor += order.cashAmountMinor ?? 0;
+      upiCollectedMinor += order.upiAmountMinor ?? 0;
+    }
     for (const line of order.lines) {
       const entry = items.get(line.itemId) ?? {
         itemId: line.itemId,
@@ -90,6 +104,9 @@ export function summarizeOrders(orders: Order[]): SalesSummary {
       .map(([category, total]) => ({ category, totalMinor: total }))
       .sort((a, b) => b.totalMinor - a.totalMinor),
     byPayment,
+    cashCollectedMinor,
+    upiCollectedMinor,
+    creditGivenMinor: byPayment.credit,
     adjustedLines,
     adjustmentTotalMinor,
   };

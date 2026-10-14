@@ -13,3 +13,4 @@ export * from './PinScreen';
 export * from './menuService';
 export * from './settingsService';
 export * from './ordersService';
+export * from './customersService';

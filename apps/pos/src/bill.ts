@@ -21,6 +21,11 @@ export interface BillData {
   totalGrams: number;
   totalPieces: number;
   paymentMethod: PaymentMethod;
+  /** Split bills: the two halves in paise. */
+  cashAmountMinor?: number;
+  upiAmountMinor?: number;
+  /** Credit bills: who it is on account for. */
+  customerName?: string;
 }
 
 export function formatBillDate(date: Date): string {
@@ -47,4 +52,11 @@ export const billTotals = (bill: BillData) => ({
   pieces: bill.totalPieces > 0 ? formatQty(bill.totalPieces) : null,
   total: formatMoney(bill.totalMinor),
   payment: PAYMENT_LABELS[bill.paymentMethod],
+  /** A second line under the payment: the two halves of a split, or the customer of a credit bill. */
+  paymentDetail:
+    bill.paymentMethod === 'split' && bill.cashAmountMinor !== undefined && bill.upiAmountMinor !== undefined
+      ? `${t.billCash} ${formatMoney(bill.cashAmountMinor)} + ${t.billGpay} ${formatMoney(bill.upiAmountMinor)}`
+      : bill.paymentMethod === 'credit' && bill.customerName
+        ? `${t.billCustomer}: ${bill.customerName}`
+        : null,
 });

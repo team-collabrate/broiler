@@ -34,7 +34,10 @@ test('summarizing no orders gives zeros', () => {
     totalPieces: 0,
     byItem: [],
     byCategory: [],
-    byPayment: { cash: 0, upi: 0, card: 0 },
+    byPayment: { cash: 0, upi: 0, card: 0, split: 0, credit: 0 },
+    cashCollectedMinor: 0,
+    upiCollectedMinor: 0,
+    creditGivenMinor: 0,
     adjustedLines: 0,
     adjustmentTotalMinor: 0,
   });
@@ -49,7 +52,9 @@ test('totals, per-item sales and payment split add up', () => {
   assert.equal(s.orderCount, 2);
   assert.equal(s.totalMinor, 68000);
   assert.equal(s.totalGrams, 3000);
-  assert.deepEqual(s.byPayment, { cash: 32000, upi: 36000, card: 0 });
+  assert.deepEqual(s.byPayment, { cash: 32000, upi: 36000, card: 0, split: 0, credit: 0 });
+  assert.equal(s.cashCollectedMinor, 32000);
+  assert.equal(s.upiCollectedMinor, 36000);
   assert.deepEqual(s.byItem, [
     { itemId: 'a', name: 'Chicken', category: 'broiler', unit: 'kg', grams: 2500, qty: 0, totalMinor: 60000 },
     { itemId: 'b', name: 'Liver', category: 'offal', unit: 'kg', grams: 500, qty: 0, totalMinor: 8000 },
@@ -107,4 +112,18 @@ test('a fixed-amount line that was adjusted counts as adjusted but does not chan
   ]);
   assert.equal(s.adjustedLines, 1);
   assert.equal(s.adjustmentTotalMinor, 0);
+});
+
+test('split bills count their cash half as cash and their GPay half as UPI; credit is sold but not collected', () => {
+  const s = summarizeOrders([
+    order({ paymentMethod: 'split', cashAmountMinor: 10000, upiAmountMinor: 14000, lines: [line('a', 'Chicken', 1000, 24000)] }),
+    order({ paymentMethod: 'credit', customerId: 'ravi', customerName: 'Ravi', lines: [line('a', 'Chicken', 500, 12000)] }),
+    order({ paymentMethod: 'cash', lines: [line('a', 'Chicken', 250, 6000)] }),
+  ]);
+  assert.equal(s.totalMinor, 42000); // a credit sale is still a sale
+  assert.equal(s.cashCollectedMinor, 10000 + 6000);
+  assert.equal(s.upiCollectedMinor, 14000); // the split's cash half never reached the account
+  assert.equal(s.creditGivenMinor, 12000);
+  assert.equal(s.byPayment.split, 24000);
+  assert.equal(s.byPayment.credit, 12000);
 });

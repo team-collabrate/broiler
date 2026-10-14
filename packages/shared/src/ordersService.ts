@@ -13,7 +13,16 @@ import {
 } from 'firebase/firestore';
 import { dayKey, type DateRange } from './dateRange';
 import { getServices } from './firebase';
-import { MAX_ORDER_LINES, MAX_QTY, orderLineTotalMinor } from './sale';
+import {
+  customerIdFromName,
+  customerNameKey,
+  isRealSplit,
+  MAX_CUSTOMER_NAME,
+  MAX_ORDER_LINES,
+  MAX_QTY,
+  orderLineTotalMinor,
+  tidyCustomerName,
+} from './sale';
 import { PAYMENT_METHODS, type Order, type OrderLine, type OrderLineInput, type PaymentMethod, type Unit } from './types';
 
 export interface CreateOrderInput {
@@ -21,6 +30,10 @@ export interface CreateOrderInput {
   orderId: string;
   lines: OrderLineInput[];
   paymentMethod: PaymentMethod;
+  /** Required for a `split` bill: the GPay half in paise. The cash half is whatever is left of the total. */
+  split?: { upiMinor: number };
+  /** Required for a `credit` bill: who it is on account for. A name seen before finds the same customer. */
+  customer?: { name: string };
 }
 
 export interface CreatedOrder {
@@ -55,11 +68,15 @@ function checkLine(l: OrderLineInput): void {
  * response cannot double-charge. This needs a connection: Firestore transactions fail while offline.
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
-  const { orderId, lines, paymentMethod } = input;
+  const { orderId, lines, paymentMethod, split, customer } = input;
   if (lines.length === 0) throw new Error('ஆர்டரில் குறைந்தது ஒரு பொருள் வேண்டும்');
   if (lines.length > MAX_ORDER_LINES) throw new Error(`ஒரு ஆர்டரில் அதிகபட்சம் ${MAX_ORDER_LINES} பொருட்கள்`);
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new Error(`தெரியாத பணம் செலுத்தும் முறை: ${paymentMethod}`);
   lines.forEach(checkLine);
+  const customerName = customer ? tidyCustomerName(customer.name) : '';
+  if (paymentMethod === 'credit' && (customerName === '' || customerName.length > MAX_CUSTOMER_NAME)) {
+    throw new Error('கடனுக்கு வாடிக்கையாளர் பெயர் வேண்டும்');
+  }
 
   // Totals are computed here, not by the caller, so every order is priced the same way. Each field
   // is named, so UI-only fields (like the cart's line key) never reach the database, and
@@ -86,6 +103,14 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   const counterRef = doc(db, 'counters', key);
   const orderRef = doc(db, 'orders', orderId);
 
+  // A split needs money on both sides; cash is stored as the remainder so the halves always add up.
+  if (paymentMethod === 'split' && !(split && isRealSplit(totalMinor, split.upiMinor))) {
+    throw new Error('GPay மற்றும் ரொக்கம் இரண்டிலும் தொகை வேண்டும்');
+  }
+  const upiMinor = paymentMethod === 'split' && split ? Math.round(split.upiMinor) : 0;
+  const customerId = paymentMethod === 'credit' ? customerIdFromName(customerName) : '';
+  const customerRef = paymentMethod === 'credit' ? doc(db, 'customers', customerId) : null;
+
   const saved = await runTransaction(db, async (tx) => {
     const existing = await tx.get(orderRef);
     if (existing.exists()) {
@@ -93,8 +118,30 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
       return { orderNo: existing.data().orderNo as number, totalMinor: existing.data().totalMinor as number };
     }
     const counter = await tx.get(counterRef);
+    // Every read comes before the first write, as Firestore requires.
+    const customerSnap = customerRef ? await tx.get(customerRef) : null;
     const next: number = counter.exists() ? (counter.data().next as number) : 1;
     tx.set(counterRef, { next: next + 1 });
+    if (customerRef) {
+      // The order and the customer's balance change together or not at all (Kumbakonam writes them
+      // separately, so a failure between them can leave a balance wrong).
+      if (customerSnap && customerSnap.exists()) {
+        tx.update(customerRef, {
+          balanceMinor: (customerSnap.data().balanceMinor as number) + totalMinor,
+          lastOrderId: orderId,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        tx.set(customerRef, {
+          name: customerName,
+          nameKey: customerNameKey(customerName),
+          balanceMinor: totalMinor,
+          lastOrderId: orderId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
     tx.set(orderRef, {
       orderNo: next,
       dayKey: key,
@@ -105,6 +152,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
       totalGrams,
       totalPieces,
       paymentMethod,
+      ...(paymentMethod === 'split' && { upiAmountMinor: upiMinor, cashAmountMinor: totalMinor - upiMinor }),
+      ...(paymentMethod === 'credit' && { customerId, customerName: (customerSnap?.exists() ? (customerSnap.data().name as string) : customerName) }),
     });
     return { orderNo: next, totalMinor };
   });
@@ -141,6 +190,10 @@ function toOrder(id: string, data: DocumentData): Order {
     totalGrams: Number(data.totalGrams ?? 0),
     totalPieces: Number(data.totalPieces ?? 0),
     paymentMethod: data.paymentMethod,
+    ...(typeof data.cashAmountMinor === 'number' && { cashAmountMinor: data.cashAmountMinor }),
+    ...(typeof data.upiAmountMinor === 'number' && { upiAmountMinor: data.upiAmountMinor }),
+    ...(typeof data.customerId === 'string' && { customerId: data.customerId }),
+    ...(typeof data.customerName === 'string' && { customerName: data.customerName }),
   };
 }
 

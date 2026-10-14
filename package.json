@@ -16,7 +16,7 @@
     "seed": "node --env-file=apps/pos/.env scripts/seed-menu.mjs",
     "build:web": "npm run build:web -w @broiler/pos && npm run build:web -w @broiler/admin",
     "deploy": "npm run build:web && npx firebase-tools deploy --only hosting --project broiler-pos",
-    "reset-demo": "npx firebase-tools firestore:delete orders --recursive --force --project broiler-pos && npx firebase-tools firestore:delete counters --recursive --force --project broiler-pos",
+    "reset-demo": "npx firebase-tools firestore:delete orders --recursive --force --project broiler-pos && npx firebase-tools firestore:delete counters --recursive --force --project broiler-pos && npx firebase-tools firestore:delete customers --recursive --force --project broiler-pos && npx firebase-tools firestore:delete customerPayments --recursive --force --project broiler-pos",
     "seed:users": "node --env-file=apps/pos/.env scripts/seed-users.mjs",
     "check:access": "node --env-file=apps/pos/.env scripts/check-access.mjs",
     "images": "node scripts/build-image-map.mjs",

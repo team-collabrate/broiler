@@ -1,8 +1,48 @@
-export type PaymentMethod = 'cash' | 'upi' | 'card';
+/**
+ * `split` is one bill paid partly in cash and partly by GPay/UPI. `credit` (கடன்) is a regular buying
+ * on account: the sale happens, no money moves, and the total lands on the customer's balance.
+ * `card` is no longer offered at the till but older orders carry it, so it stays.
+ */
+export type PaymentMethod = 'cash' | 'upi' | 'card' | 'split' | 'credit';
 
-export const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'upi', 'card'];
+export const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'upi', 'card', 'split', 'credit'];
 
-export const PAYMENT_LABELS: Record<PaymentMethod, string> = { cash: 'பணம்', upi: 'UPI', card: 'கார்டு' };
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  cash: 'பணம்',
+  upi: 'UPI',
+  card: 'கார்டு',
+  split: 'பிரித்து',
+  credit: 'கடன்',
+};
+
+/** How money received against a credit balance was paid. */
+export type SettleMethod = 'cash' | 'upi';
+
+/**
+ * A regular who buys on credit (கடன் / khata). Created the first time someone takes an order on account
+ * and kept after they settle: the owner needs the record and the same person comes back. The counter's
+ * list shows only `balanceMinor > 0`, so a settled customer drops off it by itself.
+ */
+export interface Customer {
+  id: string;
+  /** As first typed, e.g. "Ravi Stores". */
+  name: string;
+  /** Lower-cased, trimmed name: how a returning customer is matched to their record. */
+  nameKey: string;
+  /** What they owe, in paise. */
+  balanceMinor: number;
+  updatedAt: Date | null;
+}
+
+/** Money taken against a balance. Append-only: a receipt that can be edited is not an audit trail. */
+export interface CustomerPayment {
+  id: string;
+  customerId: string;
+  customerName: string;
+  amountMinor: number;
+  method: SettleMethod;
+  createdAt: Date;
+}
 
 /** How an item is sold: by weight (rate per kg) or by count (rate per piece or packet). */
 export type Unit = 'kg' | 'piece';
@@ -87,6 +127,12 @@ export interface Order {
   /** Count of the `piece` lines. */
   totalPieces: number;
   paymentMethod: PaymentMethod;
+  /** Split bills only: the two halves, in paise, adding up to the total. */
+  cashAmountMinor?: number;
+  upiAmountMinor?: number;
+  /** Credit bills only: who owes for it. */
+  customerId?: string;
+  customerName?: string;
 }
 
 /** The name to show and print: Tamil when the item has one, else English. */

@@ -5,7 +5,10 @@ import {
   canAddLine,
   createOrder,
   describeError,
+  formatMoney,
+  isRealSplit,
   newOrderId,
+  splitPayment,
   normalizeMethods,
   PinScreen,
   type Category,
@@ -21,6 +24,9 @@ import { CartPanel } from '../components/CartPanel';
 import { CategoryTabs } from '../components/CategoryTabs';
 import { AdminMenu } from '../components/AdminMenu';
 import { BillModal } from '../components/BillModal';
+import { CreditModal } from '../components/CreditModal';
+import { KhataModal } from '../components/KhataModal';
+import { SplitModal } from '../components/SplitModal';
 import { ItemSheet } from '../components/ItemSheet';
 import { SideRail, RAIL_WIDTH } from '../components/SideRail';
 import { gridColumns, ProductGrid } from '../components/ProductGrid';
@@ -109,6 +115,12 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
   const [notice, setNotice] = useState<string | null>(null);
 
   const [adminOpen, setAdminOpen] = useState(false);
+  const [khataOpen, setKhataOpen] = useState(false);
+  // Split and credit each need a little more than a tap: the GPay amount, or who owes.
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [splitUpiMinor, setSplitUpiMinor] = useState(0);
+  const [creditName, setCreditName] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [submitting, setSubmitting] = useState(false);
   /** The bill of the sale just saved; the checkout popup shows it. */
@@ -149,12 +161,30 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
 
   const charge = async () => {
     if (submitting || cart.lines.length === 0) return;
+    // A split with nothing on one side, or a credit bill with nobody on it, is not ready: ask first.
+    if (paymentMethod === 'split' && !isRealSplit(cart.totalMinor, splitUpiMinor)) {
+      setNotice(t.splitNeeded);
+      setSplitOpen(true);
+      return;
+    }
+    if (paymentMethod === 'credit' && !creditName) {
+      setNotice(t.creditNeeded);
+      setCreditOpen(true);
+      return;
+    }
     setSubmitting(true);
     setNotice(null);
     try {
       const lines = cart.lines;
       attemptId.current ??= newOrderId();
-      const created = await createOrder({ orderId: attemptId.current, lines, paymentMethod });
+      const upiMinor = paymentMethod === 'split' ? splitPayment(cart.totalMinor, splitUpiMinor).upiMinor : 0;
+      const created = await createOrder({
+        orderId: attemptId.current,
+        lines,
+        paymentMethod,
+        ...(paymentMethod === 'split' && { split: { upiMinor } }),
+        ...(paymentMethod === 'credit' && creditName && { customer: { name: creditName } }),
+      });
       setBill({
         orderNo: created.orderNo,
         createdAt: new Date(),
@@ -163,6 +193,8 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
         paymentMethod,
+        ...(paymentMethod === 'split' && { upiAmountMinor: upiMinor, cashAmountMinor: created.totalMinor - upiMinor }),
+        ...(paymentMethod === 'credit' && creditName && { customerName: creditName }),
       });
       newSale();
       cart.clear();
@@ -177,6 +209,22 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
   const closeBill = () => {
     setBill(null);
     setPaymentMethod('cash');
+    setSplitUpiMinor(0);
+    setCreditName(null);
+  };
+
+  const selectPayment = (method: PaymentMethod) => {
+    newSale();
+    setPaymentMethod(method);
+    if (method === 'split') setSplitOpen(true);
+    if (method === 'credit') setCreditOpen(true);
+  };
+
+  const paymentDetail = {
+    split: isRealSplit(cart.totalMinor, splitUpiMinor)
+      ? t.splitChip(formatMoney(splitPayment(cart.totalMinor, splitUpiMinor).upiMinor), formatMoney(splitPayment(cart.totalMinor, splitUpiMinor).cashMinor))
+      : null,
+    credit: creditName ? t.creditChip(creditName) : null,
   };
 
   const catalog = error ? (
@@ -203,10 +251,8 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
       totalGrams={cart.totalGrams}
       totalPieces={cart.totalPieces}
       paymentMethod={paymentMethod}
-      onPaymentChange={(method) => {
-        newSale();
-        setPaymentMethod(method);
-      }}
+      paymentDetail={paymentDetail}
+      onPaymentChange={selectPayment}
       submitting={submitting}
       notice={notice}
       onDismissNotice={() => setNotice(null)}
@@ -303,6 +349,43 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
 
       {bill && <BillModal bill={bill} onDone={closeBill} />}
 
+      {splitOpen && (
+        <SplitModal
+          totalMinor={cart.totalMinor}
+          upiMinor={splitUpiMinor}
+          onCancel={() => {
+            setSplitOpen(false);
+            // Backing out of the amounts means no split was really chosen.
+            if (!isRealSplit(cart.totalMinor, splitUpiMinor)) setPaymentMethod('cash');
+          }}
+          onDone={(upiMinor) => {
+            newSale();
+            setSplitUpiMinor(upiMinor);
+            setSplitOpen(false);
+            setNotice(null);
+          }}
+        />
+      )}
+
+      {creditOpen && (
+        <CreditModal
+          totalMinor={cart.totalMinor}
+          current={creditName}
+          onCancel={() => {
+            setCreditOpen(false);
+            if (!creditName) setPaymentMethod('cash');
+          }}
+          onChoose={(name) => {
+            newSale();
+            setCreditName(name);
+            setCreditOpen(false);
+            setNotice(null);
+          }}
+        />
+      )}
+
+      {khataOpen && <KhataModal onClose={() => setKhataOpen(false)} />}
+
       {adminOpen && (
         <AdminMenu
           rateNeeded={rateNeeded}
@@ -310,6 +393,10 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
           onLock={() => {
             setAdminOpen(false);
             onLock();
+          }}
+          onKhata={() => {
+            setAdminOpen(false);
+            setKhataOpen(true);
           }}
           onRates={() => {
             setAdminOpen(false);

@@ -6,14 +6,16 @@ import { RangePicker } from '../components/RangePicker';
 import { useOrders } from '../hooks/useOrders';
 import { t } from '../strings';
 import { colors, spacing } from '../theme';
+import { CreditScreen } from './CreditScreen';
 import { DashboardScreen } from './DashboardScreen';
 import { OrdersScreen } from './OrdersScreen';
 
-type Tab = 'dashboard' | 'orders';
+type Tab = 'dashboard' | 'orders' | 'credit';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dashboard', label: t.tabDashboard },
   { id: 'orders', label: t.tabOrders },
+  { id: 'credit', label: t.tabCredit },
 ];
 
 export function AdminHome({ onLock }: { onLock: () => void }) {
@@ -38,7 +40,9 @@ export function AdminHome({ onLock }: { onLock: () => void }) {
       </View>
 
       <View style={[styles.body, styles.column]}>
-        {error ? (
+        {tab === 'credit' ? (
+          <CreditScreen preset={preset} />
+        ) : error ? (
           <Text style={styles.message}>{t.loadError(error)}</Text>
         ) : orders === null ? (
           <ActivityIndicator style={styles.loading} color={colors.primary} />

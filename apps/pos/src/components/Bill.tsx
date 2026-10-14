@@ -82,6 +82,7 @@ export function Bill({ bill, onNew }: Props) {
           <Text style={styles.sumLabel}>{t.billPaid}</Text>
           <Text style={styles.sumValue}>{totals.payment}</Text>
         </View>
+        {totals.paymentDetail && <Text style={styles.paymentDetail}>{totals.paymentDetail}</Text>}
         <View style={styles.rule} />
         <Text style={styles.thanks}>{t.billThanks}</Text>
       </ScrollView>
@@ -119,6 +120,7 @@ const styles = StyleSheet.create({
   itemName: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: colors.text },
   itemAmount: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: colors.text },
   itemDetail: { fontSize: 13, lineHeight: 20, color: colors.muted },
+  paymentDetail: { fontSize: 14, lineHeight: 22, fontWeight: '600', textAlign: 'right', color: colors.text },
   sumLabel: { fontSize: 15, lineHeight: 24, color: colors.muted },
   sumValue: { fontSize: 15, lineHeight: 24, fontWeight: '700', color: colors.text },
   totalLabel: { fontSize: 18, lineHeight: 28, fontWeight: '800', color: colors.text },
