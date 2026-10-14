@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { RangePreset } from '@broiler/shared';
 import { RangePicker } from '../components/RangePicker';
@@ -25,6 +25,7 @@ export function AdminHome({ onLock }: { onLock: () => void }) {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
+        <Image source={require('../../assets/brand/logo.jpeg')} style={styles.logo} resizeMode="contain" accessibilityLabel={t.appTitle} />
         <Text style={styles.title}>{t.appTitle}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={t.lockLabel} onPress={onLock} style={styles.lock}>
           <Text style={styles.lockText}>{t.lock}</Text>
@@ -81,7 +82,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  title: { fontSize: 20, lineHeight: 30, fontWeight: '800', color: colors.primary },
+  logo: { width: 38, height: 46 },
+  title: { flex: 1, marginLeft: spacing.md, fontSize: 20, lineHeight: 30, fontWeight: '800', color: colors.primary },
   lock: { height: 44, paddingHorizontal: spacing.lg, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   lockText: { fontSize: 15, lineHeight: 24, fontWeight: '700', color: colors.text },
   body: { flex: 1 },

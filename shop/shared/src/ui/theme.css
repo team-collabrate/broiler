@@ -3,7 +3,12 @@
 
 :root {
   /* ---- Colour ---- */
-  --color-accent: #e8674f;
+  --color-accent: #d71920;
+  --color-accent-dark: #a80f15;
+  /* Beak gold: shop-name line, active border, badges. Dark text sits on it; never gold text on white. */
+  --color-secondary: #f59e0b;
+  --color-secondary-contrast: #1f1512;
+  --color-accent-soft: #fdebea;
   /* Deep warm brown, not white. White on this terracotta is 3.24:1 — under
      the 4.5 that 16px bold needs — and it sits on the most-pressed control
      in the app (Print Bill, the selected payment method, selected category
@@ -11,10 +16,10 @@
      cost of the brand colour the Design Brief specifies; darkening the
      label keeps the colour and scores better: 5.53:1. Tuned to the accent's
      own hue rather than a flat black. */
-  --color-accent-contrast: #231310;
-  --color-success: #6fcf97;
-  --color-warning: #f2c94c;
-  --color-danger: #d64545;
+  --color-accent-contrast: #ffffff;
+  --color-success: #a80f15;
+  --color-warning: #f59e0b;
+  --color-danger: #a80f15;
   --color-danger-contrast: #ffffff;
 
   /* Semantic colour used as *text*, which is a different problem from the
@@ -108,18 +113,18 @@
 
 [data-theme="light"] {
   /* Measured on #ffffff: 6.04, 6.08 and 6.22:1 — all clear of AA's 4.5. */
-  --color-spend-text: #7d5e0a;
+  --color-spend-text: #9a5b00;
   --color-positive-text: #18704a;
-  --color-negative-text: #b3302b;
+  --color-negative-text: #a80f15;
 
-  --color-bg: #f6f6f3;
+  --color-bg: #fffaf2;
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
-  --color-text: #14151a;
-  --color-text-muted: #6b6c75;
-  --color-border: #e5e3de;
+  --color-text: #1f1512;
+  --color-text-muted: #6b5a52;
+  --color-border: #eadccb;
 
-  --material-chrome: rgba(246, 246, 243, 0.72);
+  --material-chrome: rgba(255, 250, 242, 0.72);
   --material-panel: rgba(255, 255, 255, 0.82);
   --material-scrim: rgba(20, 21, 26, 0.35);
   --material-edge: rgba(255, 255, 255, 0.7);

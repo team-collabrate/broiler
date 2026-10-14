@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { describeError, PinScreen, useSession, type Role } from '@broiler/shared';
 import { startFirebase } from './src/firebase';
+import { LOGO } from './src/images.generated';
 import { PosScreen } from './src/screens/PosScreen';
 import { t } from './src/strings';
 import { colors, spacing } from './src/theme';
@@ -34,6 +35,7 @@ function Gate() {
   if (session.status === 'out') {
     return (
       <PinScreen
+        logo={LOGO}
         title={t.signInTitle}
         subtitle={t.signInSubtitle}
         onSubmit={async (pin) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 import { describeError } from './errors';
 import { applyPinKey, isValidPin, MAX_PIN_LENGTH, MIN_PIN_LENGTH } from './roles';
 import { colors, spacing } from './theme';
@@ -16,6 +16,8 @@ interface Props {
   subtitle: string;
   /** Called with the PIN. Throw to show the failure under the dots; resolve to finish (the screen is then replaced). */
   onSubmit: (pin: string) => Promise<void>;
+  /** The shop logo shown above the title. */
+  logo?: ImageSourcePropType | null;
   /** An optional way back, for a PIN view that sits inside the app (for example the owner PIN before today's rates). */
   onCancel?: () => void;
 }
@@ -24,7 +26,7 @@ interface Props {
  * A full-page PIN entry: dots, a keypad and a sign-in button. A page, not a popup. The PIN is
  * kept only in this component's state and is cleared after a wrong attempt.
  */
-export function PinScreen({ title, subtitle, onSubmit, onCancel }: Props) {
+export function PinScreen({ title, subtitle, logo, onSubmit, onCancel }: Props) {
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel }: Props) {
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
+        {logo ? <Image source={logo} style={styles.logo} resizeMode="contain" accessibilityIgnoresInvertColors /> : null}
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
@@ -120,6 +123,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  logo: { alignSelf: 'center', width: 96, height: 116 },
   title: { fontSize: 22, lineHeight: 32, fontWeight: '800', textAlign: 'center', color: colors.primary },
   subtitle: { fontSize: 15, lineHeight: 24, textAlign: 'center', color: colors.muted },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, minHeight: 20 },

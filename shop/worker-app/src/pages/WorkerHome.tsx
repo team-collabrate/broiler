@@ -199,7 +199,7 @@ export function WorkerHome({ sessionUser, onLogout }: WorkerHomeProps) {
   });
 
   return (
-    <div className="worker-home" data-theme="dark">
+    <div className="worker-home" data-theme="light">
       <Sidebar
         syncStatus={syncStatus}
         activeWorkerName={activeWorkerName}

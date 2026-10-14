@@ -34,6 +34,9 @@ import { colors, spacing } from '../theme';
 /** Catalog beside the cart from tablet widths up; one scrolling page below that. */
 const WIDE_BREAKPOINT = 720;
 
+/** Four products per row on a tablet, however wide the screen: big enough to tap, and the same on every screen. */
+const MAX_COLUMNS = 4;
+
 /** Lets a catalog still being drafted (items not switched on) show at the counter, for checking. Never set in production. */
 const SHOW_DRAFT_MENU = process.env.EXPO_PUBLIC_SHOW_DRAFT_MENU === '1';
 
@@ -84,7 +87,7 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
   // Columns come from the window width less the cart column and the page padding, so they never depend on
   // whether a scrollbar is showing (see gridColumns).
   const cartWidth = Math.min(420, Math.max(340, Math.round(width * 0.3)));
-  const columns = wide ? gridColumns(width - cartWidth - 2 * spacing.lg, 5) : 2;
+  const columns = wide ? gridColumns(width - cartWidth - 2 * spacing.lg, MAX_COLUMNS) : 2;
 
   const [view, setView] = useState<Screen>('sell');
   // True while the owner is signed in only to set the rates; the till then signs back in as the counter.
@@ -219,6 +222,7 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
   // the rates view opens. Signing in as the owner is what lets the server accept the change.
   const ownerPin = (
     <PinScreen
+      logo={LOGO}
       title={t.ownerPinTitle}
       subtitle={t.ownerPinSubtitle}
       onSubmit={async (pin) => {
@@ -332,7 +336,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  logo: { width: 52, height: 44 },
+  logo: { width: 44, height: 54 },
   title: { flex: 1, fontSize: 20, lineHeight: 30, fontWeight: '800', color: colors.primary },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rateButton: {

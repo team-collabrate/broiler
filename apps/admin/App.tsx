@@ -4,6 +4,8 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from '
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { describeError, PinScreen, useSession } from '@broiler/shared';
 import { startFirebase } from './src/firebase';
+
+const LOGO = require('./assets/brand/logo.jpeg');
 import { AdminHome } from './src/screens/AdminHome';
 import { t } from './src/strings';
 import { colors, spacing } from './src/theme';
@@ -31,7 +33,7 @@ function Gate() {
     );
   }
   if (session.status === 'out') {
-    return <PinScreen title={t.appTitle} subtitle={t.signInSubtitle} onSubmit={(pin) => signIn('owner', pin)} />;
+    return <PinScreen logo={LOGO} title={t.appTitle} subtitle={t.signInSubtitle} onSubmit={(pin) => signIn('owner', pin)} />;
   }
   return (
     <View style={styles.root} onStartShouldSetResponderCapture={() => { touch(); return false; }}>

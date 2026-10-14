@@ -12,4 +12,4 @@ export const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 /** The client's logo, or null until one is added. */
-export const LOGO: ImageSourcePropType | null = null;
+export const LOGO: ImageSourcePropType | null = require("../assets/brand/logo.jpeg");

@@ -22,8 +22,8 @@ export default defineConfig({
         // install (PWABuilder flags a manifest with no id).
         id: "/",
         description: "Kumbakonam Cafe — counter order & billing",
-        theme_color: "#14151A",
-        background_color: "#14151A",
+        theme_color: "#D71920",
+        background_color: "#FFFAF2",
         display: "standalone",
         orientation: "any",
         start_url: "/",
