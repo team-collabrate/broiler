@@ -1,0 +1,11 @@
+/* See worker-app/src/App.css for the full rationale — same gap between a
+   restored session and anonymous auth finishing, same fix. */
+.app-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}

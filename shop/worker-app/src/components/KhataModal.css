@@ -1,0 +1,205 @@
+.khata__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 25;
+  overflow-y: auto;
+}
+
+.khata {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.khata__title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+}
+
+.khata__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.khata__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* Amber, not red: an outstanding balance is expected trade, not an error. */
+.khata__total strong {
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  color: var(--color-warning);
+  font-variant-numeric: tabular-nums;
+}
+
+.khata__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.khata__list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.khata__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.khata__balance {
+  flex: none;
+  font-size: var(--text-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-warning);
+}
+
+.khata__list button {
+  flex: none;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent);
+  background: transparent;
+  color: var(--color-accent);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.khata__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.khata__field > span {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.khata__field input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.khata__field input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.khata__field input::-webkit-outer-spin-button,
+.khata__field input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+/* Settling in full is the common case, so it gets one tap. */
+.khata__payfull {
+  min-height: var(--tap-target-min);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.khata__status {
+  min-height: 18px;
+  font-size: var(--text-footnote);
+  color: var(--color-warning);
+}
+
+.khata__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.khata__secondary,
+.khata__primary {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.khata__secondary:active,
+.khata__primary:active {
+  transform: scale(0.97);
+}
+
+.khata__secondary {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.khata__primary {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

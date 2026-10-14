@@ -1,0 +1,52 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { VitePWA } from "vite-plugin-pwa";
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  server: { port: 3000 },
+  preview: { port: 3000 },
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["pwa-icon.svg", "icon-192.png", "icon-512.png", "icon-512-maskable.png"],
+      manifest: {
+        // Requested explicitly, replacing "Kumbakonam POS" — this is the
+        // name shown under the home-screen icon and in the Android app
+        // packaging (PWABuilder/TWA) flow.
+        name: "Kumbakonam",
+        short_name: "Kumbakonam",
+        // Stable identity separate from start_url, so the installed app
+        // survives a future start_url change without counting as a new
+        // install (PWABuilder flags a manifest with no id).
+        id: "/",
+        description: "Kumbakonam Cafe — counter order & billing",
+        theme_color: "#14151A",
+        background_color: "#14151A",
+        display: "standalone",
+        orientation: "any",
+        start_url: "/",
+        // PNG icons alongside the SVG — Android/TWA packaging (PWABuilder)
+        // needs real raster icons at these sizes; it doesn't accept an
+        // SVG-only manifest. See scripts/prepare-pwa-icons.mjs.
+        icons: [
+          { src: "pwa-icon.svg", sizes: "192x192", type: "image/svg+xml", purpose: "any" },
+          { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      workbox: {
+        // App shell only — order/menu data goes through Firestore's own
+        // offline cache (TDD §3/§4), not the service worker.
+        //
+        // `png` is here for the receipt logo specifically. It's fetched at
+        // print time, so without it precached the first bill printed on a
+        // dropped connection would come out logo-less — and silently, since
+        // a logo that won't load degrades to a text-only receipt by design.
+        globPatterns: ["**/*.{js,css,html,svg,png}"],
+      },
+    }),
+  ],
+});

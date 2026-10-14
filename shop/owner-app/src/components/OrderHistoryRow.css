@@ -1,0 +1,207 @@
+.order-row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.order-row__summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 120ms var(--ease-out);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.order-row__summary:active {
+  transform: scale(0.99);
+}
+
+/* One consistent tint for every method — see PaymentIcon's own comment on
+   why this doesn't also vary by colour (WorkerDot, right next to it,
+   already owns colour on this row for a different fact). 36px: matches
+   WorkerDot + text-line height, not sized to the 44px tap-target minimum,
+   since it isn't its own tap target — the whole row is. */
+.order-row__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+
+.order-row__icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.order-row__summary-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.order-row__time-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.order-row__time {
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: var(--tracking-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.order-row__meta {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-caption);
+}
+
+.order-row__total {
+  font-size: var(--text-callout);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.order-row__chevron {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 200ms var(--ease-in-out);
+}
+
+.order-row__chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+.order-row__details {
+  padding: 0 0 var(--space-3) var(--space-2);
+  animation: order-row-details-enter 160ms var(--ease-out);
+}
+
+@keyframes order-row-details-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.order-row__details ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.order-row__item-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-footnote);
+  font-variant-numeric: tabular-nums;
+  padding: var(--space-1) 0;
+}
+
+.order-row__item-note {
+  margin: 0 0 var(--space-1);
+  padding-left: var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.order-row__discount-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  padding-top: var(--space-2);
+  margin-top: var(--space-1);
+  border-top: 1px dashed var(--color-border);
+}
+
+/* How a split bill was actually settled. Same weight as the discount line —
+   it annotates the total rather than adding to it. */
+.order-row__split {
+  padding-top: var(--space-2);
+  margin-top: var(--space-1);
+  border-top: 1px dashed var(--color-border);
+}
+
+.order-row__split-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+/* A voided order stays in the list — never removed, only dimmed — since
+   the point is "this happened but doesn't count", not "this never
+   happened". Struck-through total makes that legible at a glance, without
+   needing to expand the row to find out why a number looks off. */
+.order-row.is-voided .order-row__time,
+.order-row.is-voided .order-row__total,
+.order-row.is-voided .order-row__icon {
+  color: var(--color-text-muted);
+}
+
+.order-row.is-voided .order-row__icon {
+  background: var(--color-bg);
+}
+
+.order-row.is-voided .order-row__total {
+  text-decoration: line-through;
+}
+
+/* The one thing on a voided row that should NOT read as muted — everything
+   else dims to say "doesn't count", this says "why", and needs to be seen
+   at a glance without expanding the row. */
+.order-row__voided-badge {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-sm, 4px);
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caption);
+  text-transform: uppercase;
+}
+
+.order-row__void {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-row__void:active {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.order-row__void-error {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-footnote);
+  color: var(--color-danger);
+}

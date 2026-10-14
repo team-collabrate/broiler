@@ -1,0 +1,20 @@
+/* The gap between a restored session (sessionUser set synchronously from
+   localStorage on mount, see shared/auth/session.tsx) and anonymous auth
+   actually completing — normally a few ms, since Firebase Auth's own
+   local persistence already has the token cached from last time. Without
+   this, WorkerHome mounted immediately and fired its Firestore listeners
+   before the client was authenticated, which failed once with a
+   permission error and then just sat broken (Firestore doesn't retry a
+   listener that already errored out) instead of self-healing a moment
+   later. Not the PIN pad's `loading` — that one's about not blocking
+   typing; this is the one genuine wait, and it's brief enough that a
+   plain line of text is all it needs. */
+.app-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}

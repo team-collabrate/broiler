@@ -1,0 +1,145 @@
+.recent-bills__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 25;
+  overflow-y: auto;
+}
+
+.recent-bills {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.recent-bills__title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+}
+
+.recent-bills__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.recent-bills__status {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+.recent-bills__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.recent-bills__list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.recent-bills__row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.recent-bills__billno {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.recent-bills__time {
+  font-size: var(--text-body);
+  font-weight: 600;
+  flex: none;
+}
+
+.recent-bills__payment {
+  font-size: var(--text-footnote);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-bills__total {
+  flex: none;
+  font-size: var(--text-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.recent-bills__delete {
+  flex: none;
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-danger);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recent-bills__error {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--color-danger);
+}
+
+.recent-bills__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.recent-bills__close {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.recent-bills__close:active {
+  transform: scale(0.97);
+}

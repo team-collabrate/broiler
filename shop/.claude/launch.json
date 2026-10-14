@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "shop-worker", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:worker"], "port": 3000 }
+  ]
+}

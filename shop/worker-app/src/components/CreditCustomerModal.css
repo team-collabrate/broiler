@@ -1,0 +1,184 @@
+.credit__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 25;
+  overflow-y: auto;
+}
+
+.credit {
+  width: 100%;
+  max-width: 460px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.credit__title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+}
+
+.credit__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.credit__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+.credit__total strong {
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.credit__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.credit__section-title {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.credit__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* A long list shouldn't push the new-name field off the screen. */
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.credit__list button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out), border-color 150ms ease;
+}
+
+.credit__list button:active {
+  transform: scale(0.98);
+  border-color: var(--color-accent);
+}
+
+.credit__name {
+  font-size: var(--text-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What they already owe, before this bill is added to it. */
+.credit__balance {
+  flex: none;
+  font-size: var(--text-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-warning);
+}
+
+.credit__section input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: var(--text-title-3);
+  font-weight: 600;
+}
+
+.credit__section input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.credit__status {
+  min-height: 18px;
+  font-size: var(--text-footnote);
+  color: var(--color-text-muted);
+}
+
+.credit__status.is-error {
+  color: var(--color-warning);
+}
+
+.credit__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.credit__cancel,
+.credit__use {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.credit__cancel:active,
+.credit__use:active {
+  transform: scale(0.97);
+}
+
+.credit__cancel {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.credit__use {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

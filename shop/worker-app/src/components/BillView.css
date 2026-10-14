@@ -1,0 +1,107 @@
+.bill-view__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  padding: var(--space-5);
+  z-index: 20;
+  overflow-y: auto;
+  animation: bill-backdrop-enter 200ms var(--ease-out);
+}
+
+.bill-view {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  animation: bill-view-enter 240ms var(--ease-out);
+}
+
+@keyframes bill-backdrop-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+
+@keyframes bill-view-enter {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-enter-scale));
+  }
+}
+
+.bill-view__notice {
+  margin: 0;
+  text-align: center;
+  color: var(--color-warning);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+/* The bill is a rendered bitmap now (same artwork the printer receives), so
+   this just presents it as paper: white stock, natural width, crisp scaling. */
+.bill-view__paper {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  justify-content: center;
+}
+
+.bill-view__image {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  display: block;
+  /* 1-bit artwork: keep the dots sharp rather than smoothing them to grey. */
+  image-rendering: crisp-edges;
+}
+
+.bill-view__rendering {
+  margin: 0;
+  padding: var(--space-6) 0;
+  color: #55565f;
+  font-size: var(--text-footnote);
+}
+
+.bill-view__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.bill-view__retry,
+.bill-view__close {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-body);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.bill-view__retry:active,
+.bill-view__close:active {
+  transform: scale(0.97);
+}
+
+.bill-view__retry {
+  border: 1px solid var(--color-accent);
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.bill-view__close {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

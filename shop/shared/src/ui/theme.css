@@ -1,0 +1,253 @@
+/* Design tokens — 04_Design_Brief.md, refined against Apple HIG for optical
+   typography, materials and elevation. Imported once by each app's main.tsx. */
+
+:root {
+  /* ---- Colour ---- */
+  --color-accent: #e8674f;
+  /* Deep warm brown, not white. White on this terracotta is 3.24:1 — under
+     the 4.5 that 16px bold needs — and it sits on the most-pressed control
+     in the app (Print Bill, the selected payment method, selected category
+     tabs). Darkening the accent instead would have fixed the label at the
+     cost of the brand colour the Design Brief specifies; darkening the
+     label keeps the colour and scores better: 5.53:1. Tuned to the accent's
+     own hue rather than a flat black. */
+  --color-accent-contrast: #231310;
+  --color-success: #6fcf97;
+  --color-warning: #f2c94c;
+  --color-danger: #d64545;
+  --color-danger-contrast: #ffffff;
+
+  /* Semantic colour used as *text*, which is a different problem from the
+     fills above. The three tokens above were chosen against the worker
+     app's near-black and score 10.9:1 there; on the owner app's white card
+     the same amber is 1.59:1 — effectively invisible. So the text variants
+     are re-tuned per theme below rather than shared. Same hues, legible
+     luminance. */
+  --color-spend-text: #f2c94c;
+  --color-positive-text: #6fcf97;
+  --color-negative-text: #ff6b6b;
+
+  --font-family: "Inter", "Roboto", system-ui, -apple-system, sans-serif;
+
+  /* ---- Type scale ----
+     rem, not px, so the OS/browser text-size setting still scales the UI.
+     Tracking tightens as type grows (large text reads too loose at 0);
+     leading loosens as type shrinks. Never one tracking value for all sizes. */
+  --text-caption: 0.75rem; /* 12px */
+  --text-footnote: 0.8125rem; /* 13px */
+  --text-body: 0.9375rem; /* 15px */
+  --text-callout: 1rem; /* 16px */
+  --text-title-3: 1.1875rem; /* 19px */
+  --text-title-2: 1.5rem; /* 24px */
+  --text-title-1: 1.875rem; /* 30px */
+  --text-display: 2.5rem; /* 40px */
+
+  --tracking-caption: 0.01em;
+  --tracking-body: 0em;
+  --tracking-title: -0.015em;
+  --tracking-display: -0.028em;
+
+  --leading-display: 1.05;
+  --leading-title: 1.18;
+  --leading-body: 1.45;
+
+  /* ---- Geometry ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --tap-target-min: 44px;
+  /* Owner app's floating tab bar — content reserves this much scroll padding. */
+  --tabbar-height: calc(56px + env(safe-area-inset-bottom, 0px));
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Entrance transforms live as tokens so `prefers-reduced-motion` can
+     neutralise them to identity below — every enter keyframe then collapses
+     to a pure opacity fade without each component re-declaring it. */
+  --motion-enter-scale: 0.96;
+  --motion-enter-shift: 8px;
+  --motion-enter-sheet: 100%;
+
+  /* ---- Material ---- Bigger surfaces read as thicker glass. */
+  --blur-thin: blur(12px) saturate(170%);
+  --blur-regular: blur(20px) saturate(180%);
+  --blur-thick: blur(32px) saturate(190%);
+}
+
+[data-theme="dark"] {
+  --color-bg: #101116;
+  --color-surface: #191a21;
+  --color-surface-raised: #22242d;
+  --color-text: #f5f6f8;
+  --color-text-muted: #9a9ba5;
+  --color-border: #2a2b33;
+
+  /* Translucent chrome that content scrolls underneath. */
+  --material-chrome: rgba(16, 17, 22, 0.72);
+  --material-panel: rgba(25, 26, 33, 0.82);
+  --material-scrim: rgba(0, 0, 0, 0.55);
+  /* A brighter top edge reads as light catching the lip of the material. */
+  --material-edge: rgba(255, 255, 255, 0.07);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] {
+  /* Measured on #ffffff: 6.04, 6.08 and 6.22:1 — all clear of AA's 4.5. */
+  --color-spend-text: #7d5e0a;
+  --color-positive-text: #18704a;
+  --color-negative-text: #b3302b;
+
+  --color-bg: #f6f6f3;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-text: #14151a;
+  --color-text-muted: #6b6c75;
+  --color-border: #e5e3de;
+
+  --material-chrome: rgba(246, 246, 243, 0.72);
+  --material-panel: rgba(255, 255, 255, 0.82);
+  --material-scrim: rgba(20, 21, 26, 0.35);
+  --material-edge: rgba(255, 255, 255, 0.7);
+
+  --shadow-sm: 0 1px 2px rgba(20, 21, 26, 0.06);
+  --shadow-md: 0 6px 20px rgba(20, 21, 26, 0.1);
+  --shadow-lg: 0 24px 60px rgba(20, 21, 26, 0.16);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Anchors the whole app's height to the viewport that's actually visible
+   right now, not the tallest one the browser could ever show. Mobile Chrome
+   computes a bare 100vh against the viewport with its own address bar
+   *hidden* — while the bar is showing (e.g. on first load, before an
+   installed-PWA launch strips it away), the real visible area is shorter,
+   so an element sized to 100vh runs off the bottom of the screen. 100dvh
+   (Chrome 108+, which this Android/Chrome-only PWA already requires)
+   tracks the true visible viewport instead; the 100% line above it is the
+   fallback for anything that doesn't understand dvh — an unsupported value
+   is simply dropped, so it never overrides the working one. */
+html {
+  height: 100%;
+  height: 100dvh;
+  /* Kills Chrome's native pull-to-refresh. Both apps sync over realtime
+     Firestore listeners, so there's never a reason to manually refresh —
+     and the gesture was doing real harm: dragging down anywhere near the
+     top of a scrolled-to-top view reloaded the whole page, wiping the
+     in-memory PIN session and dropping the worker back at the lock
+     screen mid-order. `none`, not `contain` — `contain` still lets the
+     browser attempt the gesture at this outermost element, it only stops
+     it chaining further up (nothing to chain to here, this *is* the top). */
+  overscroll-behavior-y: none;
+}
+
+body,
+#root {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+html {
+  /* No fixed px root size — the user's text-size preference must survive. */
+  font-size: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+/* Headings inherit the tightened tracking/leading of the title scale. */
+h1,
+h2,
+h3 {
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+/* Reduced motion means gentler, not zero: opacity and colour feedback stay
+   (they aid comprehension and don't move); movement and overshoot go. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-enter-scale: 1;
+    --motion-enter-shift: 0px;
+    --motion-enter-sheet: 0%;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 140ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 140ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Frostier, not glassier — raise opacity and drop the blur entirely. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --blur-thin: none;
+    --blur-regular: none;
+    --blur-thick: none;
+  }
+
+  [data-theme="dark"] {
+    --material-chrome: #101116;
+    --material-panel: #191a21;
+  }
+
+  [data-theme="light"] {
+    --material-chrome: #f6f6f3;
+    --material-panel: #ffffff;
+  }
+}
+
+/* Near-solid surfaces with defined, contrasting borders. */
+@media (prefers-contrast: more) {
+  [data-theme="dark"] {
+    --color-border: #4d4f5c;
+    --color-text-muted: #c4c5ce;
+    --material-chrome: #101116;
+    --material-panel: #191a21;
+  }
+
+  [data-theme="light"] {
+    --color-border: #9d9b95;
+    --color-text-muted: #42434b;
+    --material-chrome: #f6f6f3;
+    --material-panel: #ffffff;
+  }
+}

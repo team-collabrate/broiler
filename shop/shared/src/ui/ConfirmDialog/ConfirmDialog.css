@@ -1,0 +1,98 @@
+.confirm-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Dim + blur: a modal task pushes the background back rather than merely
+     tinting it, so attention has nowhere else to go. */
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  padding: var(--space-5);
+  z-index: 30;
+  animation: confirm-backdrop-enter 200ms var(--ease-out);
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 340px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--material-edge);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  /* Modals scale from centre, not from a trigger — no transform-origin override. */
+  animation: confirm-dialog-enter 220ms var(--ease-out);
+}
+
+@keyframes confirm-backdrop-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+
+@keyframes confirm-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-enter-scale));
+  }
+}
+
+.confirm-dialog__title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+}
+
+.confirm-dialog__message {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.confirm-dialog__cancel,
+.confirm-dialog__confirm {
+  flex: 1;
+  min-height: var(--tap-target-min);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-body);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out), background-color 150ms ease;
+}
+
+.confirm-dialog__cancel:active,
+.confirm-dialog__confirm:active {
+  transform: scale(0.97);
+}
+
+.confirm-dialog__cancel {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.confirm-dialog__confirm {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.confirm-dialog__confirm.is-destructive {
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+}

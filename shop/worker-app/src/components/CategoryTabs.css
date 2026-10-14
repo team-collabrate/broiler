@@ -1,0 +1,108 @@
+/* Takes the middle of the header, between the logo and the menu edge. The
+   sync badge lives in a fixed corner pill, not this row (see WorkerHome.css
+   .worker-home__sync-float), so the tabs get the row's full width.
+
+   Equal-width grid columns rather than a packed flex row: the category
+   count sets grid-template-columns inline (see CategoryTabs.tsx), so the
+   full row width is always divided evenly between however many tabs there
+   are — no dead space trailing the last one, and the gap between every pair
+   of tabs (and each tab's own internal centring) comes out identical. */
+.category-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.category-tabs__tab {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Photo tabs: the cutout photo on top, the category word underneath. No
+   pill, no fill, no crop — the photo keeps its own shape and the tab
+   chrome that used to carry the "this is a button" cue (the dark rounded
+   rectangle) is gone entirely. */
+.category-tabs__tab--photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-1) var(--space-2);
+}
+
+/* Every photo is scaled to the same box, so the five sit at one visual
+   size regardless of each source photo's own resolution or crop — contain,
+   not cover, so nothing is cropped to force a shape onto it. */
+.category-tabs__photo {
+  display: block;
+  width: 100%;
+  max-width: 132px;
+  height: 76px;
+  object-fit: contain;
+  object-position: bottom center;
+  transition: transform 120ms var(--ease-out);
+}
+
+.category-tabs__label {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-body);
+  white-space: nowrap;
+  transition: color 150ms ease;
+}
+
+.category-tabs__tab--photo:active .category-tabs__photo {
+  transform: scale(0.94);
+}
+
+/* Selected state is carried by the label (weight + colour) and a thin
+   accent underline on the tab itself — not a ring or a background fill
+   drawn onto the photo. */
+.category-tabs__tab--photo.is-active {
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+}
+
+.category-tabs__tab--photo.is-active .category-tabs__label {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Fallback for a category with no photo (an older or owner-added one, see
+   CATEGORY_IMAGE in CategoryTabs.tsx) — a plain text chip so it never
+   renders as a missing image. */
+.category-tabs__tab--plain {
+  min-height: 52px;
+  padding: 0 var(--space-4);
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  transition: border-color 150ms ease, color 150ms ease, transform 120ms var(--ease-out);
+}
+
+.category-tabs__tab--plain:active {
+  transform: scale(0.96);
+}
+
+.category-tabs__tab--plain.is-active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.category-tabs__tab--plain .category-tabs__label {
+  font-size: var(--text-callout);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-tabs__tab--photo:active .category-tabs__photo {
+    transform: none;
+  }
+  .category-tabs__tab--plain:active {
+    transform: none;
+  }
+}

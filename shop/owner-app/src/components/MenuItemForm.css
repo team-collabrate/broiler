@@ -1,0 +1,156 @@
+.menu-form__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 20;
+  animation: menu-form-backdrop-enter 200ms var(--ease-out);
+}
+
+.menu-form {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-top: 1px solid var(--material-edge);
+  padding: var(--space-5);
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  /* Bottom sheet — slides up like a drawer, not a centered scale-in. */
+  animation: menu-form-enter 300ms var(--ease-drawer);
+}
+
+/* Grabber: the familiar sheet affordance, and a visual anchor for the
+   rounded lip. Purely indicative here — the sheet isn't drag-dismissible. */
+.menu-form::before {
+  content: "";
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+@keyframes menu-form-backdrop-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+
+@keyframes menu-form-enter {
+  from {
+    transform: translateY(var(--motion-enter-sheet));
+  }
+}
+
+.menu-form__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+.menu-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.menu-form__field input {
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-callout);
+  font-weight: 400;
+  letter-spacing: var(--tracking-body);
+  transition: border-color 150ms ease;
+}
+
+.menu-form__field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.menu-form__toggle-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--tap-target-min);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.menu-form__toggle-field input {
+  width: 20px;
+  height: 20px;
+}
+
+.menu-form__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-footnote);
+}
+
+.menu-form__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.menu-form__cancel,
+.menu-form__save {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-body);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.menu-form__cancel:active:not(:disabled),
+.menu-form__save:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.menu-form__cancel {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.menu-form__cancel:disabled,
+.menu-form__save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-form__save {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

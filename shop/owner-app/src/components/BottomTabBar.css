@@ -1,0 +1,58 @@
+/* Floating translucent chrome — content scrolls underneath it (see
+   OwnerHome.css), so the bar reads as a layer above the page rather than a
+   strip carved out of it. */
+.bottom-tabs {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--material-chrome);
+  backdrop-filter: var(--blur-thick);
+  -webkit-backdrop-filter: var(--blur-thick);
+  /* A bright top lip instead of a hard divider: light catching the material. */
+  border-top: 1px solid var(--material-edge);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.bottom-tabs__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 56px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 150ms ease, transform 110ms var(--ease-out);
+}
+
+.bottom-tabs__item:active {
+  transform: scale(0.94);
+}
+
+.bottom-tabs__item.is-active {
+  color: var(--color-accent);
+}
+
+.bottom-tabs__icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Vibrancy: over a translucent surface, flat grey text loses legibility —
+   the active tab gains weight, not just colour. */
+.bottom-tabs__label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: var(--tracking-caption);
+  line-height: 1;
+}
+
+.bottom-tabs__item.is-active .bottom-tabs__label {
+  font-weight: 700;
+}

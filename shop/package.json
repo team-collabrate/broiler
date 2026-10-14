@@ -1,0 +1,30 @@
+{
+  "name": "kumbakonam-pos",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "worker-app",
+    "owner-app",
+    "reports-app"
+  ],
+  "scripts": {
+    "dev:worker": "npm run dev -w worker-app",
+    "dev:owner": "npm run dev -w owner-app",
+    "dev:reports": "npm run dev -w reports-app",
+    "build:worker": "npm run build -w worker-app",
+    "build:owner": "npm run build -w owner-app",
+    "build:reports": "npm run build -w reports-app",
+    "build": "npm run build:worker && npm run build:owner && npm run build:reports",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w worker-app && npm run typecheck -w owner-app && npm run typecheck -w reports-app",
+    "seed:users": "node scripts/seed-users.mjs",
+    "send:daily-report": "node scripts/send-daily-report-email.mjs"
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.7.0",
+    "nodemailer": "^6.9.16",
+    "typescript": "^5.6.3",
+    "xlsx": "^0.18.5"
+  }
+}

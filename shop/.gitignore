@@ -1,0 +1,39 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# env files (keep example files)
+.env
+.env.*
+!.env.example
+
+# firebase
+.firebase
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+service-account*.json
+*-firebase-adminsdk-*.json
+
+# editor / os
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# logs
+npm-debug.log*
+
+# Claude Code local tooling (personal settings, installed skill cache)
+.claude/settings.local.json
+.claude/skills/
+.agents/
+skills-lock.json
+
+# Locally-downloaded JDKs used to build the worker-app Android APK on this
+# machine (see worker-app/android/.jdk21/) — large binaries, environment-
+# specific, never meant to be committed.
+worker-app/android/.jdk17/
+worker-app/android/.jdk21/

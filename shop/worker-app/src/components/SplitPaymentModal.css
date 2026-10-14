@@ -1,0 +1,153 @@
+.split-pay__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 25;
+}
+
+.split-pay {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.split-pay__title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+}
+
+.split-pay__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
+.split-pay__total strong {
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.split-pay__fields {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.split-pay__field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.split-pay__label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.split-pay__field input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  /* Amounts are read at a glance while the customer waits. */
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.split-pay__field input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+/* The number spinners steal width from digits and are useless at a counter. */
+.split-pay__field input::-webkit-outer-spin-button,
+.split-pay__field input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.split-pay__field input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.split-pay__plus {
+  flex: none;
+  padding-bottom: 14px;
+  font-size: var(--text-title-3);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.split-pay__hint {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.split-pay__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.split-pay__cancel,
+.split-pay__done {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-body);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.split-pay__cancel:active,
+.split-pay__done:active {
+  transform: scale(0.97);
+}
+
+.split-pay__cancel {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.split-pay__done {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

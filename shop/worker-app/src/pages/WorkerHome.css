@@ -1,0 +1,76 @@
+.worker-home {
+  display: grid;
+  /* 400px was sized against a wide desktop preview. On the real counter
+     tablet (985px wide — measured from the device, not guessed) that left
+     the menu column too narrow to show 4 legible cards at once alongside
+     it. 260px is still enough for the cart's own content (2-column
+     payment grid, totals, submit) at that width — verified, not assumed —
+     and gives the menu column the room 4 columns actually needs. */
+  grid-template-columns: 76px 1fr 260px;
+  grid-template-areas: "sidebar menu cart";
+  /* See the html rule in theme.css for why this is two lines, not one —
+     same fix, applied here too since this sets its own explicit height
+     rather than inheriting the corrected one. */
+  height: 100vh;
+  height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Flex column so the header stays put and only the grid scrolls — that's what
+   lets the category bar behave as a material with cards passing under it. */
+.worker-home__menu {
+  grid-area: menu;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.worker-home__cart {
+  grid-area: cart;
+  min-height: 0;
+}
+
+/* Logo, category tabs, sync badge. The tabs are the flexible middle and may
+   wrap to a second line on a narrow tablet, so this row is centred and lets
+   its own height follow the strip. */
+.worker-home__menu-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-3);
+}
+
+/* Carries the wordmark itself rather than sitting beside a text title.
+   120px against a 256px asset still leaves better than 2x for a
+   high-density tablet panel. */
+.worker-home__logo {
+  flex: none;
+  width: 120px;
+  height: auto;
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.4));
+}
+
+@media (max-width: 900px) {
+  .worker-home {
+    grid-template-columns: 1fr;
+    grid-template-areas: "sidebar" "menu" "cart";
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .worker-home__cart {
+    height: 60vh;
+    height: 60dvh;
+  }
+}
+
+/* Give the tab strip back some width where the row is tight. */
+@media (max-width: 1200px) {
+  .worker-home__logo {
+    width: 88px;
+  }
+}

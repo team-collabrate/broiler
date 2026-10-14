@@ -1,0 +1,84 @@
+.worker-select {
+  position: relative;
+}
+
+.worker-select__trigger {
+  position: relative;
+}
+
+/* First-letter badge — a glance-check that the right person is still
+   selected, without needing the full name to fit in a 44px button. */
+.worker-select__initial {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  border: 1.5px solid var(--color-surface);
+}
+
+.worker-select__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  /* Transparent on purpose — see the component's own comment: this closes
+     the popover on an outside tap, it isn't meant to darken the screen
+     the way the real modals do. */
+  background: transparent;
+}
+
+.worker-select__menu {
+  position: absolute;
+  left: calc(100% + var(--space-2));
+  top: 0;
+  z-index: 41;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  min-width: 140px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+/* Narrow viewport: the sidebar becomes a top bar (see Sidebar.css), so the
+   menu drops down from the trigger instead of appearing to its side. */
+@media (max-width: 900px) {
+  .worker-select__menu {
+    left: 0;
+    top: calc(100% + var(--space-2));
+  }
+}
+
+.worker-select__option {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.worker-select__option:active {
+  background: var(--color-surface);
+}
+
+.worker-select__option.is-selected {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}

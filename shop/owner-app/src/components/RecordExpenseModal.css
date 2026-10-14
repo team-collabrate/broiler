@@ -1,0 +1,196 @@
+.record-expense__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--material-scrim);
+  backdrop-filter: var(--blur-thin);
+  -webkit-backdrop-filter: var(--blur-thin);
+  z-index: 20;
+  animation: record-expense-backdrop-enter 200ms var(--ease-out);
+}
+
+.record-expense {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-top: 1px solid var(--material-edge);
+  padding: var(--space-5);
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-lg);
+  animation: record-expense-enter 300ms var(--ease-drawer);
+}
+
+.record-expense::before {
+  content: "";
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+@keyframes record-expense-backdrop-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+
+@keyframes record-expense-enter {
+  from {
+    transform: translateY(var(--motion-enter-sheet));
+  }
+}
+
+.record-expense__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+.record-expense__subtitle {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--color-text-muted);
+}
+
+.record-expense__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.record-expense__field input {
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-callout);
+  transition: border-color 150ms ease;
+}
+
+.record-expense__field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.record-expense__photo-field {
+  display: flex;
+}
+
+.record-expense__photo-add {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.record-expense__photo-add:active {
+  transform: scale(0.98);
+}
+
+.record-expense__photo-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.record-expense__photo-preview img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm, 8px);
+  object-fit: cover;
+  flex: none;
+}
+
+.record-expense__photo-preview-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.record-expense__photo-preview-actions button {
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.record-expense__status {
+  min-height: 1.2em;
+  font-size: var(--text-footnote);
+  color: var(--color-danger);
+}
+
+.record-expense__actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.record-expense__cancel,
+.record-expense__save {
+  flex: 1;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-body);
+  cursor: pointer;
+  transition: transform 110ms var(--ease-out);
+}
+
+.record-expense__cancel:active:not(:disabled),
+.record-expense__save:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.record-expense__cancel {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.record-expense__cancel:disabled,
+.record-expense__save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.record-expense__save {
+  border: none;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
