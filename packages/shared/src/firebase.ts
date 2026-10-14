@@ -5,7 +5,6 @@ import {
   getAuth,
   getReactNativePersistence,
   initializeAuth,
-  signInAnonymously,
   type Auth,
   type Persistence,
 } from 'firebase/auth';
@@ -58,13 +57,3 @@ export function getServices(): FirebaseServices {
   return services;
 }
 
-/**
- * Both apps sign in anonymously so Firestore rules can require `request.auth != null`.
- * This is a placeholder: it keeps drive-by traffic out but does not tell the POS and
- * the owner apart. Replace it with real owner login before going live.
- */
-export async function ensureSignedIn(): Promise<void> {
-  const { auth } = getServices();
-  await auth.authStateReady();
-  if (!auth.currentUser) await signInAnonymously(auth);
-}

@@ -1,37 +1,132 @@
 rules_version = '2';
 
-// v1 rules. Both apps sign in anonymously, so "signed in" only means "is one of our
-// apps"; it does NOT separate the POS from the owner. Before going live, add real owner
-// login and restrict menu writes (including the daily rate) and order reads to the owner.
+// Access rules. Two accounts exist, and the sign-in email says which is which:
+//   owner@broiler-pos.invalid    the owner: reads sales, sets rates, edits the menu and settings
+//   counter@broiler-pos.invalid  the till: reads the menu, saves orders, nothing else
+// Each account's password is its PIN (see packages/shared/src/roles.ts). Anyone else who signs up
+// with the public API key has neither email, so every rule below refuses them.
+//
+// Rules cannot loop over a list, so an order's lines are checked at fixed positions and an order
+// holds at most 20 lines (the till enforces the same limit).
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // The POS sets today's per-kg rate here, so signed-in apps can write for now.
+    function emailIs(email) {
+      return request.auth != null
+        && request.auth.token.get('email', '') == email
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+    function isOwner() { return emailIs('owner@broiler-pos.invalid'); }
+    function isCounter() { return emailIs('counter@broiler-pos.invalid'); }
+    function isStaff() { return isOwner() || isCounter(); }
+
+    // The menu: the rate is per kg or per piece, whichever the item is sold by. Only the owner
+    // changes it (the till asks for the owner's PIN before showing today's rates).
     match /menu/{itemId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && request.resource.data.pricePerKgMinor is int
-        && request.resource.data.pricePerKgMinor > 0;
-      allow delete: if request.auth != null;
+      allow read: if isStaff();
+      allow create, update: if isOwner()
+        && request.resource.data.rateMinor is int
+        && request.resource.data.rateMinor > 0;
+      allow delete: if isOwner();
     }
 
-    // Orders are append-only: they can be created and read, never edited or deleted.
+    // Settings: how far the counter may adjust a sale's rate, and the counter's category tabs.
+    match /settings/pricing {
+      allow read: if isStaff();
+      allow write: if isOwner()
+        && request.resource.data.maxAdjustMinor is int
+        && request.resource.data.maxAdjustMinor >= 0
+        && request.resource.data.maxAdjustMinor <= 100000;
+    }
+    match /settings/categories {
+      allow read: if isStaff();
+      allow write: if isOwner() && request.resource.data.list is list && request.resource.data.list.size() <= 30;
+    }
+
+    function maxAdjust() {
+      return exists(/databases/$(database)/documents/settings/pricing)
+        ? get(/databases/$(database)/documents/settings/pricing).data.maxAdjustMinor
+        : 2000;
+    }
+
+    // One order line: consistent with its own rate and quantity, and no further from the list
+    // rate than the owner allows.
+    function validLine(l, maxAdj) {
+      return l.keys().hasAll(['itemId', 'name', 'category', 'unit', 'rateMinor', 'listRateMinor', 'grams', 'qty', 'lineTotalMinor'])
+        && l.unit in ['kg', 'piece']
+        && l.rateMinor is int && l.rateMinor > 0 && l.rateMinor <= 10000000
+        && l.listRateMinor is int && l.listRateMinor > 0 && l.listRateMinor <= 10000000
+        && l.rateMinor >= l.listRateMinor - maxAdj
+        && l.rateMinor <= l.listRateMinor + maxAdj
+        && l.grams is int && l.grams >= 0 && l.grams <= 999999
+        && l.qty is int && l.qty >= 0 && l.qty <= 999
+        && l.lineTotalMinor is int && l.lineTotalMinor >= 0
+        && (l.unit == 'piece'
+          ? (l.qty >= 1 && l.grams == 0
+            && ('amountMinor' in l
+              ? (l.amountMinor is int && l.amountMinor > 0 && l.lineTotalMinor == l.amountMinor)
+              : l.lineTotalMinor == l.rateMinor * l.qty))
+          : (l.grams >= 1 && l.qty == 0
+            && ('amountMinor' in l
+              ? (l.amountMinor is int && l.amountMinor > 0 && l.lineTotalMinor == l.amountMinor)
+              : math.abs(l.lineTotalMinor - math.round(l.rateMinor * l.grams / 1000.0)) <= 1)));
+    }
+
+    function lineOk(lines, i, maxAdj) { return lines.size() <= i || validLine(lines[i], maxAdj); }
+    function lineTotal(lines, i) { return lines.size() <= i ? 0 : lines[i].lineTotalMinor; }
+    function lineGrams(lines, i) { return lines.size() <= i ? 0 : lines[i].grams; }
+    function lineQty(lines, i) { return lines.size() <= i ? 0 : lines[i].qty; }
+
+    function validOrder() {
+      let d = request.resource.data;
+      let maxAdj = maxAdjust();
+      let L = d.lines;
+      return d.keys().hasOnly(['orderNo', 'dayKey', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod'])
+        && d.orderNo is int && d.orderNo >= 1
+        && d.dayKey is string && d.dayKey.size() == 10
+        && d.createdAt == request.time
+        && d.paymentMethod in ['cash', 'upi', 'card']
+        && L is list && L.size() >= 1 && L.size() <= 20
+        && lineOk(L, 0, maxAdj) && lineOk(L, 1, maxAdj) && lineOk(L, 2, maxAdj) && lineOk(L, 3, maxAdj)
+        && lineOk(L, 4, maxAdj) && lineOk(L, 5, maxAdj) && lineOk(L, 6, maxAdj) && lineOk(L, 7, maxAdj)
+        && lineOk(L, 8, maxAdj) && lineOk(L, 9, maxAdj) && lineOk(L, 10, maxAdj) && lineOk(L, 11, maxAdj)
+        && lineOk(L, 12, maxAdj) && lineOk(L, 13, maxAdj) && lineOk(L, 14, maxAdj) && lineOk(L, 15, maxAdj)
+        && lineOk(L, 16, maxAdj) && lineOk(L, 17, maxAdj) && lineOk(L, 18, maxAdj) && lineOk(L, 19, maxAdj)
+        && d.totalMinor is int
+        && d.totalMinor == lineTotal(L, 0) + lineTotal(L, 1) + lineTotal(L, 2) + lineTotal(L, 3) + lineTotal(L, 4)
+          + lineTotal(L, 5) + lineTotal(L, 6) + lineTotal(L, 7) + lineTotal(L, 8) + lineTotal(L, 9)
+          + lineTotal(L, 10) + lineTotal(L, 11) + lineTotal(L, 12) + lineTotal(L, 13) + lineTotal(L, 14)
+          + lineTotal(L, 15) + lineTotal(L, 16) + lineTotal(L, 17) + lineTotal(L, 18) + lineTotal(L, 19)
+        && d.totalGrams is int
+        && d.totalGrams == lineGrams(L, 0) + lineGrams(L, 1) + lineGrams(L, 2) + lineGrams(L, 3) + lineGrams(L, 4)
+          + lineGrams(L, 5) + lineGrams(L, 6) + lineGrams(L, 7) + lineGrams(L, 8) + lineGrams(L, 9)
+          + lineGrams(L, 10) + lineGrams(L, 11) + lineGrams(L, 12) + lineGrams(L, 13) + lineGrams(L, 14)
+          + lineGrams(L, 15) + lineGrams(L, 16) + lineGrams(L, 17) + lineGrams(L, 18) + lineGrams(L, 19)
+        && d.totalPieces is int
+        && d.totalPieces == lineQty(L, 0) + lineQty(L, 1) + lineQty(L, 2) + lineQty(L, 3) + lineQty(L, 4)
+          + lineQty(L, 5) + lineQty(L, 6) + lineQty(L, 7) + lineQty(L, 8) + lineQty(L, 9)
+          + lineQty(L, 10) + lineQty(L, 11) + lineQty(L, 12) + lineQty(L, 13) + lineQty(L, 14)
+          + lineQty(L, 15) + lineQty(L, 16) + lineQty(L, 17) + lineQty(L, 18) + lineQty(L, 19);
+    }
+
+    // Orders are append-only. Only the owner can list and read sales. The till may fetch a single
+    // order it saved in the last two hours (by its id) so that retrying a sale after a lost
+    // response finds the first copy instead of saving a second one.
     match /orders/{orderId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.orderNo is int
-        && request.resource.data.totalMinor is int
-        && request.resource.data.totalMinor >= 0
-        && request.resource.data.totalGrams is int
-        && request.resource.data.lines is list
-        && request.resource.data.lines.size() > 0
-        && request.resource.data.paymentMethod in ['cash', 'upi', 'card'];
+      allow list: if isOwner();
+      allow get: if isOwner()
+        || (isCounter() && (resource == null || resource.data.createdAt > request.time - duration.value(2, 'h')));
+      allow create: if isStaff() && validOrder();
       allow update, delete: if false;
     }
 
     // Per-day order number counters, bumped inside the order transaction.
     match /counters/{dayKey} {
-      allow read, write: if request.auth != null;
+      allow read: if isStaff();
+      allow write: if isStaff()
+        && request.resource.data.keys().hasOnly(['next'])
+        && request.resource.data.next is int
+        && request.resource.data.next >= 1;
     }
   }
 }

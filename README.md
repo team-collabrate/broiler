@@ -66,11 +66,31 @@ floating-point drift. A line costs `round(pricePerKgMinor × grams / 1000)`.
 To try the apps on your computer without a phone, run either of these (each needs its `.env` from step 3):
 
 ```bash
-npm run pos:web     # POS   → http://localhost:8081
+npm run pos:web     # POS   → http://localhost:3000
 npm run admin:web   # Admin → http://localhost:8082
 ```
 
 Both can run at the same time. The browser view is for looking at layout and trying the flow; check touch behavior, the slider and anything hardware-related on a real Android device.
+
+## Hosted prototype
+
+Both apps are published on Firebase Hosting in the `broiler-pos` project (free plan):
+
+| App | Address |
+| --- | --- |
+| POS (counter) | https://broiler-pos.web.app |
+| Admin (owner) | https://broiler-pos-admin.web.app |
+
+```bash
+npm run deploy       # rebuild both apps for the web and publish them
+npm run reset-demo   # delete all sales (orders and the bill counter) so the next demo starts clean
+```
+
+The sites are marked no-index, so search engines skip them. **They are a prototype with no login:** anyone who has the address can make sales, change the daily rates and read the sales. Use sample data only until Phase 2 adds owner login.
+
+## Language and screens
+
+The whole app and the bill are in Tamil (`apps/pos/src/strings.ts`, `apps/admin/src/strings.ts`; the shop name on the bill is `SHOP_NAME` in `apps/pos/src/config.ts`). Each menu item has an English `name` and a Tamil `nameTa`; the Tamil one is shown and printed. It is built for a tablet in landscape and also fits laptop windows (about 1366×650 and up) and large monitors.
 
 ## Checks
 

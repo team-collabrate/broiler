@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BACKSPACE_KEY } from '@broiler/shared';
+import { t } from '../strings';
 import { colors, spacing } from '../theme';
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
   onKey: (key: string) => void;
 }
 
-const LABELS: Record<string, string> = { [BACKSPACE_KEY]: 'Delete', '.': 'Decimal point', C: 'Clear' };
+const LABELS: Record<string, string> = { [BACKSPACE_KEY]: t.keyDelete, '.': t.keyDecimal, C: t.keyClear };
 
 export function Keypad({ leftKey, keyHeight = 56, onKey }: Props) {
   const rows = [

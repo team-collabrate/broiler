@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { dayKey, rangeFor, subscribeOrders, type Order, type RangePreset } from '@broiler/shared';
+import { dayKey, describeError, rangeFor, subscribeOrders, type Order, type RangePreset } from '@broiler/shared';
 
 interface OrdersState {
   /** null until the first snapshot arrives. */
@@ -27,7 +27,7 @@ export function useOrders(preset: RangePreset): OrdersState {
     return subscribeOrders(
       rangeFor(preset),
       (orders) => setState({ orders, error: null }),
-      (e) => setState({ orders: null, error: e.message }),
+      (e) => setState({ orders: null, error: describeError(e) }),
     );
   }, [preset, today]);
 

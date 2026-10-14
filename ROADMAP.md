@@ -56,6 +56,7 @@ security. If receipts matter more to you on day one, swap 2 and 3.
 
 - Receipt layout (shop name, order number, lines with weight × rate, total, payment, date/time)
 - Bluetooth thermal printer support (ESC/POS), with a classic-printer fallback and a retry button
+- **Tamil on thermal printers:** these printers can't render Tamil text, so the bill is drawn onto a canvas and sent as a bitmap, as the Kumbakonam POS already does. Its working code is in `kumbakonam/worker-app/src/printing/` (`receiptCanvas.ts`, `escposRaster.ts`, `classicBluetoothPrinter.ts`, `webBluetoothPrinter.ts`, `usePrinter.ts`) and can be adapted rather than rewritten. Phase 1 already shows the bill on screen and prints it from the web
 - Printer selection and test print
 - **Note:** this needs a native module, so the apps move from Expo Go to a development build (`expo run:android` or EAS)
 

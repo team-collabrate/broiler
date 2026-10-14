@@ -30,10 +30,10 @@ export function rangeFor(preset: RangePreset, now: Date = new Date()): DateRange
   const today = startOfDay(now);
   switch (preset) {
     case 'today':
-      return { start: today, end: addDays(today, 1), label: 'Today' };
+      return { start: today, end: addDays(today, 1), label: 'இன்று' };
     case 'yesterday':
-      return { start: addDays(today, -1), end: today, label: 'Yesterday' };
+      return { start: addDays(today, -1), end: today, label: 'நேற்று' };
     case 'last7':
-      return { start: addDays(today, -6), end: addDays(today, 1), label: 'Last 7 days' };
+      return { start: addDays(today, -6), end: addDays(today, 1), label: 'கடந்த 7 நாட்கள்' };
   }
 }

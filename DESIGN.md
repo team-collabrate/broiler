@@ -7,6 +7,14 @@ file when a preference changes, so later phases follow it.
 1280×800 dp and holds from roughly 1024 to 1463 wide. Phones still work (one scrolling page) but
 are not the design target.
 
+**Language:** everything on screen and on the bill is in **Tamil**, with Latin digits and ₹, as in the Kumbakonam POS. Item names come from each menu item's `nameTa` (English `name` is the fallback). Wording follows the Kumbakonam apps: ஆர்டர், பணம், பணம் செலுத்தும் முறை, பில் அச்சிடு. Tamil needs more line height than English, so text uses generous line heights, and letter-spacing and upper-casing are never applied to it.
+
+**Screen sizes:** three layouts from one codebase.
+- **Tablet, 760dp tall or more** (Redmi Pad 2 in landscape): the layout described below. Xiaomi lists the Redmi Pad 2 at 2560×1600, 274 ppi; its Android or browser viewport size isn't published, and works out to roughly 1280×800 to 1495×934.
+- **Laptop or any short window, 1180dp wide or more** (for example 1366×650): the meter and presets stack in a left column and the ₹ pad sits on the right, so all three controls stay on screen. Tested at 1366×650 and 1536×730.
+- **Smaller or narrower:** the stacked layout scrolls inside the panel with **Add** pinned. Phones get one scrolling page.
+- Very wide monitors keep the content in a centred column (about 1200dp) instead of stretching.
+
 **No popups, anywhere.** No modals, sheets, alerts or overlays in either app. Everything happens
 on the page: confirmations and errors are banners, the rate editor is a view, order detail
 expands in place.
@@ -72,9 +80,13 @@ to the item's default weight.
 - Pick a type and type the rate (the first key replaces it). **Save rates** confirms every rate shown, changed or not, so "same as yesterday" is one tap.
 - The button shows a dot until every type has been set today; each row says "Set today", "Not set today" or "Never set".
 
-### Charging
+### Charging and the bill
 
-After **Charge** the cart clears at once and a green banner in the cart column reads `✓ Order #12 saved · ₹100.00`, so the next customer can be served immediately. It clears itself after about 6 seconds. If saving fails, a red banner shows the reason with **Retry**, and the cart is kept.
+After **பில் போடு** (Charge) the sale is saved, the cart clears at once, and the **Tamil bill** appears in the cart column in place of the cart: shop name, bill number, date and time, each item with weight and per-kilo rate and amount, total weight, total, payment method, and "நன்றி! மீண்டும் வருக!". Two buttons sit under it: **பில் அச்சிடு** (print, web only) and **புதிய பில்** (new bill). Adding the next item also brings the cart back, so the next customer is never held up.
+
+- **Printing:** on the web, Print uses the browser's print dialog with a separate print-only copy of the bill (72mm wide, so it suits an 80mm receipt printer and also prints on A4 or saves as PDF). In the tablet app there is no printing yet: Bluetooth thermal printing is Phase 3.
+- **Errors:** if saving fails, a red banner in the cart column explains in Tamil and offers **மீண்டும் முயற்சி** (retry); the cart is kept.
+- **Shop name:** a placeholder (`பிராய்லர் கோழிக்கடை`); change `SHOP_NAME` (and optional address or phone lines, `SHOP_LINES`) in `apps/pos/src/config.ts`.
 
 ### Phones and small screens
 

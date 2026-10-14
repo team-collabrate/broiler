@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "shop-worker", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "shop", "run", "dev:worker"], "port": 3000 },
+    { "name": "pos-web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "pos:web"], "port": 3000 },
+    { "name": "admin-web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "admin:web"], "port": 8082 }
+  ]
+}

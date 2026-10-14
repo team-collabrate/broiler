@@ -2,28 +2,65 @@ export type PaymentMethod = 'cash' | 'upi' | 'card';
 
 export const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'upi', 'card'];
 
-export const PAYMENT_LABELS: Record<PaymentMethod, string> = { cash: 'Cash', upi: 'UPI', card: 'Card' };
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = { cash: 'பணம்', upi: 'UPI', card: 'கார்டு' };
 
-/** A product sold by weight. Prices are integer minor units (paise) per kg. */
+/** How an item is sold: by weight (rate per kg) or by count (rate per piece or packet). */
+export type Unit = 'kg' | 'piece';
+
+/**
+ * How a sale is entered in the product's configuration sheet:
+ * weight (pick a weight, the rate prices it), amount (type the money, the weight follows),
+ * qty (pick a count, the rate prices each).
+ */
+export type Method = 'weight' | 'amount' | 'qty';
+
+/** The form a product is sold in. Each variant is its own menu item with its own daily rate. */
+export type Variant = 'live' | 'skin' | 'skinless' | 'bone' | 'boneless';
+
+/** A product sold by weight or by count. Rates are integer minor units (paise) per kg or per piece. */
 export interface MenuItem {
   id: string;
+  /** English name; also the fallback when there is no Tamil one. */
   name: string;
-  pricePerKgMinor: number;
-  /** The item's usual sale weight in grams (liver 100, chicken 1000); where the sale panel starts. */
+  /** Tamil name shown in the apps and on the bill. */
+  nameTa: string | null;
+  /** Category key (see categories.ts): the tab the item sits under at the counter. */
+  category: string;
+  /** Product family the variants belong to, e.g. `broiler`. */
+  group: string;
+  variant: Variant | null;
+  unit: Unit;
+  /** The billing methods the sheet offers for this product, first is the default shown. Never empty. */
+  methods: Method[];
+  /** The product photo: a key from the generated image map (see scripts/build-image-map.mjs) or an https link. */
+  image: string | null;
+  /** Today's list rate in paise: per kg for `kg` items, per piece for `piece` items. */
+  rateMinor: number;
+  /** A kg item's usual sale weight in grams (liver 100, chicken 1000); where the sale panel starts. */
   defaultGrams: number;
-  /** When the rate was last set (or confirmed) at the counter; null if never. Used to flag a stale daily rate. */
+  /** A piece item's usual count; where the quantity panel starts. */
+  defaultQty: number;
+  /** When the rate was last set (or confirmed); null if never. Used to flag a stale daily rate. */
   rateUpdatedAt: Date | null;
   active: boolean;
   sortOrder: number;
 }
 
-/** What the POS sends when charging a sale: the weighed lines. */
+/** What the POS sends when charging a sale: the lines. */
 export interface OrderLineInput {
   itemId: string;
   name: string;
-  pricePerKgMinor: number;
-  /** Weight in whole grams. For a fixed-amount sale this is the weight to weigh out. */
+  /** Category key at the time of sale, so reports can group without looking the item up. */
+  category: string;
+  unit: Unit;
+  /** The rate actually charged per kg or per piece, in paise. Differs from `listRateMinor` when adjusted. */
+  rateMinor: number;
+  /** The item's list rate when the line was added, in paise. */
+  listRateMinor: number;
+  /** Weight in whole grams for a `kg` line (for a fixed-amount sale, the weight to weigh out); 0 for a `piece` line. */
   grams: number;
+  /** Count for a `piece` line; 0 for a `kg` line. */
+  qty: number;
   /**
    * Set only when the line was sold for a fixed amount (₹100 of chicken). The line then
    * charges exactly this, in paise, instead of pricing the weight. Leave the key out otherwise:
@@ -45,6 +82,14 @@ export interface Order {
   createdAt: Date;
   lines: OrderLine[];
   totalMinor: number;
+  /** Weight of the `kg` lines. */
   totalGrams: number;
+  /** Count of the `piece` lines. */
+  totalPieces: number;
   paymentMethod: PaymentMethod;
+}
+
+/** The name to show and print: Tamil when the item has one, else English. */
+export function itemName(item: Pick<MenuItem, 'name' | 'nameTa'>): string {
+  return item.nameTa ?? item.name;
 }

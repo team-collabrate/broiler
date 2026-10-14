@@ -1,32 +1,56 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  ADJUST_STEP_MINOR,
   addLine,
+  adjustLine,
+  canAddLine,
+  MAX_ORDER_LINES,
+  adjustmentMinor,
+  applyQtyKey,
   applyRateKey,
   applyRupeesKey,
   BACKSPACE_KEY,
   cartTotals,
+  clampRate,
   DEFAULT_GRAMS,
+  DEFAULT_MAX_ADJUST_MINOR,
+  DEFAULT_QTY,
   describeLine,
+  formatLineQuantity,
   formatMoney,
+  formatRate,
   formatRateInput,
   formatWeight,
   gramsForAmount,
   isValidRupeesInput,
   lineTotalMinor,
   MAX_LINE_GRAMS,
+  MAX_QTY,
   MIN_GRAMS,
   meterGramsFromX,
   meterXFromGrams,
   normalizeDefaultGrams,
+  normalizeDefaultQty,
+  normalizeMethods,
+  replaceLine,
+  splitGrams,
+  wheelIndexFromOffset,
+  wheelMaxOffset,
+  normalizeMaxAdjust,
   orderLineTotalMinor,
+  parseQtyInput,
   parseRateInput,
   parseRupeesInput,
+  pieceTotalMinor,
   removeLine,
   stepDownGrams,
+  stepDownQty,
   stepUpGrams,
+  stepUpQty,
   type CartLine,
 } from './sale.ts';
+import type { OrderLineInput } from './types.ts';
 
 test('lineTotalMinor prices by the kilo and rounds to the paisa', () => {
   assert.equal(lineTotalMinor(24000, 1000), 24000); // 1 kg at 240.00
@@ -45,11 +69,11 @@ test('formatMoney uses Indian grouping and two decimals', () => {
 });
 
 test('formatWeight switches between grams and kilos', () => {
-  assert.equal(formatWeight(850), '850 g');
-  assert.equal(formatWeight(1000), '1 kg');
-  assert.equal(formatWeight(1250), '1.25 kg');
-  assert.equal(formatWeight(1005), '1.005 kg');
-  assert.equal(formatWeight(12500), '12.5 kg');
+  assert.equal(formatWeight(850), '850 கிராம்');
+  assert.equal(formatWeight(1000), '1 கிலோ');
+  assert.equal(formatWeight(1250), '1.25 கிலோ');
+  assert.equal(formatWeight(1005), '1.005 கிலோ');
+  assert.equal(formatWeight(12500), '12.5 கிலோ');
 });
 
 test('gramsForAmount converts rupees to the weight they buy, to the nearest gram', () => {
@@ -183,28 +207,68 @@ test('applyRateKey builds a rate entry key by key', () => {
   assert.equal(typeRate(['2', '4', BACKSPACE_KEY]), '2');
 });
 
-const chicken = { itemId: 'chicken', name: 'Chicken', pricePerKgMinor: 24000 };
-const byWeight = (grams: number): CartLine => ({ ...chicken, grams });
-const byAmount = (amountMinor: number): CartLine => ({
+const chicken = { itemId: 'chicken', name: 'Chicken', category: 'broiler', unit: 'kg' as const, rateMinor: 24000, listRateMinor: 24000, qty: 0 };
+const byWeight = (grams: number): OrderLineInput => ({ ...chicken, grams });
+const byAmount = (amountMinor: number): OrderLineInput => ({
   ...chicken,
-  grams: gramsForAmount(amountMinor, chicken.pricePerKgMinor),
+  grams: gramsForAmount(amountMinor, chicken.rateMinor),
   amountMinor,
 });
+const eggs = (qty: number, rateMinor = 1000): OrderLineInput => ({
+  itemId: 'podi',
+  name: 'Podi',
+  category: 'more',
+  unit: 'piece',
+  rateMinor,
+  listRateMinor: rateMinor,
+  grams: 0,
+  qty,
+});
+const cart = (...lines: OrderLineInput[]): CartLine[] => lines.reduce<CartLine[]>(addLine, []);
 
 test('orderLineTotalMinor prices a weighed line from its weight and a fixed-amount line at exactly the amount', () => {
-  assert.equal(orderLineTotalMinor(byWeight(1250)), 30000);
+  assert.equal(orderLineTotalMinor({ ...byWeight(1250) }), 30000);
   // 417 g would price at ₹100.08, but the customer asked for ₹100.
   assert.equal(lineTotalMinor(24000, 417), 10008);
   assert.equal(orderLineTotalMinor(byAmount(10000)), 10000);
 });
 
+test('a piece line is priced as rate times count', () => {
+  assert.equal(orderLineTotalMinor(eggs(3)), 3000);
+  assert.equal(orderLineTotalMinor(eggs(12, 750)), 9000);
+  assert.equal(pieceTotalMinor(1000, 0), 0);
+});
+
 test('describeLine explains how a line was sold', () => {
-  assert.equal(describeLine(byWeight(1250)), '1.25 kg × ₹240.00/kg');
-  assert.equal(describeLine(byAmount(10000)), '≈ 417 g (by amount)');
+  assert.equal(describeLine(byWeight(1250)), '1.25 கிலோ × ₹240.00/கிலோ');
+  assert.equal(describeLine(byAmount(10000)), '≈ 417 கிராம் (தொகைப்படி)');
+  assert.equal(describeLine(eggs(3)), '3 எண் × ₹10.00/எண்');
+});
+
+test('formatLineQuantity gives the weight or the count for the bill', () => {
+  assert.equal(formatLineQuantity(byWeight(500)), '500 கிராம்');
+  assert.equal(formatLineQuantity(byAmount(10000)), '≈ 417 கிராம்');
+  assert.equal(formatLineQuantity(eggs(2)), '2 எண்');
+  assert.equal(formatRate(24000, 'kg'), '₹240.00/கிலோ');
+  assert.equal(formatRate(1000, 'piece'), '₹10.00/எண்');
+});
+
+test('quantity stepping stays between 1 and the maximum', () => {
+  assert.equal(stepUpQty(1), 2);
+  assert.equal(stepDownQty(2), 1);
+  assert.equal(stepDownQty(1), 1);
+  assert.equal(stepUpQty(MAX_QTY), MAX_QTY);
+});
+
+test('normalizeDefaultQty keeps a sensible stored count and falls back to 1', () => {
+  assert.equal(normalizeDefaultQty(5), 5);
+  for (const bad of [undefined, null, 0, -1, 1.5, '2', NaN, 1000]) {
+    assert.equal(normalizeDefaultQty(bad), DEFAULT_QTY, `expected the fallback for ${String(bad)}`);
+  }
 });
 
 test('addLine starts a new line and merges repeat weighings of the same item', () => {
-  const two = addLine(addLine([], byWeight(500)), { ...chicken, itemId: 'liver', name: 'Liver', grams: 250 });
+  const two = cart(byWeight(500), { ...byWeight(250), itemId: 'liver', name: 'Liver' });
   assert.equal(two.length, 2);
   const merged = addLine(two, byWeight(1000));
   assert.equal(merged.length, 2);
@@ -213,39 +277,179 @@ test('addLine starts a new line and merges repeat weighings of the same item', (
 });
 
 test('merging two weighed portions stays priced by weight', () => {
-  const merged = addLine([byWeight(500)], byWeight(750));
+  const merged = cart(byWeight(500), byWeight(750));
   assert.equal(merged[0].amountMinor, undefined);
   assert.equal(merged[0].grams, 1250);
   assert.equal(cartTotals(merged).totalMinor, 30000);
 });
 
+test('merging piece lines adds the counts and caps at the maximum', () => {
+  const merged = cart(eggs(2), eggs(3));
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].qty, 5);
+  assert.equal(cartTotals(merged).totalMinor, 5000);
+  assert.equal(addLine(cart(eggs(MAX_QTY - 1)), eggs(10))[0].qty, MAX_QTY);
+});
+
 test('merging a fixed-amount portion keeps the exact sum of what each portion cost', () => {
-  const merged = addLine([byAmount(10000)], byAmount(20000));
+  const merged = cart(byAmount(10000), byAmount(20000));
   assert.equal(merged.length, 1);
   assert.equal(merged[0].amountMinor, 30000);
   assert.equal(merged[0].grams, 417 + 833);
   assert.equal(cartTotals(merged).totalMinor, 30000);
 
   // A weighed portion added to a fixed-amount one: ₹100 + 500 g (₹120.00) = ₹220.00.
-  const mixed = addLine([byAmount(10000)], byWeight(500));
+  const mixed = cart(byAmount(10000), byWeight(500));
   assert.equal(mixed[0].amountMinor, 22000);
   assert.equal(cartTotals(mixed).totalMinor, 22000);
 
   // The other way round gives the same total.
-  const reversed = addLine([byWeight(500)], byAmount(10000));
+  const reversed = cart(byWeight(500), byAmount(10000));
   assert.equal(cartTotals(reversed).totalMinor, 22000);
 });
 
 test('addLine caps a merged weight at the maximum', () => {
-  const merged = addLine([byWeight(MAX_LINE_GRAMS - 100)], byWeight(5000));
+  const merged = addLine(cart(byWeight(MAX_LINE_GRAMS - 100)), byWeight(5000));
   assert.equal(merged[0].grams, MAX_LINE_GRAMS);
 });
 
-test('removeLine drops one item and cartTotals sums the rest', () => {
-  const lines = [byWeight(1000), { ...chicken, itemId: 'liver', name: 'Liver', pricePerKgMinor: 20000, grams: 500 }];
-  assert.deepEqual(cartTotals(lines), { totalMinor: 34000, totalGrams: 1500 });
-  const after = removeLine(lines, 'chicken');
-  assert.deepEqual(after.map((l) => l.itemId), ['liver']);
-  assert.deepEqual(cartTotals(after), { totalMinor: 10000, totalGrams: 500 });
-  assert.deepEqual(cartTotals([]), { totalMinor: 0, totalGrams: 0 });
+test('the same item at a different rate becomes its own line instead of merging', () => {
+  const lines = cart(byWeight(500), { ...byWeight(500), rateMinor: 23500 });
+  assert.equal(lines.length, 2);
+  assert.notEqual(lines[0].key, lines[1].key);
+  assert.equal(cartTotals(lines).totalMinor, 12000 + 11750);
+});
+
+test('removeLine drops one line by key and cartTotals sums the rest', () => {
+  const lines = cart(byWeight(1000), { ...byWeight(500), itemId: 'liver', name: 'Liver', rateMinor: 20000, listRateMinor: 20000 }, eggs(4));
+  assert.deepEqual(cartTotals(lines), { totalMinor: 24000 + 10000 + 4000, totalGrams: 1500, totalPieces: 4 });
+  const after = removeLine(lines, lines[0].key);
+  assert.deepEqual(after.map((l) => l.itemId), ['liver', 'podi']);
+  assert.deepEqual(cartTotals(after), { totalMinor: 14000, totalGrams: 500, totalPieces: 4 });
+  assert.deepEqual(cartTotals([]), { totalMinor: 0, totalGrams: 0, totalPieces: 0 });
+});
+
+test('clampRate keeps a rate within the allowed distance of the list rate and above zero', () => {
+  assert.equal(clampRate(24500, 24000, DEFAULT_MAX_ADJUST_MINOR), 24500);
+  assert.equal(clampRate(30000, 24000, DEFAULT_MAX_ADJUST_MINOR), 26000); // +₹20 at most
+  assert.equal(clampRate(10000, 24000, DEFAULT_MAX_ADJUST_MINOR), 22000); // -₹20 at most
+  assert.equal(clampRate(-5, 1000, 5000), 1); // never zero or negative
+  assert.equal(adjustmentMinor({ rateMinor: 23500, listRateMinor: 24000 }), -500);
+});
+
+test('adjustLine moves the rate in the given step and re-prices the line', () => {
+  const lines = cart(byWeight(1000));
+  const down = adjustLine(lines, lines[0].key, -ADJUST_STEP_MINOR, DEFAULT_MAX_ADJUST_MINOR);
+  assert.equal(down[0].rateMinor, 23500);
+  assert.equal(down[0].listRateMinor, 24000); // the list rate stays on record
+  assert.equal(cartTotals(down).totalMinor, 23500);
+});
+
+test('adjustLine stops at the limit and leaves other lines alone', () => {
+  let lines = cart(byWeight(1000), eggs(2));
+  for (let i = 0; i < 10; i++) lines = adjustLine(lines, lines[0].key, ADJUST_STEP_MINOR, DEFAULT_MAX_ADJUST_MINOR);
+  assert.equal(lines[0].rateMinor, 26000); // 10 steps of +₹5 stop at +₹20
+  assert.equal(lines[1].rateMinor, 1000);
+});
+
+test('adjusting a fixed-amount line keeps the amount and changes the weight to weigh out', () => {
+  const lines = cart(byAmount(10000)); // ₹100 at ₹240/kg = 417 g
+  const up = adjustLine(lines, lines[0].key, ADJUST_STEP_MINOR, DEFAULT_MAX_ADJUST_MINOR); // ₹245/kg
+  assert.equal(up[0].amountMinor, 10000);
+  assert.equal(up[0].grams, gramsForAmount(10000, 24500)); // 408 g
+  assert.equal(cartTotals(up).totalMinor, 10000);
+});
+
+test('parseQtyInput accepts counts from 1 to 999 and rejects the rest', () => {
+  assert.equal(parseQtyInput('1'), 1);
+  assert.equal(parseQtyInput('12'), 12);
+  assert.equal(parseQtyInput('999'), 999);
+  for (const bad of ['', '0', '00', '1000', '1.5', '-2', 'x']) assert.equal(parseQtyInput(bad), null, `expected null for "${bad}"`);
+});
+
+test('applyQtyKey builds a count key by key', () => {
+  const typeQty = (keys: string[]) => keys.reduce(applyQtyKey, '');
+  assert.equal(typeQty(['1', '2']), '12');
+  assert.equal(typeQty(['0', '5']), '5'); // no leading zero
+  assert.equal(typeQty(['1', '2', '3', '4']), '123'); // at most 3 digits
+  assert.equal(typeQty(['1', '.', '5']), '15');
+  assert.equal(typeQty(['1', '2', BACKSPACE_KEY]), '1');
+});
+
+test('normalizeMaxAdjust keeps whole steps and falls back to the default for unusable values', () => {
+  assert.equal(normalizeMaxAdjust(2000), 2000);
+  assert.equal(normalizeMaxAdjust(0), 0); // the owner can switch adjustment off
+  assert.equal(normalizeMaxAdjust(2300), 2000); // rounded down to a whole step
+  for (const bad of [undefined, null, -500, 1.5, '2000', NaN, 10_000_000]) {
+    assert.equal(normalizeMaxAdjust(bad), DEFAULT_MAX_ADJUST_MINOR, String(bad));
+  }
+});
+
+test('canAddLine stops a 21st line but still lets an existing line grow', () => {
+  let lines: CartLine[] = [];
+  for (let i = 0; i < MAX_ORDER_LINES; i++) lines = addLine(lines, { ...byWeight(500), itemId: 'item' + i });
+  assert.equal(lines.length, MAX_ORDER_LINES);
+  assert.equal(canAddLine(lines, { ...byWeight(500), itemId: 'another' }), false);
+  assert.equal(canAddLine(lines, { ...byWeight(500), itemId: 'item3' }), true);
+  assert.equal(canAddLine([], byWeight(500)), true);
+});
+
+test('normalizeMethods keeps only methods that suit the unit and falls back to the usual ones', () => {
+  assert.deepEqual(normalizeMethods('kg', ['amount', 'weight']), ['amount', 'weight']); // order is the owner's
+  assert.deepEqual(normalizeMethods('kg', ['weight', 'weight', 'qty', 'junk']), ['weight']); // no repeats, no qty for kg
+  assert.deepEqual(normalizeMethods('piece', ['qty', 'amount']), ['qty', 'amount']);
+  assert.deepEqual(normalizeMethods('piece', ['weight']), ['qty']); // nothing usable: the usual
+  for (const bad of [undefined, null, [], 'weight', 5]) {
+    assert.deepEqual(normalizeMethods('kg', bad), ['weight', 'amount']);
+    assert.deepEqual(normalizeMethods('piece', bad), ['qty']);
+  }
+});
+
+test('wheelIndexFromOffset picks the nearest row and stays inside the list', () => {
+  assert.equal(wheelIndexFromOffset(0, 48, 20), 0);
+  assert.equal(wheelIndexFromOffset(47, 48, 20), 1);
+  assert.equal(wheelIndexFromOffset(23, 48, 20), 0); // under half a row stays
+  assert.equal(wheelIndexFromOffset(25, 48, 20), 1); // past half a row moves on
+  assert.equal(wheelIndexFromOffset(-100, 48, 20), 0);
+  assert.equal(wheelIndexFromOffset(99999, 48, 20), 19);
+  assert.equal(wheelIndexFromOffset(10, 48, 0), 0);
+  assert.equal(wheelMaxOffset(48, 20), 19 * 48);
+  assert.equal(wheelMaxOffset(48, 0), 0);
+});
+
+test('splitGrams breaks a weight into the kilo and grams wheels, snapped to the step', () => {
+  assert.deepEqual(splitGrams(1500, 30), { kg: 1, gramsPart: 500 });
+  assert.deepEqual(splitGrams(850, 30), { kg: 0, gramsPart: 850 });
+  assert.deepEqual(splitGrams(1000, 30), { kg: 1, gramsPart: 0 });
+  assert.deepEqual(splitGrams(1235, 30), { kg: 1, gramsPart: 250 }); // snapped to 1250
+  assert.deepEqual(splitGrams(1980, 30), { kg: 2, gramsPart: 0 }); // 1950 + rounding up carries to the next kilo
+  assert.deepEqual(splitGrams(30000, 30), { kg: 30, gramsPart: 0 });
+  assert.equal(splitGrams(31000, 30), null);
+});
+
+test('a 1.5 kg sale at 240 a kilo is 360 rupees', () => {
+  const { kg, gramsPart } = splitGrams(1500, 30)!;
+  assert.equal(kg * 1000 + gramsPart, 1500);
+  assert.equal(lineTotalMinor(24000, 1500), 36000);
+});
+
+test('replaceLine swaps one line in place without merging it into another', () => {
+  const lines = cart(byWeight(500), { ...byWeight(250), itemId: 'liver', name: 'Liver' });
+  const keyOfChicken = lines[0].key;
+  const edited = replaceLine(lines, keyOfChicken, { ...byWeight(1500), rateMinor: 23500 });
+  assert.equal(edited.length, 2);
+  assert.equal(edited[0].key, keyOfChicken); // same place, same key
+  assert.equal(edited[0].grams, 1500);
+  assert.equal(edited[0].rateMinor, 23500);
+  assert.equal(edited[1].grams, 250);
+  // Edited to exactly match the other line's item and rate: still two lines (an edit never merges).
+  const same = replaceLine(edited, edited[1].key, { ...byWeight(250) });
+  assert.equal(same.length, 2);
+});
+
+test('a piece line billed by amount charges that amount and keeps its count', () => {
+  const masala: OrderLineInput = { ...eggs(3), amountMinor: 2500 };
+  assert.equal(orderLineTotalMinor(masala), 2500);
+  assert.equal(describeLine(masala), '3 எண் (தொகைப்படி)');
+  assert.equal(cartTotals(cart(masala)).totalPieces, 3);
 });

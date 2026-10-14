@@ -2,7 +2,7 @@
 // integer grams everywhere, so totals never pick up floating-point drift. Format only at
 // the edge, when showing a value. Keep this file free of runtime imports from sibling
 // files so the unit tests can load it directly under Node.
-import type { OrderLineInput } from './types';
+import type { Method, OrderLineInput, Unit } from './types';
 
 export const CURRENCY_SYMBOL = '₹';
 
@@ -65,32 +65,130 @@ export function meterXFromGrams(grams: number, width: number, thumb: number, max
   return thumb / 2 + fraction * travel;
 }
 
-// --- Pricing --------------------------------------------------------------------------
+// --- Billing methods ---------------------------------------------------------------------
 
-/** Price of `grams` of an item that costs `pricePerKgMinor` per kg, rounded to the nearest paisa. */
-export function lineTotalMinor(pricePerKgMinor: number, grams: number): number {
-  return Math.round((pricePerKgMinor * grams) / 1000);
+const ALLOWED_METHODS: Record<Unit, Method[]> = { kg: ['weight', 'amount'], piece: ['qty', 'amount'] };
+
+/**
+ * The billing methods for an item from stored data: only ones that make sense for its unit, in the
+ * order given, no repeats. An item with none usable gets the usual ones (weight and amount for kg,
+ * count for piece), so the sheet always has something to offer.
+ */
+export function normalizeMethods(unit: Unit, raw: unknown): Method[] {
+  const allowed = ALLOWED_METHODS[unit];
+  const picked = Array.isArray(raw) ? raw.filter((m, i, all): m is Method => allowed.includes(m) && all.indexOf(m) === i) : [];
+  if (picked.length > 0) return picked;
+  return unit === 'kg' ? ['weight', 'amount'] : ['qty'];
 }
 
-/** Grams that `amountMinor` buys at `pricePerKgMinor` per kg, to the nearest gram. 0 if the item has no price. */
-export function gramsForAmount(amountMinor: number, pricePerKgMinor: number): number {
-  if (pricePerKgMinor <= 0) return 0;
-  return Math.round((amountMinor * 1000) / pricePerKgMinor);
+// --- Scroll wheels (the weight and count pickers) --------------------------------------------
+// The pickers work like the iOS alarm: rows scroll under a fixed highlight, and the row in the
+// highlight is the value. The maths is here so it can be tested; the gestures live in the app.
+
+/** The wheel row nearest to a scroll offset, kept inside the list. */
+export function wheelIndexFromOffset(offset: number, rowHeight: number, rowCount: number): number {
+  'worklet';
+  const index = Math.round(offset / rowHeight);
+  return Math.min(Math.max(index, 0), Math.max(rowCount - 1, 0));
+}
+
+/** How far a drag is allowed to scroll the wheel: 0 up to the last row's offset. */
+export function wheelMaxOffset(rowHeight: number, rowCount: number): number {
+  'worklet';
+  return Math.max(rowCount - 1, 0) * rowHeight;
+}
+
+/** Whole kilos and the grams part (a multiple of the step) that make up a weight, or null above the wheel's range. */
+export function splitGrams(grams: number, maxKg: number): { kg: number; gramsPart: number } | null {
+  const snapped = Math.round(grams / WEIGHT_STEP_GRAMS) * WEIGHT_STEP_GRAMS;
+  const kg = Math.floor(snapped / 1000);
+  return kg > maxKg ? null : { kg, gramsPart: snapped - kg * 1000 };
+}
+
+// --- Quantity (items sold by count) -----------------------------------------------------
+
+/** The most of one piece item a single line can hold. */
+export const MAX_QTY = 999;
+
+/** What the quantity panel starts at for an item with no valid default count. */
+export const DEFAULT_QTY = 1;
+
+/** An item's default count from stored data: kept if it is a whole number from 1 to the maximum, else 1. */
+export function normalizeDefaultQty(value: unknown): number {
+  const ok = typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_QTY;
+  return ok ? value : DEFAULT_QTY;
+}
+
+export function stepUpQty(qty: number): number {
+  return Math.min(qty + 1, MAX_QTY);
+}
+
+export function stepDownQty(qty: number): number {
+  return Math.max(qty - 1, 1);
+}
+
+// --- Pricing --------------------------------------------------------------------------
+
+/** Price of `grams` of an item that costs `rateMinor` per kg, rounded to the nearest paisa. */
+export function lineTotalMinor(rateMinor: number, grams: number): number {
+  return Math.round((rateMinor * grams) / 1000);
+}
+
+/** Price of `qty` pieces at `rateMinor` each. */
+export function pieceTotalMinor(rateMinor: number, qty: number): number {
+  return rateMinor * qty;
+}
+
+/** Grams that `amountMinor` buys at `rateMinor` per kg, to the nearest gram. 0 if the item has no price. */
+export function gramsForAmount(amountMinor: number, rateMinor: number): number {
+  if (rateMinor <= 0) return 0;
+  return Math.round((amountMinor * 1000) / rateMinor);
 }
 
 interface PricedLine {
-  pricePerKgMinor: number;
+  unit: Unit;
+  rateMinor: number;
   grams: number;
+  qty: number;
   /** Set when the line was sold for a fixed amount rather than by weight. */
   amountMinor?: number;
 }
 
 /**
  * What a line costs. A line sold for a fixed amount (₹100 of chicken) charges exactly that
- * amount; its grams are only the weight to weigh out. Otherwise it is priced from the weight.
+ * amount; its grams are only the weight to weigh out. A piece line is rate × count; any other
+ * line is priced from its weight.
  */
 export function orderLineTotalMinor(line: PricedLine): number {
-  return line.amountMinor ?? lineTotalMinor(line.pricePerKgMinor, line.grams);
+  // A line billed by amount charges exactly that, whatever the unit.
+  if (line.amountMinor !== undefined) return line.amountMinor;
+  return line.unit === 'piece' ? pieceTotalMinor(line.rateMinor, line.qty) : lineTotalMinor(line.rateMinor, line.grams);
+}
+
+// --- Price adjustment -------------------------------------------------------------------
+
+/** The counter raises or lowers a sale's rate in steps of this many paise (₹5). */
+export const ADJUST_STEP_MINOR = 500;
+
+/** How far the counter may move a rate from the list rate unless the owner sets another limit (₹20). */
+export const DEFAULT_MAX_ADJUST_MINOR = 2000;
+
+/** The counter's adjustment limit from stored data: a whole number of steps, never negative; the default if unusable. */
+export function normalizeMaxAdjust(value: unknown): number {
+  const ok = typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 100_000;
+  return ok ? Math.floor(value / ADJUST_STEP_MINOR) * ADJUST_STEP_MINOR : DEFAULT_MAX_ADJUST_MINOR;
+}
+
+/** How far a line's rate sits from its list rate: negative is a reduction. */
+export function adjustmentMinor(line: { rateMinor: number; listRateMinor: number }): number {
+  return line.rateMinor - line.listRateMinor;
+}
+
+/** `rateMinor` held within `maxAdjustMinor` of the list rate, and above zero. */
+export function clampRate(rateMinor: number, listRateMinor: number, maxAdjustMinor: number): number {
+  const lowest = Math.max(listRateMinor - maxAdjustMinor, 1);
+  const highest = listRateMinor + maxAdjustMinor;
+  return Math.min(Math.max(rateMinor, lowest), highest);
 }
 
 // --- Formatting -----------------------------------------------------------------------
@@ -104,17 +202,48 @@ export function formatMoney(minor: number): string {
   return `${sign}${CURRENCY_SYMBOL}${amount}`;
 }
 
-/** `850 g` below one kilo, otherwise `1.25 kg` (up to three decimals, trailing zeros trimmed). */
+/** `850 கிராம்` below one kilo, otherwise `1.25 கிலோ` (up to three decimals, trailing zeros trimmed). */
 export function formatWeight(grams: number): string {
-  if (grams < 1000) return `${grams} g`;
+  if (grams < 1000) return `${grams} கிராம்`;
   const kg = (grams / 1000).toFixed(3).replace(/\.?0+$/, '');
-  return `${kg} kg`;
+  return `${kg} கிலோ`;
 }
 
-/** The small print under a line: `1.25 kg × ₹240.00/kg`, or `≈ 417 g (by amount)` for a fixed-amount line. */
+/** `3 எண்`: a count of pieces or packets. */
+export function formatQty(qty: number): string {
+  return `${qty} எண்`;
+}
+
+/** The per-unit suffix of a rate: `/கிலோ` or `/எண்`. */
+export function unitSuffix(unit: Unit): string {
+  return unit === 'piece' ? '/எண்' : '/கிலோ';
+}
+
+/** A rate with its unit: `₹240.00/கிலோ`. */
+export function formatRate(rateMinor: number, unit: Unit): string {
+  return `${formatMoney(rateMinor)}${unitSuffix(unit)}`;
+}
+
+/** A weight and/or a count together, e.g. `1.5 கிலோ · 3 எண்`; empty when there is neither. */
+export function formatTotals(totalGrams: number, totalPieces: number): string {
+  return [totalGrams > 0 ? formatWeight(totalGrams) : '', totalPieces > 0 ? formatQty(totalPieces) : ''].filter(Boolean).join(' · ');
+}
+
+/** How much of a line was sold: its weight (`≈` for a fixed-amount line) or its count. */
+export function formatLineQuantity(line: PricedLine): string {
+  if (line.unit === 'piece') return formatQty(line.qty);
+  return line.amountMinor !== undefined ? `≈ ${formatWeight(line.grams)}` : formatWeight(line.grams);
+}
+
+/** The small print under a line: `1.25 கிலோ × ₹240.00/கிலோ`, `3 எண் × ₹10.00/எண்`, or `≈ 417 கிராம் (தொகைப்படி)`. */
 export function describeLine(line: PricedLine): string {
-  if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams)} (by amount)`;
-  return `${formatWeight(line.grams)} × ${formatMoney(line.pricePerKgMinor)}/kg`;
+  if (line.unit === 'piece') {
+    return line.amountMinor !== undefined
+      ? `${formatQty(line.qty)} (தொகைப்படி)`
+      : `${formatQty(line.qty)} × ${formatRate(line.rateMinor, 'piece')}`;
+  }
+  if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams)} (தொகைப்படி)`;
+  return `${formatWeight(line.grams)} × ${formatRate(line.rateMinor, 'kg')}`;
 }
 
 // --- Keypad entry ---------------------------------------------------------------------
@@ -167,6 +296,24 @@ export function applyRateKey(prev: string, key: string): string {
   return RATE_INPUT.test(next) ? next : prev;
 }
 
+const QTY_INPUT = /^\d{0,3}$/;
+
+/** Parses a typed count like `12` (1 to 999). Returns null if empty, zero or malformed. */
+export function parseQtyInput(text: string): number | null {
+  if (!QTY_INPUT.test(text) || text === '') return null;
+  const qty = parseInt(text, 10);
+  return qty >= 1 && qty <= MAX_QTY ? qty : null;
+}
+
+/** Applies one keypad press to a count entry (up to 3 digits, no leading zero). Invalid presses are ignored. */
+export function applyQtyKey(prev: string, key: string): string {
+  if (key === BACKSPACE_KEY) return prev.slice(0, -1);
+  if (!/^\d$/.test(key)) return prev;
+  if (prev === '' && key === '0') return prev;
+  const next = prev + key;
+  return QTY_INPUT.test(next) ? next : prev;
+}
+
 /** Applies one keypad press to a whole-rupee entry. Presses that would make it invalid are ignored. */
 export function applyRupeesKey(prev: string, key: string): string {
   if (key === BACKSPACE_KEY) return prev.slice(0, -1);
@@ -178,31 +325,72 @@ export function applyRupeesKey(prev: string, key: string): string {
 
 // --- Cart -----------------------------------------------------------------------------
 
-export type CartLine = OrderLineInput;
+/** The most lines one order can hold. The Firestore rules check lines at fixed positions, so they have the same limit. */
+export const MAX_ORDER_LINES = 20;
 
-function mergeLines(existing: CartLine, added: CartLine): CartLine {
+/** A line in the cart. `key` tells apart two lines of the same item sold at different rates. */
+export type CartLine = OrderLineInput & { key: string };
+
+/** Lines merge only when they are the same item at the same rate; a different rate is its own line. */
+function canMerge(existing: CartLine, added: OrderLineInput): boolean {
+  return existing.itemId === added.itemId && existing.rateMinor === added.rateMinor && existing.listRateMinor === added.listRateMinor;
+}
+
+function mergeLines(existing: CartLine, added: OrderLineInput): CartLine {
   const grams = Math.min(existing.grams + added.grams, MAX_LINE_GRAMS);
-  if (existing.amountMinor === undefined && added.amountMinor === undefined) return { ...existing, grams };
+  const qty = Math.min(existing.qty + added.qty, MAX_QTY);
+  if (existing.amountMinor === undefined && added.amountMinor === undefined) return { ...existing, grams, qty };
   // At least one portion was sold for a fixed amount, so the merged line keeps the exact
   // sum of what each portion cost rather than re-pricing the combined weight.
-  return { ...existing, grams, amountMinor: orderLineTotalMinor(existing) + orderLineTotalMinor(added) };
+  return { ...existing, grams, qty, amountMinor: orderLineTotalMinor(existing) + orderLineTotalMinor(added) };
 }
 
-/** Adds a line. Selling the same item again adds to its existing line rather than starting a second one. */
-export function addLine(lines: CartLine[], line: CartLine): CartLine[] {
-  if (!lines.some((l) => l.itemId === line.itemId)) {
-    return [...lines, { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS) }];
+function nextKey(lines: CartLine[], itemId: string): string {
+  const used = lines.filter((l) => l.itemId === itemId).map((l) => Number(l.key.slice(l.key.lastIndexOf('#') + 1)) || 0);
+  return `${itemId}#${Math.max(0, ...used) + 1}`;
+}
+
+/** False when adding `line` would start a 21st line. Adding to an existing line is always allowed. */
+export function canAddLine(lines: CartLine[], line: OrderLineInput): boolean {
+  return lines.length < MAX_ORDER_LINES || lines.some((l) => canMerge(l, line));
+}
+
+/** Adds a line. Selling the same item again at the same rate adds to its existing line. */
+export function addLine(lines: CartLine[], line: OrderLineInput): CartLine[] {
+  if (lines.some((l) => canMerge(l, line))) {
+    return lines.map((l) => (canMerge(l, line) ? mergeLines(l, line) : l));
   }
-  return lines.map((l) => (l.itemId === line.itemId ? mergeLines(l, line) : l));
+  const capped = { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY) };
+  return [...lines, { ...capped, key: nextKey(lines, line.itemId) }];
 }
 
-export function removeLine(lines: CartLine[], itemId: string): CartLine[] {
-  return lines.filter((l) => l.itemId !== itemId);
+/** Replaces the line with `key` by an edited one, keeping its place and key. No merging: an edit is exactly what was entered. */
+export function replaceLine(lines: CartLine[], key: string, line: OrderLineInput): CartLine[] {
+  return lines.map((l) => (l.key === key ? { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY), key } : l));
 }
 
-export function cartTotals(lines: CartLine[]): { totalMinor: number; totalGrams: number } {
+export function removeLine(lines: CartLine[], key: string): CartLine[] {
+  return lines.filter((l) => l.key !== key);
+}
+
+/**
+ * Moves one line's rate by `deltaMinor`, held within `maxAdjustMinor` of its list rate. A line
+ * sold for a fixed amount keeps charging that amount; the weight to weigh out follows the new rate.
+ */
+export function adjustLine(lines: CartLine[], key: string, deltaMinor: number, maxAdjustMinor: number): CartLine[] {
+  return lines.map((l) => {
+    if (l.key !== key) return l;
+    const rateMinor = clampRate(l.rateMinor + deltaMinor, l.listRateMinor, maxAdjustMinor);
+    if (l.amountMinor === undefined) return { ...l, rateMinor };
+    const grams = Math.min(Math.max(gramsForAmount(l.amountMinor, rateMinor), 1), MAX_LINE_GRAMS);
+    return { ...l, rateMinor, grams };
+  });
+}
+
+export function cartTotals(lines: CartLine[]): { totalMinor: number; totalGrams: number; totalPieces: number } {
   return {
     totalMinor: lines.reduce((sum, l) => sum + orderLineTotalMinor(l), 0),
     totalGrams: lines.reduce((sum, l) => sum + l.grams, 0),
+    totalPieces: lines.reduce((sum, l) => sum + l.qty, 0),
   };
 }

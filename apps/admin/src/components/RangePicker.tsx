@@ -41,6 +41,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 14, fontWeight: '600', color: colors.muted },
+  chipText: { fontSize: 14, lineHeight: 24, fontWeight: '600', color: colors.muted },
   chipTextSelected: { color: colors.onPrimary },
 });

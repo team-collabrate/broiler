@@ -1,11 +1,12 @@
-import { ensureSignedIn, initFirebase } from '@broiler/shared';
+import { initFirebase } from '@broiler/shared';
+import { t } from './strings';
 
 /**
- * Connects to Firebase and signs in. Called from the app's boot step rather than at
+ * Connects to Firebase. Signing in is separate: the PIN screen (see useSession) does it. Called from the app's boot step rather than at
  * import time: Firebase Auth throws on an empty API key, which would crash the app
  * before it could explain that `.env` is missing.
  */
-export async function startFirebase(): Promise<void> {
+export function startFirebase(): void {
   // Expo only inlines literal `process.env.EXPO_PUBLIC_*` reads, so each is spelled out.
   const config = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -17,11 +18,8 @@ export async function startFirebase(): Promise<void> {
   };
 
   if (!config.apiKey || !config.projectId || !config.appId) {
-    throw new Error(
-      'Firebase is not configured. Copy apps/pos/.env.example to apps/pos/.env, fill in the values, then restart Expo with `npx expo start --clear`.',
-    );
+    throw new Error(t.firebaseNotConfigured);
   }
 
   initFirebase(config);
-  await ensureSignedIn();
 }
