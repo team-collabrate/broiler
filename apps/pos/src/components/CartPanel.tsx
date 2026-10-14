@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   adjustmentMinor,
   describeLine,
@@ -10,6 +10,7 @@ import {
   type CartLine,
   type PaymentMethod,
 } from '@broiler/shared';
+import { LOGO } from '../images.generated';
 import { t } from '../strings';
 import { colors, spacing } from '../theme';
 
@@ -79,6 +80,7 @@ export function CartPanel({
       <ScrollView style={styles.list} nestedScrollEnabled showsVerticalScrollIndicator={false}>
         {lines.length === 0 ? (
           <View style={styles.empty}>
+            {LOGO ? <Image source={LOGO} style={styles.emptyLogo} resizeMode="contain" accessibilityIgnoresInvertColors /> : null}
             <Text style={styles.emptyTitle}>{t.cartEmpty}</Text>
             <Text style={styles.emptyHint}>{t.cartEmptyHint}</Text>
           </View>
@@ -153,7 +155,7 @@ export function CartPanel({
 }
 
 const styles = StyleSheet.create({
-  panel: { flex: 1, backgroundColor: colors.surface, padding: spacing.lg, gap: spacing.md },
+  panel: { flex: 1, backgroundColor: colors.surface, padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
   heading: { fontSize: 22, lineHeight: 32, fontWeight: '800', color: colors.primary },
   notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: 12, backgroundColor: colors.warningSoft },
   noticeText: { flex: 1, fontSize: 15, lineHeight: 24, fontWeight: '600', color: colors.text },
@@ -161,6 +163,7 @@ const styles = StyleSheet.create({
   noticeCloseText: { fontSize: 16, color: colors.muted },
   list: { flex: 1 },
   empty: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.xl },
+  emptyLogo: { width: 88, height: 106, opacity: 0.28, marginBottom: spacing.sm },
   emptyTitle: { fontSize: 17, lineHeight: 26, fontWeight: '700', color: colors.text },
   emptyHint: { fontSize: 14, lineHeight: 22, color: colors.muted },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -180,7 +183,7 @@ const styles = StyleSheet.create({
   printBillDisabled: { backgroundColor: colors.disabled },
   printBillText: { fontSize: 19, lineHeight: 28, fontWeight: '800', color: colors.onPrimary },
   payments: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { flexBasis: '47%', flexGrow: 1, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
+  chip: { flexBasis: '47%', flexGrow: 1, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface },
   chipSelected: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   chipOff: { opacity: 0.5 },
   chipText: { fontSize: 17, lineHeight: 24, fontWeight: '700', color: colors.muted },

@@ -22,6 +22,7 @@ import { CategoryTabs } from '../components/CategoryTabs';
 import { AdminMenu } from '../components/AdminMenu';
 import { BillModal } from '../components/BillModal';
 import { ItemSheet } from '../components/ItemSheet';
+import { SideRail, RAIL_WIDTH } from '../components/SideRail';
 import { gridColumns, ProductGrid } from '../components/ProductGrid';
 import { isRateStale, RatesPanel } from '../components/RatesPanel';
 import { useCart } from '../hooks/useCart';
@@ -87,7 +88,7 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
   // Columns come from the window width less the cart column and the page padding, so they never depend on
   // whether a scrollbar is showing (see gridColumns).
   const cartWidth = Math.min(420, Math.max(340, Math.round(width * 0.3)));
-  const columns = wide ? gridColumns(width - cartWidth - 2 * spacing.lg, MAX_COLUMNS) : 2;
+  const columns = wide ? gridColumns(width - RAIL_WIDTH - cartWidth - 2 * spacing.lg, MAX_COLUMNS) : 2;
 
   const [view, setView] = useState<Screen>('sell');
   // True while the owner is signed in only to set the rates; the till then signs back in as the counter.
@@ -262,31 +263,30 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.header}>
-        {LOGO ? <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel={t.appTitle} /> : null}
-        <Text style={styles.title} numberOfLines={1}>
-          {t.appTitle}
-        </Text>
-      </View>
-
       {wide ? (
         <View style={styles.bodyWide}>
+          <SideRail rateNeeded={rateNeeded} onAdmin={() => setAdminOpen(true)} />
           <View style={styles.mainWide}>{main}</View>
           <View style={[styles.cartWide, { width: cartWidth }]}>{cartPanel}</View>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.page}>
-          {view === 'sell' ? <View style={styles.mainContent}>{catalog}</View> : <View style={styles.pageOverlay}>{main}</View>}
-          <View style={styles.cartNarrow}>{cartPanel}</View>
-        </ScrollView>
-      )}
-
-      {/* The round Admin button, bottom-left as in the sketch. */}
-      {view === 'sell' && (
-        <Pressable accessibilityRole="button" accessibilityLabel={t.admin} onPress={() => setAdminOpen(true)} style={styles.adminButton}>
-          <Text style={styles.adminText}>{t.adminShort}</Text>
-          {rateNeeded && <View style={styles.adminDot} />}
-        </Pressable>
+        <View style={styles.bodyNarrow}>
+          {/* On a phone the rail becomes a slim bar across the top. */}
+          <View style={styles.topBar}>
+            {LOGO ? <Image source={LOGO} style={styles.topLogo} resizeMode="contain" accessibilityLabel={t.appTitle} /> : null}
+            <Text style={styles.topTitle} numberOfLines={1}>
+              {t.appTitle}
+            </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t.admin} onPress={() => setAdminOpen(true)} style={styles.topAdmin}>
+              <Text style={styles.adminText}>{t.adminShort}</Text>
+              {rateNeeded && <View style={styles.topDot} />}
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.page}>
+            {view === 'sell' ? <View style={styles.mainContent}>{catalog}</View> : <View style={styles.pageOverlay}>{main}</View>}
+            <View style={styles.cartNarrow}>{cartPanel}</View>
+          </ScrollView>
+        </View>
       )}
 
       {sheet && (
@@ -326,43 +326,16 @@ export function PosScreen({ role, signInOwner, restoreCounter, onLock }: Props) 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  logo: { width: 44, height: 54 },
-  title: { flex: 1, fontSize: 20, lineHeight: 30, fontWeight: '800', color: colors.primary },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    height: 44,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  rateButtonNeeded: { borderColor: colors.warning, backgroundColor: colors.warningSoft },
-  rateButtonDisabled: { opacity: 0.5 },
-  rateButtonPressed: { backgroundColor: colors.primarySoft },
-  rateButtonText: { fontSize: 15, lineHeight: 24, fontWeight: '700', color: colors.text },
-  rateButtonTextNeeded: { color: colors.warning },
-  rateDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warning },
-  lockButton: { height: 44, paddingHorizontal: spacing.lg, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  lockText: { fontSize: 15, lineHeight: 24, fontWeight: '700', color: colors.text },
 
   bodyWide: { flex: 1, flexDirection: 'row' },
+  bodyNarrow: { flex: 1 },
   mainWide: { flex: 1 },
-  // Bottom padding leaves room under the last card for the round Admin button.
-  mainContent: { padding: spacing.lg, paddingBottom: 104 },
+  mainContent: { padding: spacing.lg },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  topLogo: { width: 36, height: 44 },
+  topTitle: { flex: 1, fontSize: 18, lineHeight: 28, fontWeight: '800', color: colors.primary },
+  topAdmin: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary },
+  topDot: { position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: colors.warning, borderWidth: 2, borderColor: colors.surface },
   catalog: { gap: spacing.md },
   cartWide: { borderLeftWidth: 1, borderLeftColor: colors.border },
 
@@ -370,9 +343,7 @@ const styles = StyleSheet.create({
   pageOverlay: { minHeight: 640 },
   cartNarrow: { height: 480, borderTopWidth: 1, borderTopColor: colors.border },
 
-  adminButton: { position: 'absolute', left: spacing.lg, bottom: spacing.lg, width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 6 },
   adminText: { fontSize: 15, lineHeight: 24, fontWeight: '800', color: colors.primary },
-  adminDot: { position: 'absolute', top: 4, right: 4, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.warning, borderWidth: 2, borderColor: colors.surface },
   loading: { marginTop: spacing.xl },
   message: { margin: spacing.lg, fontSize: 15, lineHeight: 24, color: colors.muted },
 });

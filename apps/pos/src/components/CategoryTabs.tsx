@@ -43,27 +43,25 @@ export function CategoryTabs({ categories, selected, onSelect }: Props) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 0 },
+  scroll: { flexGrow: 0, borderBottomWidth: 1, borderBottomColor: colors.border },
   // flexGrow on the content and on each tab makes the tabs share the row equally; with many tabs they scroll.
-  row: { flexGrow: 1, gap: spacing.sm, paddingVertical: spacing.xs },
+  row: { flexGrow: 1 },
   tab: {
     flexGrow: 1,
-    minWidth: 120,
-    height: 56,
+    minWidth: 140,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderBottomWidth: 4,
+    borderBottomColor: 'transparent',
   },
-  tabActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+  tabActive: { borderBottomColor: colors.primary },
   tabPressed: { backgroundColor: colors.primarySoft },
-  thumbWrap: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.primarySoft },
-  thumb: { width: 40, height: 40 },
-  text: { fontSize: 17, lineHeight: 26, fontWeight: '700', color: colors.text },
-  textActive: { color: colors.onPrimary },
+  thumbWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: colors.primarySoft },
+  thumb: { width: 44, height: 44 },
+  text: { fontSize: 19, lineHeight: 28, fontWeight: '700', color: colors.muted },
+  textActive: { color: colors.primary },
 });

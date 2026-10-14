@@ -1,7 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CURRENCY_SYMBOL, formatMoney, itemName, unitSuffix, type MenuItem } from '@broiler/shared';
 import { t } from '../strings';
 import { colors, spacing } from '../theme';
+import { LOGO } from '../images.generated';
 import { imageSource, ProductImage } from './ProductImage';
 
 /** `₹260` for a whole-rupee rate, `₹260.50` when it has paise: short enough for a card. */
@@ -53,17 +54,21 @@ export function ProductGrid({ items, columns, onSelect }: Props) {
               {source && <ProductImage source={source} />}
               {source && <View style={styles.scrim} />}
 
-              <View style={styles.plus}>
-                <Text style={styles.plusText}>+</Text>
-              </View>
+              {/* No photo yet: the shop's rooster, faint, so the card still looks finished. */}
+              {!source && LOGO ? <Image source={LOGO} style={styles.watermark} resizeMode="contain" accessibilityIgnoresInvertColors /> : null}
 
               <View style={styles.info}>
                 <Text style={[styles.name, !source && styles.nameOnPlain]} numberOfLines={2}>
                   {itemName(item)}
                 </Text>
-                <Text style={[styles.price, !source && styles.priceOnPlain]} numberOfLines={1}>
-                  {rate}
-                </Text>
+                <View style={styles.bottomRow}>
+                  <View style={styles.plus}>
+                    <Text style={styles.plusText}>+</Text>
+                  </View>
+                  <Text style={[styles.price, !source && styles.priceOnPlain]} numberOfLines={1}>
+                    {rate}
+                  </Text>
+                </View>
               </View>
             </Pressable>
             </View>
@@ -91,23 +96,13 @@ const styles = StyleSheet.create({
   cardPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   // The darkening under the text. Only drawn over a photo, so white text stays readable on any picture.
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '58%', backgroundColor: 'rgba(8, 24, 14, 0.62)' },
-  plus: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-  plusText: { fontSize: 24, lineHeight: 28, fontWeight: '700', color: colors.onPrimary },
-  info: { gap: 2, padding: spacing.md },
-  name: { fontSize: 17, lineHeight: 26, fontWeight: '800', color: '#FFFFFF' },
+  watermark: { position: 'absolute', alignSelf: 'center', top: '8%', width: '46%', height: '60%', opacity: 0.16 },
+  plus: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.surface },
+  plusText: { fontSize: 26, lineHeight: 30, fontWeight: '700', color: colors.onPrimary },
+  info: { gap: spacing.xs, padding: spacing.md },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  name: { fontSize: 18, lineHeight: 28, fontWeight: '800', color: '#FFFFFF' },
   nameOnPlain: { color: colors.text },
-  price: { alignSelf: 'flex-end', fontSize: 16, lineHeight: 24, fontWeight: '800', color: '#FFFFFF' },
+  price: { flexShrink: 1, fontSize: 17, lineHeight: 26, fontWeight: '800', color: '#FFFFFF' },
   priceOnPlain: { color: colors.primary },
 });
