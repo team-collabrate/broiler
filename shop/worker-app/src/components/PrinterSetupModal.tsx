@@ -16,6 +16,8 @@ export interface PrinterSetupModalProps {
   onConnect: () => void;
   /** Native only — called with an address from printerDevices. */
   onSelectPrinter: (address: string) => void;
+  /** Prints a sample bill, so the paper can be checked right after pairing. Only offered once connected. */
+  onTestPrint?: () => void;
   onClose: () => void;
 }
 
@@ -54,6 +56,7 @@ const STRINGS = {
   connected: { en: "Connected", ta: "இணைக்கப்பட்டது" },
   connectAnother: { en: "Connect a different printer", ta: "வேறு பிரிண்டரை இணை" },
   connect: { en: "Connect Bluetooth Printer", ta: "புளூடூத் பிரிண்டரை இணை" },
+  testPrint: { en: "Print a test bill", ta: "சோதனை பில் அச்சிடு" },
   done: { en: "Done", ta: "முடிந்தது" },
   troubleshootTitle: { en: "Printer not in the list?", ta: "பட்டியலில் பிரிண்டர் இல்லையா?" },
   checking: { en: "Checking…", ta: "சரிபார்க்கிறது…" },
@@ -93,6 +96,7 @@ export function PrinterSetupModal({
   printerDevices,
   onConnect,
   onSelectPrinter,
+  onTestPrint,
   onClose,
 }: PrinterSetupModalProps) {
   const { language } = useLanguage();
@@ -164,6 +168,12 @@ export function PrinterSetupModal({
         >
           {status === "ready" ? STRINGS.connectAnother[language] : STRINGS.connect[language]}
         </button>
+
+        {status === "ready" && onTestPrint && (
+          <button type="button" className="printer-modal__connect" onClick={onTestPrint}>
+            {STRINGS.testPrint[language]}
+          </button>
+        )}
 
         {/* Only worth surfacing while the printer still isn't working, and
             only on the web path — see this effect's own comment above. */}

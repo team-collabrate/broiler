@@ -30,6 +30,7 @@ import { useOutstandingCustomers } from "../hooks/useOutstandingCustomers";
 import { useRecentOrders } from "../hooks/useRecentOrders";
 import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
+import { SAMPLE_BILLS } from "../printing/sampleBills";
 import "./WorkerHome.css";
 
 const EXPENSE_FAILED = {
@@ -328,6 +329,10 @@ export function WorkerHome({ sessionUser, onLogout }: WorkerHomeProps) {
           printerDevices={printer.printerDevices}
           onConnect={printer.connect}
           onSelectPrinter={printer.selectPrinter}
+          onTestPrint={async () => {
+            const { bytes, timing } = await prepareReceiptRaster(SAMPLE_BILLS[0].bill);
+            await printer.print(bytes, timing);
+          }}
           onClose={() => setPrinterSetupOpen(false)}
         />
       )}

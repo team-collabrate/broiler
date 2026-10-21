@@ -1,0 +1,49 @@
+name: CI
+
+# Runs on every push and pull request: typecheck, unit tests and the build, for the shop app (shop/) and the
+# Expo prototype (apps/, packages/). A red result means do not deploy or hand the build to the shop.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shop:
+    name: Shop app (shop/)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: shop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: shop/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # The build needs Firebase settings to exist; these are dummy values, only for compiling.
+      - run: npm run build:worker
+        env:
+          VITE_FIREBASE_API_KEY: ci
+          VITE_FIREBASE_AUTH_DOMAIN: ci
+          VITE_FIREBASE_PROJECT_ID: ci
+          VITE_FIREBASE_STORAGE_BUCKET: ci
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ci
+          VITE_FIREBASE_APP_ID: ci
+
+  expo-prototype:
+    name: Expo prototype (apps/, packages/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

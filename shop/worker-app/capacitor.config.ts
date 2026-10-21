@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.kumbakonam.pos',
-  appName: 'Kumbakonam POS',
+  appId: 'com.broiler.pos',
+  appName: 'Broiler POS',
   webDir: 'dist'
 };
 

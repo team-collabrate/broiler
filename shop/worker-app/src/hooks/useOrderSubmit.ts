@@ -9,7 +9,12 @@ import {
   type OrderItem,
 } from "@kumbakonam/shared";
 import type { UseCartResult } from "./useCart";
-import { paymentLabelForReceipt, splitBreakdownForReceipt, type BillInput } from "../printing/receipt";
+import type { BillInput } from "../printing/receipt";
+
+// TEMPORARY bridge: this cart still prices items as price x qty, so each line prints as a count. When the
+// cart moves to the shop's weight-and-count model, the bill lines are built from it directly.
+const PAYMENT_LABEL_TA: Record<string, string> = { cash: "பணம்", upi: "UPI", split: "பிரித்து", credit: "கடன்", card: "கார்டு" };
+const rupees = (n: number) => `₹${n.toFixed(2)}`;
 
 export interface UseOrderSubmitResult {
   /** `print` defaults to true (the Enter shortcut and the Print button both
@@ -180,28 +185,19 @@ export function useOrderSubmit(
       onSaved({
         orderId,
         billNo: String(billNo),
-        // The receipt prints in Tamil regardless of the app's language, so it
-        // takes nameTa when the item has one.
-        items: cart.lines.map((l) => ({
+        // The receipt prints in Tamil regardless of the app's language, so it takes nameTa when the item has one.
+        lines: cart.lines.map((l) => ({
           name: l.nameTa || l.name,
-          qty: l.qty,
-          price: l.price,
-          note: l.note.trim() || undefined,
+          quantity: `${l.qty} எண்`,
+          rate: `${rupees(l.price)}/எண்`,
+          amount: rupees(l.price * l.qty),
+          ...(l.note.trim() ? { note: l.note.trim() } : {}),
         })),
-        subtotal: cart.subtotal,
-        total: cart.total,
-        paymentMethod: cart.paymentMethod,
-        paymentLabel: paymentLabelForReceipt(cart.paymentMethod),
+        total: rupees(cart.total),
+        paymentLabel: PAYMENT_LABEL_TA[cart.paymentMethod] ?? cart.paymentMethod,
         ...(credit ? { customerName: credit.name } : {}),
-        ...(isSplit
-          ? {
-              paymentBreakdown: splitBreakdownForReceipt({
-                cash: cart.splitCashAmount,
-                upi: cart.splitUpiAmount,
-              }),
-            }
-          : {}),
-        workerName,
+        ...(isSplit ? { paymentDetail: `ரொக்கம் ${rupees(cart.splitCashAmount)} + GPay ${rupees(cart.splitUpiAmount)}` } : {}),
+        staffName: workerName,
         createdAt: new Date(),
       }, print);
 

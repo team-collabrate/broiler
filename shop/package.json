@@ -19,7 +19,11 @@
     "build": "npm run build:worker && npm run build:owner && npm run build:reports",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w worker-app && npm run typecheck -w owner-app && npm run typecheck -w reports-app",
     "seed:users": "node scripts/seed-users.mjs",
-    "send:daily-report": "node scripts/send-daily-report-email.mjs"
+    "send:daily-report": "node scripts/send-daily-report-email.mjs",
+    "android:sync": "npm run android:sync -w worker-app",
+    "android:open": "npm run android:open -w worker-app",
+    "dev": "npm run dev:worker",
+    "test": "npm test -w shared"
   },
   "devDependencies": {
     "firebase-admin": "^12.7.0",

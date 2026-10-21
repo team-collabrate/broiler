@@ -34,7 +34,7 @@ const STRINGS = {
 /**
  * These three captions are fixed Tamil words, not translated through
  * `language` — the same "always Tamil" choice the printed receipt makes
- * (see worker-app/src/printing/cafeDetails.ts): they're short enough to
+ * (see worker-app/src/printing/shopDetails.ts): they're short enough to
  * read as labels rather than sentences, and staying put means a worker who
  * knows this sidebar by shape doesn't have it relabel itself under them
  * when someone else on shift taps the language toggle.

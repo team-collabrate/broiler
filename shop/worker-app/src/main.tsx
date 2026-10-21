@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "@kumbakonam/shared/theme.css";
 import { initFirebase, LanguageProvider, seedBillCounterFromServer, SessionProvider } from "@kumbakonam/shared";
 import { App } from "./App";
+import { ReceiptPreview } from "./pages/ReceiptPreview";
 
 // Worker app gets offline persistence — it must keep taking orders on flaky cafe wifi (TDD §4).
 initFirebase({ offlinePersistence: true });
@@ -13,6 +14,10 @@ initFirebase({ offlinePersistence: true });
 // the counter just starts from whatever it already has locally.
 seedBillCounterFromServer();
 
+// /?receipt shows the bill as the printer will get it, with no sign-in (it shows sample bills only).
+if (new URLSearchParams(window.location.search).has("receipt")) {
+  createRoot(document.getElementById("root")!).render(<ReceiptPreview />);
+} else {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <LanguageProvider>
@@ -22,3 +27,4 @@ createRoot(document.getElementById("root")!).render(
     </LanguageProvider>
   </StrictMode>,
 );
+}
