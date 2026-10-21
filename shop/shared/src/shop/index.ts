@@ -1,0 +1,6 @@
+// Broiler's data layer for the web apps: products, orders, settings and the PIN session. These use the new
+// sale language in ../core (paise, grams, units, billing methods) and replace the cafe-era services.
+export * from "./menu";
+export * from "./orders";
+export * from "./settings";
+export * from "./session";

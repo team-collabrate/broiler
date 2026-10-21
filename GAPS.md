@@ -82,12 +82,13 @@ proved (popup, wheel, units, price adjustment, PIN login, rules); they move acro
 | Receipt preview at `/?receipt`, test-print button in printer setup, shop details in one file | Real shop name, address and phone |
 | Android app renamed Broiler POS (`com.broiler.pos`), rooster icons and splash, PWA name and icons | Signed release build |
 
-### Remaining order of work in `shop/`
+### Order of work in `shop/` (phase numbers are from the project plan)
 
-1. **Migrate the cart and sale model** to weight, count and paise: bring `sale.ts`, the types, categories and their tests across; rebuild the product popup and weight wheel in web code; build bills from that model.
-2. **Re-skin** every screen: Tamil text, the red-and-gold theme, the product image grid with the left rail; remove the cafe wording and the English toggle.
-3. **Payments:** split (GPay + cash) and credit with the credit book, on the new model, with customers and receipts under the transaction rules.
-4. **Login and rules:** the Firebase-checked PIN login and the new Firestore rules replace its readable PIN hashes; create the counter account; run `check:access`.
-5. **Owner side:** menu management, today's rate, price-adjust limit, void, reports with charts, staff names, expenses.
-6. **Reports site:** item sales, loan report, expenses, Excel export, nightly email.
-7. **Offline and release:** bill numbers that cannot duplicate offline, sync badge, signed APK, hosting, backups.
+1. **Phase 1, done:** the sale model (weight, count, paise), types, categories and their 74 tests live in `shop/shared/src/core`; CI runs typecheck, tests and the build.
+2. **Phase 2, done (counter on the new model):** Tamil counter in `shop/worker-app/src/counter`: left rail, category tabs, four-per-row image grid, product popup with the weight wheel, cart with edit and remove, cash and UPI payment, owner-PIN today's-rate screen, Firebase PIN sign-in with a 30-minute idle lock, bill saved through `shop/shared/src/shop`. The cafe screens it replaced are removed. `npm run images` prepares product photos (`shop/product-photos/<id>.jpg` to `worker-app/public/items/<id>.jpg`, 800 x 600).
+   *Still open from Phase 2:* real product photos, and the split and credit buttons are shown but disabled ("soon") until Phase 4.
+3. **Phase 3, next: offline.** Bill numbers that cannot duplicate, sync badge, queued sales; a spike on credit while offline.
+4. **Phase 4: payments.** Split (GPay + cash) and credit with the credit book on the new model, under the transaction rules. The modals to port are still in `worker-app/src/components` (`SplitPaymentModal`, `CreditCustomerModal`, `KhataModal`).
+5. **Phase 5: printing** on the real printer and the signed APK.
+6. **Phase 6: login and rules.** Deploy the new Firestore rules, create the counter account, run `check:access`, switch anonymous sign-in off, remove the dev flags.
+7. **Phases 7 to 9:** owner side (menu management, void, reports with charts, staff names, expenses), reports site (item sales, loan report, Excel, nightly email), backups and cost control.

@@ -1,43 +1,54 @@
-import { PinEntryScreen, useLanguage, useSession } from "@kumbakonam/shared";
-import { WorkerHome } from "./pages/WorkerHome";
-import "./App.css";
+import { useRef } from "react";
+import { signInCounterOrOwner, signInWithPin, useShopSession } from "@kumbakonam/shared/shop";
+import { CounterScreen } from "./counter/CounterScreen";
+import { PinScreen } from "./counter/PinScreen";
+import { t } from "./counter/strings";
+import "./counter/counter.css";
 
-const STRINGS = {
-  subtitleReady: { en: "Enter your PIN", ta: "உங்கள் பின் எண்ணை உள்ளிடவும்" },
-  subtitleConnecting: { en: "Connecting…", ta: "இணைக்கிறது…" },
-};
+/**
+ * Dev only: sign in anonymously so the till can be seen before the PIN accounts exist. `import.meta.env.DEV` is
+ * false in a production build, so this can never switch on in a release.
+ */
+const DEV_SIGN_IN = import.meta.env.DEV && import.meta.env.VITE_DEV_ANON === "1";
 
 export function App() {
-  const { ready, sessionUser, loading, error, login, logout } = useSession();
-  const { language } = useLanguage();
+  const { session, touch, signOut } = useShopSession({ developmentSignIn: DEV_SIGN_IN });
+  // The PIN that signed this till in, kept in memory only, so it can sign back in after the owner has been in to set
+  // today's rates.
+  const counterPin = useRef<string | null>(null);
 
-  if (!sessionUser) {
+  if (session.status === "loading") return <div className="ct-boot">{t.connecting}</div>;
+
+  if (session.status === "out") {
     return (
-      <PinEntryScreen
-        theme="dark"
-        title="Kumbakonam POS"
-        subtitle={ready ? STRINGS.subtitleReady[language] : STRINGS.subtitleConnecting[language]}
-        onSubmit={login}
-        // Not gated on `ready` — the keypad accepts input immediately;
-        // login() itself waits for the same readiness internally, so the
-        // background handshake happens while the worker is still typing
-        // instead of freezing the keypad before they're allowed to start.
-        loading={loading}
-        error={error}
+      <PinScreen
+        logoUrl="/logo.png"
+        title={t.signInTitle}
+        subtitle={t.signInSubtitle}
+        onSubmit={async (pin) => {
+          await signInCounterOrOwner(pin);
+          counterPin.current = pin;
+        }}
       />
     );
   }
 
-  // A restored session (see shared/auth/session.tsx) sets sessionUser
-  // synchronously, before anonymous auth has necessarily finished — render
-  // WorkerHome (and its Firestore listeners) a beat too early here and
-  // they fail once, permanently, rather than just waiting the extra few
-  // ms. This only ever shows on that cold-boot path; a fresh PIN login
-  // never reaches this branch, since login() itself already waited for
-  // `ready` before it could succeed.
-  if (!ready) {
-    return <div className="app-loading">{STRINGS.subtitleConnecting[language]}</div>;
-  }
-
-  return <WorkerHome sessionUser={sessionUser} onLogout={logout} />;
+  return (
+    // Any touch counts as activity; the till locks itself after 30 minutes of none.
+    <div className="ct-root" onPointerDownCapture={touch} onKeyDownCapture={touch}>
+      <CounterScreen
+        role={session.role}
+        signInOwner={(pin) => signInWithPin("owner", pin)}
+        restoreCounter={async () => {
+          const pin = counterPin.current;
+          if (pin === null) return signOut();
+          await signInCounterOrOwner(pin);
+        }}
+        onLock={() => {
+          counterPin.current = null;
+          void signOut();
+        }}
+      />
+    </div>
+  );
 }

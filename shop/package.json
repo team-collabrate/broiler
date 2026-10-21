@@ -18,6 +18,7 @@
     "build:reports": "npm run build -w reports-app",
     "build": "npm run build:worker && npm run build:owner && npm run build:reports",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w worker-app && npm run typecheck -w owner-app && npm run typecheck -w reports-app",
+    "images": "node scripts/prepare-item-images.mjs",
     "seed:users": "node scripts/seed-users.mjs",
     "send:daily-report": "node scripts/send-daily-report-email.mjs",
     "android:sync": "npm run android:sync -w worker-app",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "firebase-admin": "^12.7.0",
     "nodemailer": "^6.9.16",
+    "sharp": "^0.35.5",
     "typescript": "^5.6.3",
     "xlsx": "^0.18.5"
   }

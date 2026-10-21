@@ -37,3 +37,6 @@ skills-lock.json
 # specific, never meant to be committed.
 worker-app/android/.jdk17/
 worker-app/android/.jdk21/
+
+# Raw product photos (phone originals, large). Only the prepared copies in worker-app/public/items are committed.
+product-photos/
