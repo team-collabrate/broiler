@@ -1,33 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut as firebaseSignOut } from "firebase/auth";
 import { isValidPin, pinPassword, roleOfEmail, ROLE_EMAILS, type Role } from "../core";
 import { getFirebaseAuth } from "../firebase";
 
 export type SessionState = { status: "loading" } | { status: "out" } | { status: "in"; role: Role };
-
-/** Signed in but idle for this long: the next launch asks for the PIN again. */
-export const IDLE_LIMIT_MS = 30 * 60 * 1000;
-const ACTIVE_KEY = "broiler.lastActiveAt";
-/** Record activity to storage at most this often; taps arrive far faster than that. */
-const RECORD_EVERY_MS = 10_000;
-
-function recordActivity(now = Date.now()): void {
-  try {
-    localStorage.setItem(ACTIVE_KEY, String(now));
-  } catch {
-    /* storage unavailable: the in-memory idle timer still works for this launch */
-  }
-}
-
-function hasBeenIdleTooLong(now = Date.now()): boolean {
-  try {
-    const raw = localStorage.getItem(ACTIVE_KEY);
-    const last = raw === null ? NaN : Number(raw);
-    return Number.isFinite(last) && now - last > IDLE_LIMIT_MS;
-  } catch {
-    return false;
-  }
-}
 
 /** Signs in with a role's account; the PIN is its password. Rejects on a wrong PIN. */
 export async function signInWithPin(role: Role, pin: string): Promise<void> {
@@ -61,19 +37,12 @@ interface Options {
 }
 
 /**
- * The signed-in role and the actions that change it. Locks itself (signs out) after 30 minutes without a touch,
- * including across a reload. Call `touch()` on every touch.
+ * The signed-in role. The session stays signed in across idle time, restarts and lost connections: signing out
+ * would stop queued sales from uploading, and signing back in needs the internet. Hiding the screen after idle
+ * time is the screen lock's job (screenLock.ts), not this hook's.
  */
 export function useShopSession({ developmentSignIn = false }: Options = {}) {
   const [session, setSession] = useState<SessionState>({ status: "loading" });
-  const lastRecorded = useRef(0);
-  const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const roleRef = useRef<Role | null>(null);
-
-  const armIdleTimer = useCallback(() => {
-    clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => void signOutNow(), IDLE_LIMIT_MS);
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -84,48 +53,28 @@ export function useShopSession({ developmentSignIn = false }: Options = {}) {
       if (user && role === null) {
         // Not the owner or the counter (an anonymous dev session, or someone who signed up with the public key).
         if (developmentSignIn) {
-          roleRef.current = "counter";
           setSession({ status: "in", role: "counter" });
           return;
         }
         await signOutNow();
         return;
       }
-      if (role !== null && hasBeenIdleTooLong()) {
-        await signOutNow();
-        return;
-      }
-      roleRef.current = role;
       if (role === null) {
         if (developmentSignIn && !triedDev) {
           triedDev = true;
           await signInAnonymously(getFirebaseAuth()).catch(() => undefined);
           return;
         }
-        clearTimeout(idleTimer.current);
         setSession({ status: "out" });
         return;
       }
-      recordActivity();
-      armIdleTimer();
       setSession({ status: "in", role });
     });
     return () => {
       alive = false;
-      clearTimeout(idleTimer.current);
       stop();
     };
-  }, [armIdleTimer, developmentSignIn]);
+  }, [developmentSignIn]);
 
-  const touch = useCallback(() => {
-    if (roleRef.current === null) return;
-    armIdleTimer();
-    const now = Date.now();
-    if (now - lastRecorded.current > RECORD_EVERY_MS) {
-      lastRecorded.current = now;
-      recordActivity(now);
-    }
-  }, [armIdleTimer]);
-
-  return { session, touch, signOut: signOutNow };
+  return { session, signOut: signOutNow };
 }

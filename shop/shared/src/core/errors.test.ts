@@ -22,4 +22,6 @@ test('describeError gives sign-in failures their own messages', () => {
   }
   assert.match(describeError({ code: 'auth/too-many-requests' }), /சிறிது நேரம்/);
   assert.match(describeError({ code: 'app/invalid-pin' }), /4 முதல் 6/);
+  assert.match(describeError({ code: 'app/needs-connection' }), /இணைய இணைப்பு/);
+  assert.match(describeError({ code: 'app/too-many-attempts' }), /சிறிது நேரம்/);
 });

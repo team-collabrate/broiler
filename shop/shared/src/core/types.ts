@@ -119,7 +119,12 @@ export interface Order {
   orderNo: number;
   /** Local date the sale was made, `YYYY-MM-DD`. */
   dayKey: string;
+  /** The counter (tablet) letter that made the sale. Absent on bills saved before counters had letters. */
+  device?: string;
+  /** When the server received the sale. For a sale made offline this is later than the sale itself. */
   createdAt: Date;
+  /** When the sale was made, by the tablet's clock (the rules limit how old it can be). Reports use this. */
+  soldAt?: Date;
   lines: OrderLine[];
   totalMinor: number;
   /** Weight of the `kg` lines. */

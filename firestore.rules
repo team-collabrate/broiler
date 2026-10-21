@@ -81,10 +81,19 @@ service cloud.firestore {
       let d = request.resource.data;
       let maxAdj = maxAdjust();
       let L = d.lines;
-      return d.keys().hasOnly(['orderNo', 'dayKey', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
+      return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
         && d.orderNo is int && d.orderNo >= 1
         && d.dayKey is string && d.dayKey.size() == 10
+        // The counter (tablet) letter that numbered the bill.
+        && d.device is string && d.device.matches('^[A-Z]$')
+        // `createdAt` is when the server received the sale. A sale made with no internet arrives later, so `soldAt`
+        // is when the tablet says it was made: never in the future (5 minutes of clock drift allowed) and never more
+        // than 3 days old, so a wrong tablet clock cannot move a sale far from the truth. Keep these two limits in
+        // step with MAX_SALE_AGE_MS and MAX_CLOCK_AHEAD_MS in shop/shared/src/core/outbox.ts.
         && d.createdAt == request.time
+        && d.soldAt is timestamp
+        && d.soldAt <= request.time + duration.value(5, 'm')
+        && d.soldAt >= request.time - duration.value(3, 'd')
         && d.paymentMethod in ['cash', 'upi', 'card', 'split', 'credit']
         // A split has money on both sides and the two halves add up to the bill; no other bill has them.
         && (d.paymentMethod == 'split'
@@ -183,8 +192,10 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Per-day order number counters, bumped inside the order transaction.
-    match /counters/{dayKey} {
+    // The server's note of how far each counter got on a day, document id "<day>_<letter>" (for example
+    // "2026-10-21_A"), written in the same batch as each order. A tablet whose storage was lost reads it to carry on
+    // from the right bill number. It is only a hint: the numbers themselves are made on the tablet.
+    match /counters/{counterId} {
       allow read: if isStaff();
       allow write: if isStaff()
         && request.resource.data.keys().hasOnly(['next'])

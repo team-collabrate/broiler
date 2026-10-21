@@ -968,3 +968,102 @@ button {
   display: flex;
   gap: var(--space-2);
 }
+
+/* --- Uploading: the rail pill, the banner and the counter letter --------------------------------------------------- */
+.ct-rail__waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 68px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 14px;
+  background: var(--color-secondary);
+  color: var(--color-secondary-contrast);
+  line-height: 1.15;
+}
+.ct-rail__waiting b {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.ct-rail__waiting small {
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.ct-rail__waiting.is-stale {
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+}
+
+.ct-sync {
+  position: sticky;
+  top: calc(-1 * var(--space-4));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+}
+.ct-sync__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.ct-sync__note--warn {
+  background: #fbe4e3;
+  border: 1px solid var(--color-danger);
+}
+.ct-sync__refused {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: #fbe4e3;
+  border: 1px solid var(--color-danger);
+  line-height: 1.5;
+}
+.ct-sync__refused > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ct-sync__refused .ct-btn {
+  flex: none;
+  height: 48px;
+}
+
+.ct-menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  font-weight: 700;
+}
+.ct-menu__letters {
+  display: flex;
+  gap: var(--space-1);
+}
+.ct-menu__letter {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ct-menu__letter.is-on {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}

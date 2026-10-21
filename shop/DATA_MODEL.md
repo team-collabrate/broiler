@@ -15,7 +15,7 @@ Anyone else, including anonymous, gets nothing once anonymous sign-in is switche
 | `customers/{customerId}` | a credit customer | read | read, and change balance only with a matching order or receipt |
 | `customerPayments/{id}` | money taken against a balance | read, create | create |
 | `settings/pricing`, `settings/categories` | shop settings | read, edit | read |
-| `counters/{day}` | the day's bill counter | read, write | read, write |
+| `counters/{day}_{letter}` | how far a counter got on a day (a recovery hint) | read, write | read, write |
 
 Planned in later phases (rules to be written with them): `expenses`, `staff`, `dailySummaries`, `auditLog`.
 
@@ -36,7 +36,10 @@ Planned in later phases (rules to be written with them): `expenses`, `staff`, `d
 ## `orders/{orderId}` (a bill). Append-only: never edited or deleted.
 | Field | Meaning |
 | --- | --- |
-| `orderNo`, `dayKey`, `createdAt` | bill number for the day, `YYYY-MM-DD`, server time |
+| `orderNo`, `device` | bill number for the day, made on the tablet; the counter letter (`A` for the first tablet). Printed as `12` for counter A and `B12` for the others |
+| `dayKey` | the day of the sale, `YYYY-MM-DD`, by the tablet's clock |
+| `soldAt` | when the sale was made, by the tablet's clock. The rules accept it only if it is not in the future (5 minutes of drift allowed) and not more than 3 days old. **Reports use this.** |
+| `createdAt` | when the server received the sale (server time). For a sale made with no internet this is later than `soldAt` |
 | `lines[]` | each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
 | `totalMinor`, `totalGrams`, `totalPieces` | totals; the rules check they equal the sum of the lines |
 | `paymentMethod` | `cash`, `upi`, `split`, `credit` (`card` only on old data) |
@@ -54,7 +57,11 @@ A line's rate may differ from its list rate only by the owner's limit (`settings
 - `pricing`: `{ maxAdjustMinor }`: how far the counter may move a sale's rate from the list rate.
 - `categories`: `{ list: [{ key, name, nameTa, image }] }`: the counter tabs, in order.
 
-## Offline rules (Phase 3)
-Orders are written with a client-made id and a server timestamp, so a sale saved offline syncs once, safely. Bill
-numbers come from a per-device daily sequence. Credit balances and customer payments need a connection unless the
-Phase 3 spike proves them safe offline.
+## Selling offline (Phase 3)
+How it works, what is and is not safe offline, and how it was tested is in [OFFLINE.md](OFFLINE.md). In short: cash, UPI
+and split sales are saved on the tablet first and upload by themselves; credit bills and credit payments need a connection.
+
+## `counters/{day}_{letter}`
+`{ next }`: the number after the last bill that counter issued that day (for example `2026-10-21_A`). It is written in the
+same batch as each order and is only a hint, read by a tablet whose storage was lost so it can carry on from the right
+number. The numbers themselves are made on the tablet.

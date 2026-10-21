@@ -19,6 +19,8 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  Timestamp,
+  writeBatch,
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -67,6 +69,8 @@ const line = (over = {}) => ({
 const order = (lines, over = {}) => ({
   orderNo: 1,
   dayKey: '2000-01-01',
+  device: 'A',
+  soldAt: Timestamp.now(),
   createdAt: serverTimestamp(),
   lines,
   totalMinor: lines.reduce((s, l) => s + l.lineTotalMinor, 0),
@@ -111,6 +115,27 @@ await denied('cannot save a line priced wrongly for its weight', () =>
   save(newId(), order([line({ lineTotalMinor: 1 })])));
 await denied('cannot save an order with a backdated time', () =>
   save(newId(), order([line()], { createdAt: new Date(2000, 0, 1) })));
+
+// ---- selling with no internet: the sale is queued on the tablet and arrives later ----------------------------------
+const hoursAgo = (h) => Timestamp.fromMillis(Date.now() - h * 3600 * 1000);
+await allowed('can save an order the way the tablet queues it (a batch, with the counter note)', () => {
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'orders', newId()), order([line()]));
+  batch.set(doc(db, 'counters', '2000-01-01_A'), { next: 2 });
+  return batch.commit();
+});
+await allowed('can save a sale that was made 2 days ago and only now arrives (an outage)', () =>
+  save(newId(), order([line()], { soldAt: hoursAgo(48) })));
+await denied('cannot save a sale dated more than 3 days ago', () =>
+  save(newId(), order([line()], { soldAt: hoursAgo(24 * 4) })));
+await denied('cannot save a sale dated in the future', () =>
+  save(newId(), order([line()], { soldAt: Timestamp.fromMillis(Date.now() + 3600 * 1000) })));
+await denied('cannot save an order with no sale time', () => {
+  const { soldAt, ...rest } = order([line()]);
+  return save(newId(), rest);
+});
+await denied('cannot save an order with a counter letter that is not one capital letter', () =>
+  save(newId(), order([line()], { device: 'ab' })));
 const testId = newId();
 await allowed('can save a correct order', () => save(testId, order([line()])));
 await allowed('can look the same order up again by its id (a safe retry)', () => getDoc(doc(db, 'orders', testId)));

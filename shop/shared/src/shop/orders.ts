@@ -1,8 +1,11 @@
-import { collection, doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { collection, doc, runTransaction, serverTimestamp, Timestamp, writeBatch } from "firebase/firestore";
 import {
+  billLabel,
+  counterDocId,
   customerIdFromName,
   customerNameKey,
   dayKey,
+  formatLineQuantity,
   isRealSplit,
   MAX_CUSTOMER_NAME,
   MAX_ORDER_LINES,
@@ -14,7 +17,9 @@ import {
   type OrderLineInput,
   type PaymentMethod,
 } from "../core";
-import { getFirestoreDb } from "../firebase";
+import { getFirebaseAuth, getFirestoreDb } from "../firebase";
+import { abandonBillNo, getDeviceLetter, reserveBillNo, settleBillNo } from "./billCounter";
+import { trackSale } from "./outbox";
 
 export interface CreateOrderInput {
   /** From `newOrderId()`. Reuse the same id when retrying a sale, so a retry can never save it twice. */
@@ -30,12 +35,23 @@ export interface CreateOrderInput {
 export interface CreatedOrder {
   id: string;
   orderNo: number;
+  /** The counter (tablet) letter that made the sale. */
+  device: string;
+  /** What is printed on the bill: the number, with the counter letter in front for any counter but A. */
+  label: string;
   totalMinor: number;
+  /** When the sale was made, by this tablet's clock. */
+  soldAt: Date;
 }
 
 /** A fresh order id. Make one per sale and keep it until the sale is saved. */
 export function newOrderId(): string {
   return doc(collection(getFirestoreDb(), "orders")).id;
+}
+
+/** A sale was dropped (the cart changed after a failed save): its bill number goes back. */
+export function abandonOrder(orderId: string): void {
+  abandonBillNo(orderId);
 }
 
 function checkLine(l: OrderLineInput): void {
@@ -50,12 +66,18 @@ function checkLine(l: OrderLineInput): void {
   if (l.amountMinor !== undefined && (!isInt(l.amountMinor) || l.amountMinor <= 0)) throw new Error(`${l.name}: தொகை தவறானது`);
 }
 
+const isOnlineNow = (): boolean => typeof navigator === "undefined" || navigator.onLine !== false;
+
 /**
- * Saves a sale. The order number comes from a per-day counter bumped in the same transaction as the order, so
- * two counters never hand out the same number. The order id is chosen by the caller and a second save with the
- * same id returns the first order untouched, so retrying after a lost response cannot double-charge. A credit
- * bill also moves the customer's balance in the same transaction. This needs a connection; Phase 3 replaces the
- * counter so selling also works offline.
+ * Saves a sale. Cash, UPI and split sales are written to the tablet first and uploaded by Firestore whenever the
+ * connection allows, so this returns at once, with or without internet: the bill number is made on the tablet, the
+ * order and the day's counter note go in one batch, and the outbox (see outbox.ts) tracks the upload. The order id
+ * is chosen by the caller.
+ *
+ * A credit bill is different: it changes a customer's balance, and the rules only accept that change when the order
+ * and the new balance arrive in one server transaction. A transaction needs a connection, so a credit bill asks for
+ * one (and is refused with a clear message when there is none) rather than risk a write the server would refuse
+ * after the customer had already walked away. See OFFLINE.md.
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
   const { orderId, lines, paymentMethod, split, customer } = input;
@@ -92,60 +114,102 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   }
   const upiMinor = paymentMethod === "split" && split ? Math.round(split.upiMinor) : 0;
 
+  if (paymentMethod === "credit" && !isOnlineNow()) {
+    throw Object.assign(new Error("a credit bill needs a connection"), { code: "app/needs-connection" });
+  }
+
   const db = getFirestoreDb();
-  const key = dayKey(new Date());
-  const counterRef = doc(db, "counters", key);
+  const now = new Date();
+  const day = dayKey(now);
+  const device = getDeviceLetter();
+  const orderNo = reserveBillNo(orderId, day, device);
+  const label = billLabel(device, orderNo);
   const orderRef = doc(db, "orders", orderId);
+  const counterRef = doc(db, "counters", counterDocId(day, device));
   const customerId = paymentMethod === "credit" ? customerIdFromName(customerName) : "";
   const customerRef = paymentMethod === "credit" ? doc(db, "customers", customerId) : null;
 
+  // `createdAt` is the server's clock, which the rules require, so it records when the sale arrived. `soldAt` is
+  // when it was made, by this tablet's clock: the rules accept it only if it is recent, so a wrong clock cannot
+  // push a sale more than a few days from the truth. Reports use `soldAt`.
+  const orderData = (existingName?: string) => ({
+    orderNo,
+    dayKey: day,
+    device,
+    soldAt: Timestamp.fromDate(now),
+    createdAt: serverTimestamp(),
+    lines: orderLines,
+    totalMinor,
+    totalGrams,
+    totalPieces,
+    paymentMethod,
+    ...(paymentMethod === "split" && { upiAmountMinor: upiMinor, cashAmountMinor: totalMinor - upiMinor }),
+    ...(paymentMethod === "credit" && { customerId, customerName: existingName ?? customerName }),
+  });
+
+  if (customerRef === null) {
+    try {
+      const batch = writeBatch(db);
+      batch.set(orderRef, orderData());
+      // The server's note of how far this counter got today, used to carry on after a reinstall.
+      batch.set(counterRef, { next: orderNo + 1 });
+      const committed = batch.commit();
+      trackSale(
+        {
+          orderId,
+          uid: getFirebaseAuth().currentUser?.uid ?? "",
+          label,
+          totalMinor,
+          soldAtMs: now.getTime(),
+          state: "pending",
+          summary: lines.map((l) => `${l.name} ${formatLineQuantity(l)}`).join(", ").slice(0, 160),
+        },
+        committed,
+      );
+    } catch (error) {
+      abandonBillNo(orderId);
+      throw error;
+    }
+    settleBillNo(orderId);
+    return { id: orderId, orderNo, device, label, totalMinor, soldAt: now };
+  }
+
+  // Credit: one transaction that saves the order and moves the customer's balance together. If it fails after it
+  // may have reached the server, the number stays reserved so a retry of the same sale reuses it.
   const saved = await runTransaction(db, async (tx) => {
     const existing = await tx.get(orderRef);
     if (existing.exists()) {
       // This sale was already saved (a retry after a lost response): report it, don't repeat it.
-      return { orderNo: existing.data().orderNo as number, totalMinor: existing.data().totalMinor as number };
+      const data = existing.data();
+      return {
+        orderNo: data.orderNo as number,
+        device: (data.device as string | undefined) ?? device,
+        totalMinor: data.totalMinor as number,
+        soldAt: (data.soldAt as Timestamp | undefined)?.toDate() ?? now,
+      };
     }
-    const counter = await tx.get(counterRef);
     // Every read comes before the first write, as Firestore requires.
-    const customerSnap = customerRef ? await tx.get(customerRef) : null;
-    const next: number = counter.exists() ? (counter.data().next as number) : 1;
-    tx.set(counterRef, { next: next + 1 });
-    if (customerRef) {
-      if (customerSnap && customerSnap.exists()) {
-        tx.update(customerRef, {
-          balanceMinor: (customerSnap.data().balanceMinor as number) + totalMinor,
-          lastOrderId: orderId,
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        tx.set(customerRef, {
-          name: customerName,
-          nameKey: customerNameKey(customerName),
-          balanceMinor: totalMinor,
-          lastOrderId: orderId,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
+    const customerSnap = await tx.get(customerRef);
+    tx.set(counterRef, { next: orderNo + 1 });
+    if (customerSnap.exists()) {
+      tx.update(customerRef, {
+        balanceMinor: (customerSnap.data().balanceMinor as number) + totalMinor,
+        lastOrderId: orderId,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      tx.set(customerRef, {
+        name: customerName,
+        nameKey: customerNameKey(customerName),
+        balanceMinor: totalMinor,
+        lastOrderId: orderId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     }
-    tx.set(orderRef, {
-      orderNo: next,
-      dayKey: key,
-      // The server's clock, which the rules require, so a wrong tablet clock cannot backdate a sale.
-      createdAt: serverTimestamp(),
-      lines: orderLines,
-      totalMinor,
-      totalGrams,
-      totalPieces,
-      paymentMethod,
-      ...(paymentMethod === "split" && { upiAmountMinor: upiMinor, cashAmountMinor: totalMinor - upiMinor }),
-      ...(paymentMethod === "credit" && {
-        customerId,
-        customerName: customerSnap?.exists() ? (customerSnap.data().name as string) : customerName,
-      }),
-    });
-    return { orderNo: next, totalMinor };
+    tx.set(orderRef, orderData(customerSnap.exists() ? (customerSnap.data().name as string) : undefined));
+    return { orderNo, device, totalMinor, soldAt: now };
   });
-
-  return { id: orderId, ...saved };
+  settleBillNo(orderId);
+  return { id: orderId, ...saved, label: billLabel(saved.device, saved.orderNo) };
 }

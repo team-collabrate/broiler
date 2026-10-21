@@ -11,13 +11,15 @@ interface Props {
   /** An optional way back, for a PIN view that sits inside the app (for example the owner PIN before today's rates). */
   onCancel?: () => void;
   logoUrl?: string;
+  /** The text of the confirm button; "Sign in" unless this is the lock screen. */
+  submitLabel?: string;
 }
 
 /**
  * A full-page PIN entry: dots, a keypad and a sign-in button. A 4 to 6 digit PIN. The PIN lives only in this
  * component's state and is cleared after a wrong attempt.
  */
-export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl }: Props) {
+export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl, submitLabel = t.signIn }: Props) {
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl }: Prop
             </button>
           ) : null}
           <button type="button" className="ct-btn ct-btn--primary" disabled={busy || !isValidPin(pin)} onClick={submit}>
-            {busy ? t.connecting : t.signIn}
+            {busy ? t.connecting : submitLabel}
           </button>
         </div>
       </div>

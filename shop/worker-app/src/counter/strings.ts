@@ -82,8 +82,30 @@ export const t = {
   comingSoon: "விரைவில்",
 
   // After a sale
-  printed: (no: number) => `பில் ${no} அச்சிடப்பட்டது ✓`,
-  savedNotPrinted: (no: number) => `பில் ${no} சேமிக்கப்பட்டது. பிரிண்டர் இல்லை.`,
+  printed: (label: string) => `பில் ${label} அச்சிடப்பட்டது ✓`,
+  printedOffline: (label: string) => `பில் ${label} அச்சிடப்பட்டது ✓ இணையம் வந்ததும் அனுப்பப்படும்`,
+  savedNotPrinted: (label: string) => `பில் ${label} சேமிக்கப்பட்டது. பிரிண்டர் இல்லை.`,
+
+  // Screen lock
+  lockedTitle: "திரை பூட்டப்பட்டுள்ளது",
+  lockedSubtitle: "தொடர பின் எண்ணை உள்ளிடவும்",
+  unlock: "திற",
+
+  // Connection and uploading
+  online: "● ஆன்லைன்",
+  offline: "⚠ ஆஃப்லைன்",
+  waitingShort: "காத்திருப்பு",
+  waitingBills: (count: number) => `${count} பில் இணையம் வந்ததும் அனுப்பப்படும்`,
+  offlineNote: "இணையம் இல்லை. விற்பனையைத் தொடரலாம்: பில்கள் இந்த டேப்லெட்டில் சேமிக்கப்பட்டு இணையம் வந்ததும் தானாக அனுப்பப்படும்.",
+  staleWarning: "பல மணி நேரமாக பில்கள் அனுப்பப்படவில்லை. இணையத்தை விரைவில் இணைக்கவும்.",
+  refusedTitle: (label: string) => `பில் ${label} சர்வரில் ஏற்கப்படவில்லை`,
+  refusedDetail: (amount: string, summary: string, reason: string) =>
+    `${amount} · ${summary}. ${reason.replace(/[.\s]+$/, "")}. இந்தப் பில்லை எழுதி வைத்து உரிமையாளரிடம் தெரிவிக்கவும்.`,
+  refusedSeen: "பார்த்தேன்",
+
+  // Counter letter
+  counterLetter: (letter: string) => `கவுண்டர் ${letter}`,
+  counterLetterHint: "இரண்டாவது டேப்லெட்டுக்கு வேறு எழுத்து வைக்கவும்",
 
   // Start-up
   cantConnect: "இணைக்க முடியவில்லை",

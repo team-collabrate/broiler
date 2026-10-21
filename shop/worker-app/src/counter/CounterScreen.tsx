@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   canAddLine,
+  isStale,
+  pendingEntries,
   describeError,
   normalizeMethods,
   type CartLine,
@@ -12,7 +14,21 @@ import {
   categoryLabel,
   DEFAULT_CATEGORIES,
 } from "@kumbakonam/shared/core";
-import { createOrder, newOrderId, subscribeCategories, subscribeMaxAdjust, subscribeMenu } from "@kumbakonam/shared/shop";
+import {
+  abandonOrder,
+  createOrder,
+  dismissRefused,
+  getDeviceLetter,
+  newOrderId,
+  resumeOutbox,
+  seedBillNumbers,
+  setDeviceLetter,
+  subscribeCategories,
+  subscribeMaxAdjust,
+  subscribeMenu,
+  useOutbox,
+  useServerConnection,
+} from "@kumbakonam/shared/shop";
 import { DEFAULT_MAX_ADJUST_MINOR } from "@kumbakonam/shared/core";
 import { BillView } from "../components/BillView";
 import { PrintDiagnosticsOverlay } from "../components/PrintDiagnosticsOverlay";
@@ -30,6 +46,7 @@ import { PinScreen } from "./PinScreen";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
+import { SyncBanner } from "./SyncBanner";
 import { t } from "./strings";
 
 /** Lets a catalog still being checked (items not switched on) show at the counter. Development only; never set in production. */
@@ -63,15 +80,37 @@ interface Props {
   role: Role;
   /** Signs in as the owner (to set today's rates). Rejects on a wrong PIN. */
   signInOwner: (pin: string) => Promise<void>;
-  /** Signs back in as the counter after the owner is done. */
+  /** Signs back in as the counter after the owner is done; signs out if that cannot be done. */
   restoreCounter: () => Promise<void>;
-  /** Locks the till: back to the PIN screen. */
+  /** Locks the screen (the tablet stays signed in). */
   onLock: () => void;
 }
 
 export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Props) {
   const cart = useCounterCart();
   const printer = usePrinter();
+  const connected = useServerConnection();
+  const outbox = useOutbox();
+  const waiting = pendingEntries(outbox).length;
+  const [device, setDevice] = useState(getDeviceLetter);
+  // The clock moves on while the screen sits open, so "a day old" is re-checked once a minute.
+  const [, setMinute] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setMinute((n) => n + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const stale = isStale(outbox, Date.now());
+
+  // Bills left waiting by an earlier launch are watched again, and the bill count is carried up to what the
+  // server last saw (for a reinstalled tablet), now and every time the connection comes back.
+  useEffect(() => {
+    resumeOutbox();
+  }, []);
+  const wasConnected = useRef(false);
+  useEffect(() => {
+    if (connected && !wasConnected.current) void seedBillNumbers();
+    wasConnected.current = connected;
+  }, [connected]);
 
   // --- Data ---------------------------------------------------------------
   const [allCategories, setAllCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
@@ -121,6 +160,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   // being sold or how it is paid makes it a different sale, so it starts a new id.
   const attemptId = useRef<string | null>(null);
   const newSale = () => {
+    // A sale that was never saved gives its bill number back (a saved sale has none to give: it was settled).
+    if (attemptId.current !== null) abandonOrder(attemptId.current);
     attemptId.current = null;
   };
 
@@ -186,7 +227,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       const bill = toBillInput({
         orderId: created.id,
         orderNo: created.orderNo,
-        createdAt: new Date(),
+        device: created.device,
+        createdAt: created.soldAt,
         lines,
         totalMinor: created.totalMinor,
         totalGrams: cart.totalGrams,
@@ -198,7 +240,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       setPaymentMethod("cash");
       // The sale is saved; now the paper. If the printer is missing or refuses, the bill shows on screen with a
       // Print again button, so a failed print is never a lost sale.
-      if (await tryPrint(bill)) setNotice({ text: t.printed(created.orderNo), tone: "info" });
+      if (await tryPrint(bill)) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
       else setBillToShow(bill);
     } catch (e) {
       // The cart is kept, so pressing Print bill again retries the same sale (same id, never saved twice).
@@ -218,8 +260,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     setView("sell");
     if (elevated.current) {
       elevated.current = false;
-      // Back to the counter session. If that fails (no connection), lock: the PIN screen takes over.
-      restoreCounter().catch(onLock);
+      // Back to the counter session. If that fails the app signs out (it must never stay signed in as the owner).
+      restoreCounter().catch(() => undefined);
     }
   };
   const openRates = () => {
@@ -261,8 +303,11 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
 
   return (
     <div className="ct-screen">
-      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} onAdmin={() => setAdminOpen(true)} />
-      <main className="ct-main">{main}</main>
+      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} onAdmin={() => setAdminOpen(true)} />
+      <main className="ct-main">
+        <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
+        {main}
+      </main>
       <BillCart
         logoUrl="/logo.png"
         lines={cart.lines}
@@ -300,6 +345,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       {adminOpen && (
         <AdminMenu
           rateNeeded={rateNeeded}
+          device={device}
+          canSetDevice={role === "owner"}
+          onDevice={(letter) => {
+            setDeviceLetter(letter);
+            setDevice(letter);
+          }}
           onClose={() => setAdminOpen(false)}
           onRates={openRates}
           onPrinter={() => {
