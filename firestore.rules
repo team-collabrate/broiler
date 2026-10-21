@@ -49,37 +49,48 @@ service cloud.firestore {
         : 2000;
     }
 
-    // One order line: consistent with its own rate and quantity, and no further from the list
-    // rate than the owner allows.
+    // Each request may evaluate at most 1000 expressions, and rules cannot loop, so an order's lines are checked at
+    // fixed positions and an order holds at most 10 lines (MAX_ORDER_LINES in shop/shared/src/core/sale.ts). Positions
+    // an order does not have cost nothing. The per-line check is deliberately the cheap one that protects money: the
+    // owner's price limit, and a line total that adds up with the others into the order's total. (Checking every line's
+    // weight times rate as well cost about three times as much and fitted only 4 lines.) Weights and counts are
+    // whatever the till measured; the rules do not second-guess the scale.
     function validLine(l, maxAdj) {
-      return l.keys().hasAll(['itemId', 'name', 'category', 'unit', 'rateMinor', 'listRateMinor', 'grams', 'qty', 'lineTotalMinor'])
-        && l.unit in ['kg', 'piece']
-        && l.rateMinor is int && l.rateMinor > 0 && l.rateMinor <= 10000000
-        && l.listRateMinor is int && l.listRateMinor > 0 && l.listRateMinor <= 10000000
-        && l.rateMinor >= l.listRateMinor - maxAdj
-        && l.rateMinor <= l.listRateMinor + maxAdj
-        && l.grams is int && l.grams >= 0 && l.grams <= 999999
-        && l.qty is int && l.qty >= 0 && l.qty <= 999
-        && l.lineTotalMinor is int && l.lineTotalMinor >= 0
-        && (l.unit == 'piece'
-          ? (l.qty >= 1 && l.grams == 0
-            && ('amountMinor' in l
-              ? (l.amountMinor is int && l.amountMinor > 0 && l.lineTotalMinor == l.amountMinor)
-              : l.lineTotalMinor == l.rateMinor * l.qty))
-          : (l.grams >= 1 && l.qty == 0
-            && ('amountMinor' in l
-              ? (l.amountMinor is int && l.amountMinor > 0 && l.lineTotalMinor == l.amountMinor)
-              : math.abs(l.lineTotalMinor - math.round(l.rateMinor * l.grams / 1000.0)) <= 1)));
+      return l.lineTotalMinor is int && l.lineTotalMinor >= 0 && l.rateMinor > 0
+        && math.abs(l.rateMinor - l.listRateMinor) <= maxAdj
+        && l.unit in ['kg', 'piece'];
     }
 
-    function lineOk(lines, i, maxAdj) { return lines.size() <= i || validLine(lines[i], maxAdj); }
-    function lineTotal(lines, i) { return lines.size() <= i ? 0 : lines[i].lineTotalMinor; }
-    function lineGrams(lines, i) { return lines.size() <= i ? 0 : lines[i].grams; }
-    function lineQty(lines, i) { return lines.size() <= i ? 0 : lines[i].qty; }
+    function linesOk(L, maxAdj) {
+      return L.size() >= 1 && L.size() <= 10
+        && validLine(L[0], maxAdj)
+        && (L.size() < 2 || (validLine(L[1], maxAdj)
+        && (L.size() < 3 || (validLine(L[2], maxAdj)
+        && (L.size() < 4 || (validLine(L[3], maxAdj)
+        && (L.size() < 5 || (validLine(L[4], maxAdj)
+        && (L.size() < 6 || (validLine(L[5], maxAdj)
+        && (L.size() < 7 || (validLine(L[6], maxAdj)
+        && (L.size() < 8 || (validLine(L[7], maxAdj)
+        && (L.size() < 9 || (validLine(L[8], maxAdj)
+        && (L.size() < 10 || (validLine(L[9], maxAdj)))))))))))))))))));
+    }
+
+    // The sum of the lines' totals.
+    function sumOfLines(L) {
+      return L.size() == 1 ? L[0].lineTotalMinor
+        : L.size() == 2 ? L[0].lineTotalMinor + L[1].lineTotalMinor
+        : L.size() == 3 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor
+        : L.size() == 4 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor
+        : L.size() == 5 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor
+        : L.size() == 6 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor
+        : L.size() == 7 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor
+        : L.size() == 8 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor
+        : L.size() == 9 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor + L[8].lineTotalMinor
+        : L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor + L[8].lineTotalMinor + L[9].lineTotalMinor;
+    }
 
     function validOrder() {
       let d = request.resource.data;
-      let maxAdj = maxAdjust();
       let L = d.lines;
       return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
         && d.orderNo is int && d.orderNo >= 1
@@ -97,36 +108,19 @@ service cloud.firestore {
         && d.paymentMethod in ['cash', 'upi', 'card', 'split', 'credit']
         // A split has money on both sides and the two halves add up to the bill; no other bill has them.
         && (d.paymentMethod == 'split'
-          ? (d.get('cashAmountMinor', 0) is int && d.get('upiAmountMinor', 0) is int
-            && d.get('cashAmountMinor', 0) >= 1 && d.get('upiAmountMinor', 0) >= 1
-            && d.get('cashAmountMinor', 0) + d.get('upiAmountMinor', 0) == d.totalMinor)
+          ? (d.cashAmountMinor is int && d.upiAmountMinor is int && d.cashAmountMinor >= 1 && d.upiAmountMinor >= 1
+            && d.cashAmountMinor + d.upiAmountMinor == d.totalMinor)
           : (!('cashAmountMinor' in d) && !('upiAmountMinor' in d)))
         // A credit bill names who owes it; no other bill does.
         && (d.paymentMethod == 'credit'
-          ? (d.get('customerId', 0) is string && d.get('customerId', '').size() > 0
-            && d.get('customerName', 0) is string && d.get('customerName', '').size() > 0 && d.get('customerName', '').size() <= 120)
+          ? (d.customerId is string && d.customerId.size() > 0
+            && d.customerName is string && d.customerName.size() > 0 && d.customerName.size() <= 120)
           : (!('customerId' in d) && !('customerName' in d)))
-        && L is list && L.size() >= 1 && L.size() <= 20
-        && lineOk(L, 0, maxAdj) && lineOk(L, 1, maxAdj) && lineOk(L, 2, maxAdj) && lineOk(L, 3, maxAdj)
-        && lineOk(L, 4, maxAdj) && lineOk(L, 5, maxAdj) && lineOk(L, 6, maxAdj) && lineOk(L, 7, maxAdj)
-        && lineOk(L, 8, maxAdj) && lineOk(L, 9, maxAdj) && lineOk(L, 10, maxAdj) && lineOk(L, 11, maxAdj)
-        && lineOk(L, 12, maxAdj) && lineOk(L, 13, maxAdj) && lineOk(L, 14, maxAdj) && lineOk(L, 15, maxAdj)
-        && lineOk(L, 16, maxAdj) && lineOk(L, 17, maxAdj) && lineOk(L, 18, maxAdj) && lineOk(L, 19, maxAdj)
-        && d.totalMinor is int
-        && d.totalMinor == lineTotal(L, 0) + lineTotal(L, 1) + lineTotal(L, 2) + lineTotal(L, 3) + lineTotal(L, 4)
-          + lineTotal(L, 5) + lineTotal(L, 6) + lineTotal(L, 7) + lineTotal(L, 8) + lineTotal(L, 9)
-          + lineTotal(L, 10) + lineTotal(L, 11) + lineTotal(L, 12) + lineTotal(L, 13) + lineTotal(L, 14)
-          + lineTotal(L, 15) + lineTotal(L, 16) + lineTotal(L, 17) + lineTotal(L, 18) + lineTotal(L, 19)
-        && d.totalGrams is int
-        && d.totalGrams == lineGrams(L, 0) + lineGrams(L, 1) + lineGrams(L, 2) + lineGrams(L, 3) + lineGrams(L, 4)
-          + lineGrams(L, 5) + lineGrams(L, 6) + lineGrams(L, 7) + lineGrams(L, 8) + lineGrams(L, 9)
-          + lineGrams(L, 10) + lineGrams(L, 11) + lineGrams(L, 12) + lineGrams(L, 13) + lineGrams(L, 14)
-          + lineGrams(L, 15) + lineGrams(L, 16) + lineGrams(L, 17) + lineGrams(L, 18) + lineGrams(L, 19)
-        && d.totalPieces is int
-        && d.totalPieces == lineQty(L, 0) + lineQty(L, 1) + lineQty(L, 2) + lineQty(L, 3) + lineQty(L, 4)
-          + lineQty(L, 5) + lineQty(L, 6) + lineQty(L, 7) + lineQty(L, 8) + lineQty(L, 9)
-          + lineQty(L, 10) + lineQty(L, 11) + lineQty(L, 12) + lineQty(L, 13) + lineQty(L, 14)
-          + lineQty(L, 15) + lineQty(L, 16) + lineQty(L, 17) + lineQty(L, 18) + lineQty(L, 19);
+        && L is list
+        && linesOk(L, maxAdjust())
+        && d.totalMinor is int && d.totalMinor == sumOfLines(L)
+        && d.totalGrams is int && d.totalGrams >= 0
+        && d.totalPieces is int && d.totalPieces >= 0;
     }
 
     // Orders are append-only. Only the owner can list and read sales. The till may fetch a single

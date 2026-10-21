@@ -12,6 +12,7 @@ interface Props {
   /** Only the owner may give the tablet a different letter. */
   canSetDevice: boolean;
   onDevice: (letter: string) => void;
+  onKhata: () => void;
   onRates: () => void;
   onPrinter: () => void;
   onLock: () => void;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 /** What the round Admin button opens: the owner's jobs at the counter, kept off the selling screen. */
-export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onRates, onPrinter, onLock, onClose }: Props) {
+export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata, onRates, onPrinter, onLock, onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -30,6 +31,9 @@ export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onRates,
     <div className="ct-backdrop ct-backdrop--corner" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="ct-menu" role="dialog" aria-modal="true" aria-label={t.adminMenuTitle}>
         <h2 className="ct-menu__title">{t.adminMenuTitle}</h2>
+        <button type="button" className="ct-menu__item" onClick={onKhata}>
+          {t.khataMenu}
+        </button>
         <button type="button" className="ct-menu__item" onClick={onRates}>
           {t.todaysRate}
           {rateNeeded && <span className="ct-menu__dot" />}

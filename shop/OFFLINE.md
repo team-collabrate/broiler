@@ -61,9 +61,10 @@ in the same transaction as the order that explains it. Two ways to make that wor
   order and the balance change together, and the customer has already left with the goods. That is money owed to the shop
   that would silently not be recorded.
 
-Without the rules emulator to prove every such case (it needs Java; see Phase 6), **credit and credit payments require a
-connection**. Cash, UPI and split never touch a balance, so they are always safe offline. This can be revisited once the
-emulator tests exist.
+So **credit and credit payments require a connection**. Cash, UPI and split never touch a balance, so they are always safe
+offline. The rules emulator now exists (`npm run test:rules`, see TESTING.md), so the queued-batch idea could be tried and
+proved case by case if the shop's internet turns out to make this too limiting; it has not been, because a refused credit write
+would quietly lose money owed to the shop.
 
 ## Limits to know about
 

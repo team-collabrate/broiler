@@ -1,12 +1,13 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {
+  connectFirestoreEmulator,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
   memoryLocalCache,
   type Firestore,
 } from "firebase/firestore";
-import { getAuth, type Auth } from "firebase/auth";
+import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
 
 // Filled from each app's .env (VITE_FIREBASE_*). See worker-app/.env.example
 // and owner-app/.env.example — copy to .env and fill in real project keys.
@@ -26,6 +27,9 @@ export interface InitFirebaseOptions {
    */
   offlinePersistence: boolean;
 }
+
+const USE_EMULATORS = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATOR === "1";
+let emulatorsConnected = false;
 
 let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
@@ -49,6 +53,13 @@ export function initFirebase(options: InitFirebaseOptions): {
   }
   if (!auth) {
     auth = getAuth(app);
+  }
+  if (!emulatorsConnected && USE_EMULATORS) {
+    // Development only: talk to the local emulators (npm run emulators) instead of the real project. Both lines are
+    // behind import.meta.env.DEV, which is false in a production build, so they can never switch on in a release.
+    connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    connectFirestoreEmulator(db, "127.0.0.1", 8080);
+    emulatorsConnected = true;
   }
   return { app, db, auth };
 }

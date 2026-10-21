@@ -5,6 +5,9 @@ import readline from 'node:readline';
 
 export function firebaseConfig() {
   const env = process.env;
+  if (env.USE_EMULATOR === '1') {
+    return { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'demo-broiler', storageBucket: 'demo-broiler.appspot.com', messagingSenderId: '0', appId: '1:0:web:0' };
+  }
   const config = {
     apiKey: env.EXPO_PUBLIC_FIREBASE_API_KEY,
     authDomain: env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

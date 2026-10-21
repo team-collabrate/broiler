@@ -26,11 +26,13 @@ import {
 } from 'firebase/firestore';
 import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
 import { customerIdFromName } from '../packages/shared/src/sale.ts';
+import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
-const app = initializeApp(firebaseConfig());
+const app = initializeApp(withEmulatorConfig(firebaseConfig()));
 const auth = getAuth(app);
 const db = getFirestore(app);
+connectEmulators(auth, db); // USE_EMULATOR=1 only: runs this same script against the local emulators
 
 let failures = 0;
 const record = (name, ok, detail = '') => {
@@ -111,8 +113,13 @@ await denied('cannot save an order whose total does not match its lines', () =>
   save(newId(), order([line()], { totalMinor: 100 })));
 await denied('cannot save a rate beyond the adjustment limit', () =>
   save(newId(), order([line({ rateMinor: 99000, lineTotalMinor: 99000 })])));
-await denied('cannot save a line priced wrongly for its weight', () =>
-  save(newId(), order([line({ lineTotalMinor: 1 })])));
+await denied('cannot save a line with a negative total', () =>
+  save(newId(), order([line({ lineTotalMinor: -24000 })])));
+await denied('cannot save a line with an unknown unit', () =>
+  save(newId(), order([line({ unit: 'litre' })])));
+const manyLines = (n) => Array.from({ length: n }, (_, i) => line({ itemId: `check-${i}` }));
+await allowed('can save a bill with the most lines the rules allow (10)', () => save(newId(), order(manyLines(10))));
+await denied('cannot save a bill with more than 10 lines', () => save(newId(), order(manyLines(11))));
 await denied('cannot save an order with a backdated time', () =>
   save(newId(), order([line()], { createdAt: new Date(2000, 0, 1) })));
 

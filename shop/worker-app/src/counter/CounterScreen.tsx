@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   canAddLine,
+  formatMoney,
+  isRealSplit,
   isStale,
   pendingEntries,
+  splitPayment,
   describeError,
   normalizeMethods,
   type CartLine,
@@ -41,11 +44,14 @@ import { AdminMenu } from "./AdminMenu";
 import { toBillInput } from "./bill";
 import { BillCart } from "./BillCart";
 import { useCounterCart } from "./cart";
+import { CreditModal } from "./CreditModal";
 import { ItemSheet } from "./ItemSheet";
+import { KhataModal } from "./KhataModal";
 import { PinScreen } from "./PinScreen";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
+import { SplitModal } from "./SplitModal";
 import { SyncBanner } from "./SyncBanner";
 import { t } from "./strings";
 
@@ -153,6 +159,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const [printerOpen, setPrinterOpen] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "info" | "error" } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  // Split and credit each need a little more than a tap: the GPay amount, or who owes.
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [khataOpen, setKhataOpen] = useState(false);
+  const [splitUpiMinor, setSplitUpiMinor] = useState(0);
+  const [creditName, setCreditName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [billToShow, setBillToShow] = useState<BillInput | null>(null);
 
@@ -218,12 +230,34 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
 
   const charge = async () => {
     if (submitting || cart.lines.length === 0) return;
+    // A split with nothing on one side, or a credit bill with nobody on it, is not ready: ask first.
+    if (paymentMethod === "split" && !isRealSplit(cart.totalMinor, splitUpiMinor)) {
+      setNotice({ text: t.splitNeeded, tone: "error" });
+      setSplitOpen(true);
+      return;
+    }
+    if (paymentMethod === "credit") {
+      // A credit bill changes the customer's balance, which only the server can check: it needs the internet.
+      if (!connected) return setNotice({ text: t.creditNeedsInternet, tone: "error" });
+      if (!creditName) {
+        setNotice({ text: t.creditNeeded, tone: "error" });
+        setCreditOpen(true);
+        return;
+      }
+    }
     setSubmitting(true);
     setNotice(null);
     try {
       const lines = cart.lines;
       attemptId.current ??= newOrderId();
-      const created = await createOrder({ orderId: attemptId.current, lines, paymentMethod });
+      const upiMinor = paymentMethod === "split" ? splitPayment(cart.totalMinor, splitUpiMinor).upiMinor : 0;
+      const created = await createOrder({
+        orderId: attemptId.current,
+        lines,
+        paymentMethod,
+        ...(paymentMethod === "split" && { split: { upiMinor } }),
+        ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
+      });
       const bill = toBillInput({
         orderId: created.id,
         orderNo: created.orderNo,
@@ -234,10 +268,14 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
         paymentMethod,
+        ...(paymentMethod === "split" && { upiAmountMinor: upiMinor, cashAmountMinor: created.totalMinor - upiMinor }),
+        ...(paymentMethod === "credit" && { customerName: created.customerName ?? creditName ?? "" }),
       });
       newSale();
       cart.clear();
       setPaymentMethod("cash");
+      setSplitUpiMinor(0);
+      setCreditName(null);
       // The sale is saved; now the paper. If the printer is missing or refuses, the bill shows on screen with a
       // Print again button, so a failed print is never a lost sale.
       if (await tryPrint(bill)) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
@@ -271,6 +309,11 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   };
 
   // --- Render -------------------------------------------------------------
+  const split = splitPayment(cart.totalMinor, splitUpiMinor);
+  const paymentDetail = {
+    split: isRealSplit(cart.totalMinor, splitUpiMinor) ? t.splitChip(formatMoney(split.upiMinor), formatMoney(split.cashMinor)) : null,
+    credit: creditName,
+  };
   const labelFor = (c: Category) => categoryLabel(c.key, allCategories);
 
   const main =
@@ -315,9 +358,17 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         totalGrams={cart.totalGrams}
         totalPieces={cart.totalPieces}
         paymentMethod={paymentMethod}
+        paymentDetail={paymentDetail}
         onPaymentChange={(method) => {
           newSale();
+          if (method === "credit" && !connected) {
+            setNotice({ text: t.creditNeedsInternet, tone: "error" });
+            setPaymentMethod("cash");
+            return;
+          }
           setPaymentMethod(method);
+          if (method === "split") setSplitOpen(true);
+          if (method === "credit") setCreditOpen(true);
         }}
         submitting={submitting}
         notice={notice}
@@ -342,6 +393,41 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         />
       )}
 
+      {splitOpen && (
+        <SplitModal
+          totalMinor={cart.totalMinor}
+          upiMinor={splitUpiMinor}
+          onCancel={() => {
+            setSplitOpen(false);
+            // Backing out of the amounts means no split was really chosen.
+            if (!isRealSplit(cart.totalMinor, splitUpiMinor)) setPaymentMethod("cash");
+          }}
+          onDone={(upiMinor) => {
+            newSale();
+            setSplitUpiMinor(upiMinor);
+            setSplitOpen(false);
+          }}
+        />
+      )}
+
+      {creditOpen && (
+        <CreditModal
+          totalMinor={cart.totalMinor}
+          current={creditName}
+          onCancel={() => {
+            setCreditOpen(false);
+            if (!creditName) setPaymentMethod("cash");
+          }}
+          onChoose={(name) => {
+            newSale();
+            setCreditName(name);
+            setCreditOpen(false);
+          }}
+        />
+      )}
+
+      {khataOpen && <KhataModal connected={connected} onClose={() => setKhataOpen(false)} />}
+
       {adminOpen && (
         <AdminMenu
           rateNeeded={rateNeeded}
@@ -352,6 +438,10 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
             setDevice(letter);
           }}
           onClose={() => setAdminOpen(false)}
+          onKhata={() => {
+            setAdminOpen(false);
+            setKhataOpen(true);
+          }}
           onRates={openRates}
           onPrinter={() => {
             setAdminOpen(false);

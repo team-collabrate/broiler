@@ -21,6 +21,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth';
 import { deleteField, doc, getDoc, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
 import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { connectEmulators, usingEmulator, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin } from './lib/pins.mjs';
 
 const goLive = process.argv.includes('--go-live');
@@ -37,7 +38,7 @@ const config = {
   appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-if (!config.apiKey || !config.projectId || !config.appId) {
+if (!usingEmulator && (!config.apiKey || !config.projectId || !config.appId)) {
   console.error('Missing EXPO_PUBLIC_FIREBASE_* values. Copy apps/pos/.env.example to apps/pos/.env and fill it in.');
   process.exit(1);
 }
@@ -89,14 +90,16 @@ const CATEGORIES = [
 // What --reset-structure re-applies. The rate, the default weight or count and `active` are never reset.
 const STRUCTURE = ['name', 'nameTa', 'category', 'group', 'variant', 'unit', 'methods'];
 
-const app = initializeApp(config);
+const app = initializeApp(withEmulatorConfig(config));
+const auth = getAuth(app);
+const db = getFirestore(app);
+connectEmulators(auth, db); // USE_EMULATOR=1 only
 if (anonymous) {
-  await signInAnonymously(getAuth(app));
+  await signInAnonymously(auth);
 } else {
   const pin = await askPin('Owner PIN', 'OWNER_PIN');
-  await signInWithEmailAndPassword(getAuth(app), ROLE_EMAILS.owner, pinPassword(pin));
+  await signInWithEmailAndPassword(auth, ROLE_EMAILS.owner, pinPassword(pin));
 }
-const db = getFirestore(app);
 
 for (const [index, { id, ...item }] of MENU.entries()) {
   const ref = doc(db, 'menu', id);

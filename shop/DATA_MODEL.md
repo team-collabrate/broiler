@@ -40,17 +40,27 @@ Planned in later phases (rules to be written with them): `expenses`, `staff`, `d
 | `dayKey` | the day of the sale, `YYYY-MM-DD`, by the tablet's clock |
 | `soldAt` | when the sale was made, by the tablet's clock. The rules accept it only if it is not in the future (5 minutes of drift allowed) and not more than 3 days old. **Reports use this.** |
 | `createdAt` | when the server received the sale (server time). For a sale made with no internet this is later than `soldAt` |
-| `lines[]` | each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
-| `totalMinor`, `totalGrams`, `totalPieces` | totals; the rules check they equal the sum of the lines |
+| `lines[]` | 1 to **10** lines (a limit of the security rules, see below); each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
+| `totalMinor` | the bill total; the rules check it equals the sum of the lines' `lineTotalMinor` |
+| `totalGrams`, `totalPieces` | weight and count totals, written by the till; the rules only check they are whole numbers |
 | `paymentMethod` | `cash`, `upi`, `split`, `credit` (`card` only on old data) |
 | `cashAmountMinor`, `upiAmountMinor` | split bills only; both above zero and adding to the total |
 | `customerId`, `customerName` | credit bills only |
 
 A line's rate may differ from its list rate only by the owner's limit (`settings/pricing.maxAdjustMinor`, default ₹20).
 
+**Why 10 lines, and what the rules check per line.** Firestore lets a security rule evaluate at most 1000 expressions per
+request and rules cannot loop, so every line is checked at a fixed position. Measured in the emulator, the checks below fit
+10 lines for every kind of bill (cash, GPay, split, credit) and not 12. A first version that also re-checked each line's weight
+times rate fitted only 4 lines and was dropped. Per line the rules check: a positive rate within the owner's limit of the list
+rate, a whole non-negative line total, and a unit of `kg` or `piece`. They do not check weight times rate (anyone can enter any
+weight through the till anyway). `MAX_ORDER_LINES` in `shared/src/core/sale.ts` and the rules must change together; the
+"the most an order can hold" test in `scripts/rules` fails if a change makes 10 lines too costly.
+
 ## `customers/{customerId}` and `customerPayments/{id}` (credit, "kadan")
 - Customer id is derived from the typed name (lower-cased, spaces collapsed), so the same name finds the same person.
 - `balanceMinor` moves only together with the order or receipt written in the same transaction (`lastOrderId` or `lastPaymentId`); a customer is never deleted.
+- The counter may not read receipts, so a payment retried after a lost answer is recognised by the customer's own `lastPaymentId` (the till reuses one receipt id per payment). A balance can have paise (a bill total is in paise), so the credit book's "முழுவதும்" pays the exact balance, not a rounded rupee amount.
 - A receipt holds `customerId`, `customerName`, `amountMinor`, `method` (`cash` or `upi`), `dayKey`, `createdAt`. Receipts cannot be edited or deleted.
 
 ## `settings`

@@ -2,6 +2,8 @@
 // sale language in ../core (paise, grams, units, billing methods) and replace the cafe-era services.
 export * from "./menu";
 export * from "./orders";
+export * from "./customers";
+export * from "./online";
 export * from "./settings";
 export * from "./session";
 export * from "./screenLock";

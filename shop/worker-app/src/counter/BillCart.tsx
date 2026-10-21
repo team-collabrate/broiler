@@ -11,13 +11,8 @@ import {
 } from "@kumbakonam/shared/core";
 import { t } from "./strings";
 
-/** Cash and UPI work now; kadan (credit) and split arrive with the payments phase, so they are drawn but off. */
-const PAYMENT_GRID: { method: PaymentMethod; available: boolean }[] = [
-  { method: "cash", available: true },
-  { method: "upi", available: true },
-  { method: "credit", available: false },
-  { method: "split", available: false },
-];
+/** The four payment buttons, in the order of the counter sketch: cash and UPI, then kadan (credit) and split. */
+const PAYMENT_GRID: PaymentMethod[] = ["cash", "upi", "credit", "split"];
 
 interface Props {
   lines: CartLine[];
@@ -26,6 +21,8 @@ interface Props {
   totalPieces: number;
   paymentMethod: PaymentMethod;
   onPaymentChange: (method: PaymentMethod) => void;
+  /** What a split or credit choice came to, shown on its button (null until chosen). */
+  paymentDetail: { split: string | null; credit: string | null };
   submitting: boolean;
   /** A short message above the list: the order is full, the last save failed, or the last bill printed. */
   notice: { text: string; tone: "info" | "error" } | null;
@@ -48,6 +45,7 @@ export function BillCart({
   totalPieces,
   paymentMethod,
   onPaymentChange,
+  paymentDetail,
   submitting,
   notice,
   onDismissNotice,
@@ -118,20 +116,23 @@ export function BillCart({
       </button>
 
       <div className="ct-pay" role="radiogroup" aria-label={t.payWith}>
-        {PAYMENT_GRID.map(({ method, available }) => (
-          <button
-            key={method}
-            type="button"
-            role="radio"
-            aria-checked={method === paymentMethod}
-            disabled={!available || submitting}
-            className={`ct-pay__chip${method === paymentMethod ? " is-on" : ""}${available ? "" : " is-off"}`}
-            onClick={() => onPaymentChange(method)}
-          >
-            <span>{PAYMENT_LABELS[method]}</span>
-            {!available && <small>{t.comingSoon}</small>}
-          </button>
-        ))}
+        {PAYMENT_GRID.map((method) => {
+          const detail = method === "split" ? paymentDetail.split : method === "credit" ? paymentDetail.credit : null;
+          return (
+            <button
+              key={method}
+              type="button"
+              role="radio"
+              aria-checked={method === paymentMethod}
+              disabled={submitting}
+              className={`ct-pay__chip${method === paymentMethod ? " is-on" : ""}`}
+              onClick={() => onPaymentChange(method)}
+            >
+              <span>{PAYMENT_LABELS[method]}</span>
+              {detail && method === paymentMethod && <small>{detail}</small>}
+            </button>
+          );
+        })}
       </div>
     </section>
   );

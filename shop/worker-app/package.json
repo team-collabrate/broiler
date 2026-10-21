@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "android:sync": "vite build && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "dev:emulator": "vite --mode emulator --port 3002"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",

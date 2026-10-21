@@ -340,6 +340,23 @@ export function isRealSplit(totalMinor: number, upiMinor: number): boolean {
   return upi > 0 && cashMinor > 0;
 }
 
+/** The two boxes of the split sheet. */
+export type SplitSide = 'upi' | 'cash';
+
+/**
+ * The GPay half that follows from an amount typed into one box of the split sheet: typing in the GPay box is the GPay
+ * half itself, typing in the cash box leaves GPay as what is left of the bill. The result is always held inside the bill.
+ */
+export function upiFromTyped(totalMinor: number, side: SplitSide, typedMinor: number): number {
+  return splitPayment(totalMinor, side === 'upi' ? typedMinor : totalMinor - typedMinor).upiMinor;
+}
+
+/** Customers whose name contains what was typed (ignoring case and extra spaces), in the order given. Nothing typed keeps everyone. */
+export function filterCustomersByName<T extends { nameKey: string }>(customers: T[], typed: string): T[] {
+  const key = customerNameKey(typed);
+  return key === '' ? customers : customers.filter((c) => c.nameKey.includes(key));
+}
+
 /** Match key for a returning customer: trimmed, collapsed spaces, lower-cased. "Ravi Stores" and "ravi  stores" are one person. */
 export function customerNameKey(name: string): string {
   return name.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -367,8 +384,12 @@ export function paymentProblem(amountMinor: number, balanceMinor: number): 'none
 
 // --- Cart -----------------------------------------------------------------------------
 
-/** The most lines one order can hold. The Firestore rules check lines at fixed positions, so they have the same limit. */
-export const MAX_ORDER_LINES = 20;
+/**
+ * The most lines one order can hold. The Firestore rules check every line at a fixed position and each request may
+ * evaluate at most 1000 expressions, so this is as many as the rules can check (see firestore.rules). The rules and
+ * this number must change together.
+ */
+export const MAX_ORDER_LINES = 10;
 
 /** A line in the cart. `key` tells apart two lines of the same item sold at different rates. */
 export type CartLine = OrderLineInput & { key: string };

@@ -437,10 +437,6 @@ button {
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
-.ct-pay__chip.is-off {
-  opacity: 0.5;
-  cursor: default;
-}
 .ct-pay__chip small {
   font-size: 0.6875rem;
   line-height: 1;
@@ -1066,4 +1062,159 @@ button {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: var(--color-accent-contrast);
+}
+
+/* --- Split, credit and the credit book ------------------------------------------------------------------------------- */
+.ct-pay__chip {
+  min-height: 52px;
+  height: auto;
+  padding: var(--space-1) var(--space-2);
+}
+.ct-pay__chip small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-sheet--narrow {
+  max-width: 480px;
+}
+.ct-split {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.ct-split__box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ct-split__box strong {
+  font-size: 1.625rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.ct-split__box.is-on {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+.ct-split__plus {
+  align-self: center;
+  font-size: 1.625rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+.ct-hint {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--color-text-muted);
+}
+.ct-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ct-field__label {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: var(--color-text-muted);
+}
+.ct-field__error {
+  min-height: 1.5em;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-danger);
+}
+.ct-input {
+  height: 56px;
+  padding: 0 var(--space-4);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.125rem;
+}
+.ct-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+.ct-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+.ct-list__status {
+  margin: 0;
+  padding: var(--space-4);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+.ct-list__row {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.0625rem;
+  text-align: left;
+  cursor: pointer;
+}
+.ct-list__row:last-child {
+  border-bottom: 0;
+}
+.ct-list__row:active {
+  background: var(--color-accent-soft);
+}
+.ct-list__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.ct-list__amount {
+  color: var(--color-accent);
+  font-weight: 800;
+}
+.ct-khata__all {
+  flex: none;
+  height: 48px;
+}
+.ct-khata__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  font-weight: 700;
+}
+
+/* A sentence of explanation under a sheet's title, not a highlighted figure like the product's rate. */
+.ct-sheet__sub--note {
+  display: block;
+  font-size: var(--text-footnote);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-text-muted);
 }

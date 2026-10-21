@@ -1,0 +1,51 @@
+# Testing
+
+What each check proves, and how to run it. Run the first group before every commit; the second group when the rules, the
+credit or payment code, or the bill format change.
+
+## Every commit (from `shop/`)
+
+| Command | What it checks |
+| --- | --- |
+| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock (106 tests, a few seconds). |
+| `npm run typecheck` | Types in all four apps. |
+| `npm run build:worker` | The counter builds for production, including the service worker. |
+
+## Security rules and the real flows, on your own computer (from the repo root)
+
+The rules in `firestore.rules` decide who may write what. They cannot be tried against the live project without changing it,
+so they are tested in Firebase's local emulator, which needs Java. This project keeps its own portable Java in `.tools/jdk21`
+(git-ignored): download the Windows x64 zip of Eclipse Temurin 21 from <https://adoptium.net>, check its SHA-256 against the one
+on that page, and unzip it into `.tools/jdk21`. Any Java 11 or newer on the machine's PATH works too.
+
+| Command | What it does |
+| --- | --- |
+| `npm run test:rules` | Starts an emulator, runs the 39 rules tests in `scripts/rules`, stops it. Stop `npm run emulators` first if it is running. |
+| `npm run emulators` | Starts the emulators and leaves them running (data is in memory, gone when they stop). |
+| `npm run emulators:seed` | Puts test accounts (owner PIN **2121**, counter PIN **1111**; valid only inside the emulator) and the catalog into the running emulators. |
+| `npm run dev:emulator -w shop` | The counter on port 3002 talking to the emulators with the real rules. Sign in with 1111. |
+
+With the emulators running, the scripts can be pointed at them with `USE_EMULATOR=1`, for example:
+
+```
+USE_EMULATOR=1 OWNER_PIN=2121 node scripts/check-books.mjs
+USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=apps/pos/.env scripts/check-access.mjs
+```
+
+`USE_EMULATOR=1` forces a throwaway project id (`demo-broiler`), so it cannot reach the live project.
+
+## Against the live project (after the new rules are deployed, Phase 6)
+
+| Command | What it checks |
+| --- | --- |
+| `npm run check:access` | The deployed rules, as the counter and the owner: what each may and may not do, including split, credit, the offline sale time and the 10-line limit. Asks for both PINs. |
+| `node --env-file=apps/pos/.env scripts/check-bills.mjs [day]` | Lists a day's bills with when each was sold and when it arrived; reports duplicate or missing bill numbers per counter. |
+| `node --env-file=apps/pos/.env scripts/check-books.mjs [day]` | **Reconciles the day's money from the raw records**: every bill adds up, every customer's balance equals their credit bills minus their payments, and cash, GPay and credit totals. Use after a trial day. |
+
+Neither of the last two changes anything.
+
+## What is not covered by an automatic test
+
+- The screens themselves (taps, layout): checked by hand in the browser and, for the tablet, on the device (Phases 5 and 10).
+- The Bluetooth printer and the installed Android app (Phase 5).
+- The rules tests are not yet part of CI (they need Java on the runner); run `npm run test:rules` before changing the rules.

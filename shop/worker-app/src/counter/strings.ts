@@ -1,3 +1,5 @@
+import { MAX_ORDER_LINES } from "@kumbakonam/shared/core";
+
 // Every piece of text on the counter screen, in Tamil. Wording follows the Kumbakonam POS where it already had a
 // word (ஆர்டர், பணம், பணம் செலுத்தும் முறை, பில் அச்சிடு) so the shop's staff read the same words in both.
 // Weights, money and payment names come from the core module (formatWeight, formatMoney, PAYMENT_LABELS).
@@ -74,12 +76,51 @@ export const t = {
   edit: (name: string) => `${name} திருத்து`,
   remove: (name: string) => `${name} நீக்கு`,
   saleError: (message: string) => `ஆர்டர் சேமிக்கப்படவில்லை. ${message}`,
-  tooManyLines: "ஒரு ஆர்டரில் அதிகபட்சம் 20 பொருட்கள். இந்த ஆர்டருக்கு பில் போட்டுவிட்டு புதியதைத் தொடங்கவும்.",
+  tooManyLines: `ஒரு ஆர்டரில் அதிகபட்சம் ${MAX_ORDER_LINES} பொருட்கள். இந்த ஆர்டருக்கு பில் போட்டுவிட்டு புதியதைத் தொடங்கவும்.`,
   dismiss: "மூடு",
   payWith: "பணம் செலுத்தும் முறை",
   payCredit: "கடன்",
   paySplit: "பிரித்து",
-  comingSoon: "விரைவில்",
+
+  // Split payment (GPay + cash)
+  splitChip: (gpay: string, cash: string) => `GPay ${gpay} + ரொக்கம் ${cash}`,
+  splitTitle: "பணம் பிரித்து செலுத்து",
+  gpay: "GPay",
+  cashHalf: "ரொக்கம்",
+  splitHint: "ஒரு தொகையை உள்ளிடவும் — மற்றொன்று தானாக நிரம்பும்.",
+  splitNeeded: "GPay மற்றும் ரொக்கம் இரண்டிலும் தொகை வேண்டும்.",
+  done: "சரி",
+  billTotal: "பில் தொகை",
+
+  // Credit (kadan)
+  creditTitle: "கடன்",
+  creditSubtitle: "இந்த பில் யாருக்கு என்பதைத் தேர்ந்தெடுக்கவும், அல்லது புதிய பெயரை எழுதவும்.",
+  thisBill: "இந்த பில்",
+  owing: "தற்போது கடன் உள்ளவர்கள்",
+  newCustomer: "புதிய வாடிக்கையாளர்",
+  namePlaceholder: "பெயர்",
+  useName: "இந்தப் பெயரைப் பயன்படுத்து",
+  needName: "முதலில் ஒரு பெயரை எழுதவும்.",
+  nobodyOwes: "தற்போது யாருக்கும் கடன் இல்லை.",
+  noMatch: "இந்தப் பெயரில் யாரும் இல்லை. கீழே புதிய வாடிக்கையாளராகச் சேர்க்கலாம்.",
+  creditNeeded: "கடன் பில்லுக்கு வாடிக்கையாளர் பெயர் வேண்டும்.",
+  creditNeedsInternet: "கடன் பில்லுக்கு இணைய இணைப்பு தேவை. இணைப்பு வந்ததும் மீண்டும் முயற்சிக்கவும்.",
+  loadFailed: (message: string) => `ஏற்ற முடியவில்லை. ${message}`,
+
+  // Credit book (taking money against a balance)
+  khataMenu: "கடன் புத்தகம்",
+  khataTitle: "கடன் புத்தகம்",
+  khataSubtitle: "யார் எவ்வளவு கடன். கடன் முடிந்ததும் பெயர் தானாக மறையும்.",
+  khataOffline: "இணையம் இல்லை. கடன் புத்தகத்தைப் பார்க்கலாம்; பணத்தைப் பதிவு செய்ய இணையம் வேண்டும்.",
+  totalOwed: "மொத்த கடன்",
+  payAll: "முழுவதும்",
+  amountReceived: "பெற்ற தொகை (₹)",
+  receivedBy: "எப்படி பெற்றது",
+  record: "பதிவு",
+  recorded: (name: string, left: string) => (left === "" ? `${name}: கடன் முழுவதும் செலுத்தப்பட்டது ✓` : `${name}: பதிவு செய்யப்பட்டது ✓ மீதம் ${left}`),
+  tooMuch: "கடனை விட அதிகம்.",
+  needAmount: "பூஜ்ஜியத்திற்கு மேல் தொகையை உள்ளிடவும்.",
+  recordFailed: (message: string) => `பதிவு செய்ய முடியவில்லை. ${message}`,
 
   // After a sale
   printed: (label: string) => `பில் ${label} அச்சிடப்பட்டது ✓`,

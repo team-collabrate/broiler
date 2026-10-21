@@ -20,6 +20,12 @@
     "seed:users": "node --env-file=apps/pos/.env scripts/seed-users.mjs",
     "check:access": "node --env-file=apps/pos/.env scripts/check-access.mjs",
     "images": "node scripts/build-image-map.mjs",
-    "dev": "npm run pos:web"
+    "dev": "npm run pos:web",
+    "emulators": "node scripts/run-emulators.mjs",
+    "emulators:seed": "node scripts/seed-emulator.mjs",
+    "test:rules": "node scripts/test-rules.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0"
   }
 }

@@ -36,6 +36,8 @@ import {
   replaceLine,
   splitGrams,
   splitPayment,
+  upiFromTyped,
+  filterCustomersByName,
   isRealSplit,
   customerNameKey,
   tidyCustomerName,
@@ -502,4 +504,32 @@ test('paymentProblem refuses zero and overpayment, accepts anything up to the ba
   assert.equal(paymentProblem(-1, 20000), 'zero');
   assert.equal(paymentProblem(1.5, 20000), 'zero');
   assert.equal(paymentProblem(20001, 20000), 'tooMuch');
+});
+
+test('typing in the GPay box is the GPay half; typing in the cash box leaves GPay as the rest', () => {
+  assert.equal(upiFromTyped(50000, 'upi', 30000), 30000);
+  assert.equal(upiFromTyped(50000, 'cash', 30000), 20000);
+  assert.equal(upiFromTyped(50000, 'cash', 0), 50000); // nothing in cash: all GPay, which is not a real split
+  assert.equal(upiFromTyped(50000, 'upi', 90000), 50000); // more than the bill is held inside it
+  assert.equal(upiFromTyped(50000, 'cash', 90000), 0);
+});
+
+test('every typed split is whole paise that add up to the bill', () => {
+  for (const side of ['upi', 'cash'] as const) {
+    for (const typed of [0, 100, 12345, 49999, 50000, 50001]) {
+      const upi = upiFromTyped(50000, side, typed);
+      const { cashMinor } = splitPayment(50000, upi);
+      assert.ok(Number.isInteger(upi) && upi >= 0 && cashMinor >= 0);
+      assert.equal(upi + cashMinor, 50000);
+    }
+  }
+});
+
+test('the credit customer list narrows to names containing what was typed', () => {
+  const people = ['Ravi Stores', 'Ravindran', 'Mohan'].map((name) => ({ name, nameKey: customerNameKey(name) }));
+  assert.deepEqual(filterCustomersByName(people, 'rav').map((p) => p.name), ['Ravi Stores', 'Ravindran']);
+  // Capitals and runs of spaces do not matter, the same as when a returning customer is matched.
+  assert.deepEqual(filterCustomersByName(people, '  RAVI  s').map((p) => p.name), ['Ravi Stores']);
+  assert.equal(filterCustomersByName(people, '   ').length, 3);
+  assert.equal(filterCustomersByName(people, 'zzz').length, 0);
 });

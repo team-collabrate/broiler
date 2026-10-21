@@ -24,7 +24,8 @@
     "android:sync": "npm run android:sync -w worker-app",
     "android:open": "npm run android:open -w worker-app",
     "dev": "npm run dev:worker",
-    "test": "npm test -w shared"
+    "test": "npm test -w shared",
+    "dev:emulator": "npm run dev:emulator -w worker-app"
   },
   "devDependencies": {
     "firebase-admin": "^12.7.0",

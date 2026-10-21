@@ -19,6 +19,7 @@ import {
 } from "../core";
 import { getFirebaseAuth, getFirestoreDb } from "../firebase";
 import { abandonBillNo, getDeviceLetter, reserveBillNo, settleBillNo } from "./billCounter";
+import { isOnlineNow, needsConnectionError } from "./online";
 import { trackSale } from "./outbox";
 
 export interface CreateOrderInput {
@@ -42,6 +43,8 @@ export interface CreatedOrder {
   totalMinor: number;
   /** When the sale was made, by this tablet's clock. */
   soldAt: Date;
+  /** Credit bills only: the customer's name as the book has it, which is what the bill should show. */
+  customerName?: string;
 }
 
 /** A fresh order id. Make one per sale and keep it until the sale is saved. */
@@ -65,8 +68,6 @@ function checkLine(l: OrderLineInput): void {
   }
   if (l.amountMinor !== undefined && (!isInt(l.amountMinor) || l.amountMinor <= 0)) throw new Error(`${l.name}: தொகை தவறானது`);
 }
-
-const isOnlineNow = (): boolean => typeof navigator === "undefined" || navigator.onLine !== false;
 
 /**
  * Saves a sale. Cash, UPI and split sales are written to the tablet first and uploaded by Firestore whenever the
@@ -115,7 +116,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   const upiMinor = paymentMethod === "split" && split ? Math.round(split.upiMinor) : 0;
 
   if (paymentMethod === "credit" && !isOnlineNow()) {
-    throw Object.assign(new Error("a credit bill needs a connection"), { code: "app/needs-connection" });
+    throw needsConnectionError();
   }
 
   const db = getFirestoreDb();
@@ -186,6 +187,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
         device: (data.device as string | undefined) ?? device,
         totalMinor: data.totalMinor as number,
         soldAt: (data.soldAt as Timestamp | undefined)?.toDate() ?? now,
+        customerName: (data.customerName as string | undefined) ?? customerName,
       };
     }
     // Every read comes before the first write, as Firestore requires.
@@ -207,8 +209,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
         updatedAt: serverTimestamp(),
       });
     }
-    tx.set(orderRef, orderData(customerSnap.exists() ? (customerSnap.data().name as string) : undefined));
-    return { orderNo, device, totalMinor, soldAt: now };
+    const bookName = customerSnap.exists() ? (customerSnap.data().name as string) : customerName;
+    tx.set(orderRef, orderData(bookName));
+    return { orderNo, device, totalMinor, soldAt: now, customerName: bookName };
   });
   settleBillNo(orderId);
   return { id: orderId, ...saved, label: billLabel(saved.device, saved.orderNo) };

@@ -29,3 +29,9 @@ yarn-error.log*
 
 # firebase cli cache
 .firebase/
+
+# Local tools downloaded for development (portable Java for the Firestore emulator). Never committed.
+.tools/
+
+# Firebase emulator logs
+*-debug.log

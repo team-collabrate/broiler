@@ -8,11 +8,13 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
 import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
-const app = initializeApp(firebaseConfig());
+const app = initializeApp(withEmulatorConfig(firebaseConfig()));
 const auth = getAuth(app);
 const db = getFirestore(app);
+connectEmulators(auth, db); // USE_EMULATOR=1 only
 await signInWithEmailAndPassword(auth, ROLE_EMAILS.owner, pinPassword(await askPin('Owner PIN', 'OWNER_PIN')));
 
 const d = new Date();

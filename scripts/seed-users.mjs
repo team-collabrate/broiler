@@ -12,10 +12,12 @@
 import { initializeApp } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
 import { isValidPin, pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
-const app = initializeApp(firebaseConfig());
+const app = initializeApp(withEmulatorConfig(firebaseConfig()));
 const auth = getAuth(app);
+connectEmulators(auth); // USE_EMULATOR=1 only
 
 const roles = [
   { role: 'owner', label: 'Owner PIN (4-6 digits)', env: 'OWNER_PIN' },
@@ -45,4 +47,7 @@ for (const { role, label, env } of roles.filter((r) => !only || r.role === only)
     }
   }
 }
-process.exit(failed ? 1 : 0);
+process.exitCode = failed ? 1 : 0;
+// Let open connections close by themselves: exiting at once can trip a libuv assertion on Windows. The timer is only a
+// fallback for a connection that never closes.
+setTimeout(() => process.exit(), 3000).unref();
