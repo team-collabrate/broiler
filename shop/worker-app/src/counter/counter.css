@@ -2462,3 +2462,21 @@ button {
   flex: 0 0 calc((100% - 12px) / 2);
   min-height: 0;
 }
+
+/* Every kind card is identical: a fixed photo height, a fixed caption area, and no scrollbar taking width. */
+.ct-pick__cards {
+  scrollbar-width: none;
+}
+.ct-pick__cards::-webkit-scrollbar {
+  display: none;
+}
+.ct-fcard__pic {
+  flex: 0 0 62%;
+  height: auto;
+}
+.ct-fcard__cap {
+  flex: 1;
+  min-height: 0;
+  align-content: center;
+  overflow: hidden;
+}
