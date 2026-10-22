@@ -555,3 +555,39 @@ test('the credit customer list narrows to names containing what was typed', () =
   assert.equal(filterCustomersByName(people, '   ').length, 3);
   assert.equal(filterCustomersByName(people, 'zzz').length, 0);
 });
+
+test('equal packs tapped one after another stay packs: 250 g twice is 2 × 250 g, not 500 g', () => {
+  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
+  let lines: CartLine[] = [];
+  lines = addLine(lines, pack(250));
+  lines = addLine(lines, pack(250));
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].grams, 500);
+  assert.equal(lines[0].packs, 2);
+  assert.equal(describeLine(lines[0], 'en'), '2 × 250 g = 500 g × ₹240.00/kg');
+  assert.equal(formatLineQuantity(lines[0], 'en'), '2 × 250 g');
+  assert.equal(formatLineQuantity(lines[0]), '2 × 250 கிராம்');
+  assert.equal(orderLineTotalMinor(lines[0]), 12000); // the same price as one 500 g line
+  // A different pack size is its own line.
+  lines = addLine(lines, pack(500));
+  assert.equal(lines.length, 2);
+  // A third 250 g joins the first line.
+  lines = addLine(lines, pack(250));
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].packs, 3);
+  assert.equal(formatLineQuantity(lines[0], 'en'), '3 × 250 g');
+});
+
+test('weights tapped without packs add up, and never mix with packs', () => {
+  let lines: CartLine[] = [];
+  lines = addLine(lines, { ...chicken, grams: 250 });
+  lines = addLine(lines, { ...chicken, grams: 250 });
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].grams, 500);
+  assert.equal(lines[0].packs, undefined);
+  assert.equal(formatLineQuantity(lines[0], 'en'), '500 g');
+  lines = addLine(lines, { ...chicken, grams: 250, packGrams: 250, packs: 1 });
+  assert.equal(lines.length, 2);
+  // One pack on its own reads as a plain weight.
+  assert.equal(formatLineQuantity(lines[1], 'en'), '250 g');
+});

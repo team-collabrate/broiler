@@ -11,6 +11,9 @@ interface Props {
   totalGrams: number;
   totalPieces: number;
   paymentMethod: PaymentMethod;
+  /** Equal packs stay packs (2 × 250 g) when ticked; unticked they add up (500 g). */
+  keepPacks: boolean;
+  onKeepPacksChange: (on: boolean) => void;
   onPaymentChange: (method: PaymentMethod) => void;
   /** The workers who bill here, and which one is billing now. */
   /** What a split or credit choice came to, shown on its button (null until chosen). */
@@ -36,6 +39,8 @@ export function BillCart({
   totalGrams,
   totalPieces,
   paymentMethod,
+  keepPacks,
+  onKeepPacksChange,
   onPaymentChange,
   paymentDetail,
   submitting,
@@ -97,6 +102,14 @@ export function BillCart({
           })
         )}
       </div>
+
+      <label className="ct-packs">
+        <input type="checkbox" checked={keepPacks} disabled={submitting} onChange={(e) => onKeepPacksChange(e.target.checked)} />
+        <span className="ct-packs__text">
+          <strong>{t.keepPacks}</strong>
+          <small>{t.keepPacksHint}</small>
+        </span>
+      </label>
 
       <div className="ct-cart__total">
         <span>{t.total(formatTotals(totalGrams, totalPieces))}</span>

@@ -43,6 +43,8 @@ interface Props {
   onCancel: () => void;
   /** The finished line. For an edit, the caller replaces the old line with it. */
   onConfirm: (line: OrderLineInput) => void;
+  /** Open on this way of billing (the picker's "Other weight" or "Other amount"), if the product offers it. */
+  startMethod?: Method;
 }
 
 /** Which method an existing line was billed by. */
@@ -79,10 +81,10 @@ function Stepper({ onMinus, onPlus, minusDisabled, plusDisabled, minusLabel, plu
  * switched on for this product), enter the values, check the summary, then Add to Bill. Only the methods
  * configured for the product show; a product with one method shows no choice.
  */
-export function ItemSheet({ item, editing, maxAdjustMinor, onCancel, onConfirm }: Props) {
+export function ItemSheet({ item, editing, maxAdjustMinor, onCancel, onConfirm, startMethod }: Props) {
   const isPiece = item.unit === "piece";
   const [method, setMethod] = useState<Method>(() =>
-    editing && item.methods.includes(methodOf(editing)) ? methodOf(editing) : item.methods[0],
+    editing && item.methods.includes(methodOf(editing)) ? methodOf(editing) : startMethod && item.methods.includes(startMethod) ? startMethod : item.methods[0],
   );
   const [grams, setGrams] = useState(() => {
     const start = editing && editing.unit === "kg" && editing.amountMinor === undefined ? editing.grams : item.defaultGrams;

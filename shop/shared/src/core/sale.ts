@@ -152,6 +152,13 @@ interface PricedLine {
   qty: number;
   /** Set when the line was sold for a fixed amount rather than by weight. */
   amountMinor?: number;
+  /** A weight line made of this many equal packs (see OrderLineInput). */
+  packs?: number;
+}
+
+/** How many equal packs a weight line is made of, or 0 when it is just a weight (or a count, or an amount). */
+function packCount(line: PricedLine): number {
+  return line.unit === 'kg' && line.amountMinor === undefined && line.packs !== undefined && line.packs >= 2 ? line.packs : 0;
 }
 
 /**
@@ -246,7 +253,9 @@ export function formatTotals(totalGrams: number, totalPieces: number, lang: Lang
 /** How much of a line was sold: its weight (`≈` for a fixed-amount line) or its count. */
 export function formatLineQuantity(line: PricedLine, lang: Lang = 'ta'): string {
   if (line.unit === 'piece') return formatQty(line.qty, lang);
-  return line.amountMinor !== undefined ? `≈ ${formatWeight(line.grams, lang)}` : formatWeight(line.grams, lang);
+  if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams, lang)}`;
+  const packs = packCount(line);
+  return packs > 0 ? `${packs} × ${formatWeight(Math.round(line.grams / packs), lang)}` : formatWeight(line.grams, lang);
 }
 
 /** The small print under a line: `1.25 கிலோ × ₹240.00/கிலோ`, `3 எண் × ₹10.00/எண்`, or `≈ 417 கிராம் (தொகைப்படி)`. */
@@ -258,7 +267,9 @@ export function describeLine(line: PricedLine, lang: Lang = 'ta'): string {
       : `${formatQty(line.qty, lang)} × ${formatRate(line.rateMinor, 'piece', lang)}`;
   }
   if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams, lang)} (${byAmount})`;
-  return `${formatWeight(line.grams, lang)} × ${formatRate(line.rateMinor, 'kg', lang)}`;
+  const packs = packCount(line);
+  const weight = packs > 0 ? `${formatLineQuantity(line, lang)} = ${formatWeight(line.grams, lang)}` : formatWeight(line.grams, lang);
+  return `${weight} × ${formatRate(line.rateMinor, 'kg', lang)}`;
 }
 
 // --- Keypad entry ---------------------------------------------------------------------
@@ -412,13 +423,20 @@ export type CartLine = OrderLineInput & { key: string };
 
 /** Lines merge only when they are the same item at the same rate; a different rate is its own line. */
 function canMerge(existing: CartLine, added: OrderLineInput): boolean {
-  return existing.itemId === added.itemId && existing.rateMinor === added.rateMinor && existing.listRateMinor === added.listRateMinor;
+  // Packs of one size merge with the same size only (250 g + 250 g becomes 2 × 250 g); weights tapped without packs add up.
+  return (
+    existing.itemId === added.itemId &&
+    existing.rateMinor === added.rateMinor &&
+    existing.listRateMinor === added.listRateMinor &&
+    existing.packGrams === added.packGrams
+  );
 }
 
 function mergeLines(existing: CartLine, added: OrderLineInput): CartLine {
   const grams = Math.min(existing.grams + added.grams, MAX_LINE_GRAMS);
   const qty = Math.min(existing.qty + added.qty, MAX_QTY);
-  if (existing.amountMinor === undefined && added.amountMinor === undefined) return { ...existing, grams, qty };
+  const packs = existing.packGrams !== undefined ? (existing.packs ?? 1) + (added.packs ?? 1) : undefined;
+  if (existing.amountMinor === undefined && added.amountMinor === undefined) return { ...existing, grams, qty, ...(packs !== undefined && { packs }) };
   // At least one portion was sold for a fixed amount, so the merged line keeps the exact
   // sum of what each portion cost rather than re-pricing the combined weight.
   return { ...existing, grams, qty, amountMinor: orderLineTotalMinor(existing) + orderLineTotalMinor(added) };
@@ -439,7 +457,7 @@ export function addLine(lines: CartLine[], line: OrderLineInput): CartLine[] {
   if (lines.some((l) => canMerge(l, line))) {
     return lines.map((l) => (canMerge(l, line) ? mergeLines(l, line) : l));
   }
-  const capped = { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY) };
+  const capped = { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY), ...(line.packGrams !== undefined && { packs: line.packs ?? 1 }) };
   return [...lines, { ...capped, key: nextKey(lines, line.itemId) }];
 }
 

@@ -117,6 +117,16 @@ export interface OrderLineInput {
    * Firestore rejects `undefined` values.
    */
   amountMinor?: number;
+  /**
+   * Cart only: the size in grams of one pack, for a weight line built from equal packs tapped one after another
+   * (250 g, then 250 g again). Such lines merge only with the same pack size. Unset for any other line.
+   */
+  packGrams?: number;
+  /**
+   * A weight line made of this many equal packs (2 or more), each `grams / packs`, shown as `2 × 250 g`.
+   * `grams` is the total of all of them, so the price is the same as one line of that weight.
+   */
+  packs?: number;
 }
 
 export interface OrderLine extends OrderLineInput {

@@ -106,6 +106,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     grams: l.grams,
     qty: l.qty,
     ...(l.amountMinor !== undefined && { amountMinor: l.amountMinor }),
+    // A weight line made of equal packs (2 × 250 g) keeps its pack count so the bill can say so.
+    ...(l.unit === "kg" && l.amountMinor === undefined && l.packs !== undefined && l.packs >= 2 && { packs: l.packs }),
     lineTotalMinor: orderLineTotalMinor(l),
   }));
   const totalMinor = orderLines.reduce((sum, l) => sum + l.lineTotalMinor, 0);

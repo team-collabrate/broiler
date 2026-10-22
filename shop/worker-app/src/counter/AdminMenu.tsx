@@ -1,17 +1,9 @@
 import { useEffect } from "react";
 import { t } from "./strings";
 
-/** The letters a counter can be given. "A" is the first and prints bill numbers with no letter. */
-const COUNTER_LETTERS = ["A", "B", "C", "D"];
-
 interface Props {
   /** Today's rates are not all set yet: the entry says so. */
   rateNeeded: boolean;
-  /** This tablet's counter letter. */
-  device: string;
-  /** Only the owner may give the tablet a different letter. */
-  canSetDevice: boolean;
-  onDevice: (letter: string) => void;
   onKhata: () => void;
   onRecent: () => void;
   onRates: () => void;
@@ -21,7 +13,7 @@ interface Props {
 }
 
 /** What the round Admin button opens: the owner's jobs at the counter, kept off the selling screen. */
-export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata, onRecent, onRates, onPrinter, onLock, onClose }: Props) {
+export function AdminMenu({ rateNeeded, onKhata, onRecent, onRates, onPrinter, onLock, onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -45,24 +37,6 @@ export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata,
         <button type="button" className="ct-menu__item" onClick={onPrinter}>
           {t.printerTitle}
         </button>
-        <div className="ct-menu__row">
-          <span>{t.counterLetter(device)}</span>
-          {canSetDevice && (
-            <span className="ct-menu__letters" role="group" aria-label={t.counterLetterHint}>
-              {COUNTER_LETTERS.map((letter) => (
-                <button
-                  key={letter}
-                  type="button"
-                  className={`ct-menu__letter${letter === device ? " is-on" : ""}`}
-                  aria-pressed={letter === device}
-                  onClick={() => onDevice(letter)}
-                >
-                  {letter}
-                </button>
-              ))}
-            </span>
-          )}
-        </div>
         <button type="button" className="ct-menu__item" onClick={onLock}>
           {t.lockLabel}
         </button>

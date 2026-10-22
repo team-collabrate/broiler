@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@kumbakonam/shared/theme.css";
+import "@fontsource-variable/inter";
 import { initFirebase, LanguageProvider } from "@kumbakonam/shared";
 import { installDevelopmentNetworkSwitch } from "@kumbakonam/shared/shop";
 import { App } from "./App";

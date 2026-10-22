@@ -239,7 +239,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
   y += GAP + size(24);
   text(`${L.date}: ${formatDate(bill.createdAt)}`, CONTENT_LEFT, y, detailFont, "left");
   text(formatTime(bill.createdAt), CONTENT_RIGHT, y, detailFont, "right");
-  y += size(10) + GAP;
+  y += size(10) + GAP + size(8);
   text(`${L.billNo}: ${bill.billNo}`, CONTENT_LEFT, y + size(14), detailFont, "left");
   y += size(14) + size(10) + GAP;
   rule(y);
@@ -275,7 +275,8 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
       y += size(30);
       text(`* ${item.note}`, CONTENT_LEFT + size(10), y, font(22), "left");
     }
-    y += size(14);
+    // A blank line after every item.
+    y += size(34);
   }
   y += size(4);
   rule(y);
@@ -285,7 +286,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     y += gap + size(fs);
     text(label, CONTENT_LEFT, y, f, "left");
     text(value, CONTENT_RIGHT, y, f, "right");
-    y += size(Math.round(fs * 0.3)) + gap / 2;
+    y += size(Math.round(fs * 0.3)) + gap / 2 + (fs <= 24 ? size(16) : 0);
   };
   if (bill.totalWeight) pair(L.totalWeight, bill.totalWeight);
   if (bill.totalPieces) pair(L.totalPieces, bill.totalPieces);

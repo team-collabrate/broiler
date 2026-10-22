@@ -44,6 +44,18 @@ export const t = {
   loading: "Loading…",
 
   // The product sheet
+  byWeight: "By weight",
+  byAmount: "By amount ₹",
+  otherWeight: "Other weight",
+  otherAmount: "Other amount ₹",
+  otherCount: "Other count",
+  onePiece: "piece",
+  manyPieces: "pieces",
+  kindsLabel: "Kinds",
+  cutLabel: "Cut",
+  howLabel: "How the customer asks",
+  keepPacks: "Keep packs separate",
+  keepPacksHint: "250 g twice stays 2 × 250 g. Untick to add them up (500 g).",
   methodWeight: "Weight",
   methodAmount: "Amount",
   methodQty: "Count",
@@ -138,11 +150,17 @@ export const t = {
   printerWebNote: "Only Bluetooth LE printers work in a browser. Use the Android app in the shop.",
   printerEmptyScan: "No devices found. Switch the printer on. First time: pair it in the tablet's Bluetooth settings.",
   connectPrinter: "Connect printer",
+  printerConnected: "Printer connected",
+  printerReady: "Ready to print",
+  chooseYourPrinter: "Choose your printer",
+  changePrinter: "Change printer",
+  searchAgain: "Search again",
+  printerStep1: "Switch the printer on and keep it close.",
+  printerStep2: "First time: pair it in tablet Settings > Bluetooth.",
+  printerStep3: "Tap Connect printer and choose it from the list.",
   connectOtherPrinter: "Connect a different printer",
   testBill: "Print test bill",
-  calibrationBill: "Print size test",
   testPrinted: "Printed ✓",
-  showPrintSpeed: "Show print speed",
   printProblem: {
     "no-printer": "No printer connected. Go to Admin > Printer setup.",
     "bluetooth-off": "Bluetooth is off. Turn it on and try again.",
@@ -198,8 +216,6 @@ export const t = {
   refusedSeen: "Got it",
 
   // Counter letter
-  counterLetter: (letter: string) => `Counter ${letter}`,
-  counterLetterHint: "Use a different letter for a second tablet",
 
   // Start-up
   cantConnect: "Cannot connect",

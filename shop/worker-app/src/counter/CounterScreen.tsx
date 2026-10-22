@@ -11,6 +11,7 @@ import {
   type CartLine,
   type Category,
   type MenuItem,
+  type Method,
   type OrderLineInput,
   type PaymentMethod,
   type Role,
@@ -20,11 +21,9 @@ import {
   abandonOrder,
   createOrder,
   dismissRefused,
-  getDeviceLetter,
   newOrderId,
   resumeOutbox,
   seedBillNumbers,
-  setDeviceLetter,
   subscribeCategories,
   subscribeMaxAdjust,
   subscribeMenu,
@@ -33,9 +32,7 @@ import {
   voidOrder,
 } from "@kumbakonam/shared/shop";
 import { DEFAULT_MAX_ADJUST_MINOR } from "@kumbakonam/shared/core";
-import { PrintDiagnosticsOverlay } from "../components/PrintDiagnosticsOverlay";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
-import { prepareCalibrationRaster } from "../printing/calibration";
 import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
 import { SAMPLE_BILLS } from "../printing/sampleBills";
@@ -50,7 +47,8 @@ import { ItemSheet } from "./ItemSheet";
 import { KhataModal } from "./KhataModal";
 import { PinScreen } from "./PinScreen";
 import { PrinterSheet } from "./PrinterSheet";
-import { CounterTabs, ProductGrid } from "./ProductGrid";
+import { ItemPicker } from "./ItemPicker";
+import { CounterTabs } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
 import { markDeleted, rememberBill, useDeletedBills, useRecentBills } from "./recentBills";
 import { isRateStale, RatesView } from "./RatesView";
@@ -62,18 +60,8 @@ import { t } from "./strings";
 /** Lets a catalog still being checked (items not switched on) show at the counter. Development only; never set in production. */
 const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
 
-const SHOW_SPEED_KEY = "broiler.showPrintSpeed";
-/** Whether the printing speed readout is switched on (a tuning aid, off by default). */
-function readShowSpeed(): boolean {
-  try {
-    return localStorage.getItem(SHOW_SPEED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 type View = "sell" | "ownerPin" | "rates";
-type Sheet = { item: MenuItem; editing?: CartLine };
+type Sheet = { item: MenuItem; editing?: CartLine; startMethod?: Method };
 
 /** A stand-in for an item that has left the menu since it was added to the cart, so its line can still be edited. */
 function itemFromLine(line: CartLine): MenuItem {
@@ -112,7 +100,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const connected = useServerConnection();
   const outbox = useOutbox();
   const waiting = pendingEntries(outbox).length;
-  const [device, setDevice] = useState(getDeviceLetter);
   // The clock moves on while the screen sits open, so "a day old" is re-checked once a minute.
   const [, setMinute] = useState(0);
   useEffect(() => {
@@ -169,6 +156,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   /** True while the owner is signed in only to set the rates; the till then signs back in as the counter. */
   const elevated = useRef(false);
   const [sheet, setSheet] = useState<Sheet | null>(null);
+  /** Repeated equal weights stay packs (2 × 250 g), as the bill is read. Always on unless the cashier unticks it. */
+  const [keepPacks, setKeepPacks] = useState(true);
   const [adminOpen, setAdminOpen] = useState(false);
   const [printerOpen, setPrinterOpen] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "info" | "error" } | null>(null);
@@ -188,7 +177,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const deletedBills = useDeletedBills();
   const [testOutcome, setTestOutcome] = useState<"ok" | PrinterProblem | null>(null);
   const [testing, setTesting] = useState(false);
-  const [showSpeed, setShowSpeed] = useState(readShowSpeed);
 
   // One id per sale, kept across a failed save so a retry cannot save the sale twice. Any change to what is
   // being sold or how it is paid makes it a different sale, so it starts a new id.
@@ -203,15 +191,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const canEditRates = items !== null && items.length > 0;
 
   // --- Printing -----------------------------------------------------------
-  const [diagnosticsVisible, setDiagnosticsVisible] = useState(false);
-  useEffect(() => {
-    if (!showSpeed || !printer.printProgress) return;
-    setDiagnosticsVisible(true);
-    if (printer.printProgress.bytesSent < printer.printProgress.totalBytes) return;
-    const timer = setTimeout(() => setDiagnosticsVisible(false), 4000);
-    return () => clearTimeout(timer);
-  }, [printer.printProgress, showSpeed]);
-
   /** Prints a bill. Never throws: says whether it came out and, if not, why. */
   const tryPrint = useCallback(
     async (bill: BillInput): Promise<PrintResult> => {
@@ -242,6 +221,17 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     newSale();
     setNotice(null);
     setSheet(null);
+  };
+
+  /** A one-tap weight, amount or count from the picker goes straight onto the bill. */
+  const addPreset = (line: OrderLineInput) => {
+    if (!canAddLine(cart.lines, line)) {
+      setNotice({ text: t.tooManyLines, tone: "error" });
+      return;
+    }
+    cart.add(line);
+    newSale();
+    setNotice(null);
   };
 
   const editLine = (key: string) => {
@@ -325,33 +315,19 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     }
   };
 
-  /** The two test prints on the printer screen: a sample bill, and the calibration sheet. */
-  const testPrint = async (kind: "bill" | "calibration") => {
+  /** The test print on the printer screen: a sample bill. */
+  const testPrint = async () => {
     setTesting(true);
     setTestOutcome(null);
     try {
-      let result: PrintResult;
-      if (kind === "bill") {
-        const { bytes, timing } = await prepareReceiptRaster(SAMPLE_BILLS[0].bill);
-        result = await printer.print(bytes, timing);
-      } else {
-        result = await printer.print(await prepareCalibrationRaster());
-      }
+      const { bytes, timing } = await prepareReceiptRaster(SAMPLE_BILLS[0].bill);
+      const result: PrintResult = await printer.print(bytes, timing);
       setTestOutcome(result.ok ? "ok" : result.problem);
     } catch (err) {
       console.error("Test print failed", err);
       setTestOutcome("unreachable");
     } finally {
       setTesting(false);
-    }
-  };
-
-  const changeShowSpeed = (on: boolean) => {
-    setShowSpeed(on);
-    try {
-      localStorage.setItem(SHOW_SPEED_KEY, on ? "1" : "0");
-    } catch {
-      /* the choice only lasts until the app closes */
     }
   };
 
@@ -403,46 +379,50 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     ) : (
       <div className="ct-catalog">
         <CounterTabs categories={tabs} selected={category} onSelect={setCategoryKey} labelFor={labelFor} />
-        {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : <ProductGrid items={visibleItems} onSelect={(item) => setSheet({ item })} />}
+        {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : <ItemPicker items={visibleItems} keepPacks={keepPacks} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />}
       </div>
     );
 
   return (
     <div className="ct-screen">
       <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onAdmin={() => setAdminOpen(true)} />
-      <main className="ct-main">
-        <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
-        {main}
-      </main>
-      <BillCart
-        logoUrl="/logo.png"
-        lines={cart.lines}
-        totalMinor={cart.totalMinor}
-        totalGrams={cart.totalGrams}
-        totalPieces={cart.totalPieces}
-        paymentMethod={paymentMethod}
-        paymentDetail={paymentDetail}
-        onPaymentChange={(method) => {
-          newSale();
-          if (method === "credit" && !connected) {
-            setNotice({ text: t.creditNeedsInternet, tone: "error" });
-            setPaymentMethod("cash");
-            return;
-          }
-          setPaymentMethod(method);
-          if (method === "split") setSplitOpen(true);
-          if (method === "credit") setCreditOpen(true);
-        }}
-        submitting={submitting}
-        notice={notice}
-        onDismissNotice={() => setNotice(null)}
-        onEdit={editLine}
-        onRemove={(key) => {
-          newSale();
-          cart.remove(key);
-        }}
-        onPrintBill={charge}
-      />
+      <div className="ct-body">
+        <main className="ct-main">
+          <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
+          {main}
+        </main>
+        <BillCart
+          logoUrl="/logo.png"
+          lines={cart.lines}
+          totalMinor={cart.totalMinor}
+          totalGrams={cart.totalGrams}
+          totalPieces={cart.totalPieces}
+          paymentMethod={paymentMethod}
+          keepPacks={keepPacks}
+          onKeepPacksChange={setKeepPacks}
+          paymentDetail={paymentDetail}
+          onPaymentChange={(method) => {
+            newSale();
+            if (method === "credit" && !connected) {
+              setNotice({ text: t.creditNeedsInternet, tone: "error" });
+              setPaymentMethod("cash");
+              return;
+            }
+            setPaymentMethod(method);
+            if (method === "split") setSplitOpen(true);
+            if (method === "credit") setCreditOpen(true);
+          }}
+          submitting={submitting}
+          notice={notice}
+          onDismissNotice={() => setNotice(null)}
+          onEdit={editLine}
+          onRemove={(key) => {
+            newSale();
+            cart.remove(key);
+          }}
+          onPrintBill={charge}
+        />
+      </div>
 
       {sheet && (
         <ItemSheet
@@ -450,6 +430,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
           key={sheet.editing?.key ?? sheet.item.id}
           item={sheet.item}
           editing={sheet.editing}
+          startMethod={sheet.startMethod}
           maxAdjustMinor={maxAdjustMinor}
           onCancel={() => setSheet(null)}
           onConfirm={confirmSheet}
@@ -494,12 +475,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       {adminOpen && (
         <AdminMenu
           rateNeeded={rateNeeded}
-          device={device}
-          canSetDevice={role === "owner"}
-          onDevice={(letter) => {
-            setDeviceLetter(letter);
-            setDevice(letter);
-          }}
           onClose={() => setAdminOpen(false)}
           onKhata={() => {
             setAdminOpen(false);
@@ -531,12 +506,9 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
           printerDevices={printer.printerDevices}
           testOutcome={testOutcome}
           busy={testing}
-          showSpeed={showSpeed}
-          onShowSpeed={changeShowSpeed}
           onConnect={printer.connect}
           onSelectPrinter={printer.selectPrinter}
-          onTestPrint={() => void testPrint("bill")}
-          onCalibration={() => void testPrint("calibration")}
+          onTestPrint={() => void testPrint()}
           onClose={() => setPrinterOpen(false)}
         />
       )}
@@ -573,8 +545,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
           onClose={() => setBillView(null)}
         />
       )}
-
-      {diagnosticsVisible && printer.printProgress && <PrintDiagnosticsOverlay progress={printer.printProgress} logs={printer.printLogs} />}
     </div>
   );
 }
