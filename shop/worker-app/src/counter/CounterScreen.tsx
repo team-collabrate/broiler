@@ -419,7 +419,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
 
   return (
     <div className="ct-screen">
-      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => goToAdmin()} />
+      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => (connected ? goToAdmin() : setNotice({ text: t.adminNeedsInternet, tone: "error" }))} />
       <div className="ct-body">
         <main className="ct-main">
           <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
