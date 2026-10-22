@@ -8,7 +8,7 @@ export const t = {
   appTitle: "Broiler POS",
 
   // Sign-in, owner PIN, lock
-  signInTitle: "Honey Broilers",
+  signInTitle: "HONEY BROILERS",
   signInSubtitle: "Enter your PIN",
   signIn: "Sign in",
   ownerPinTitle: "Owner PIN",
@@ -55,8 +55,7 @@ export const t = {
   scrollDown: "More below: scroll down",
   cutLabel: "Cut",
   howLabel: "How the customer asks",
-  keepPacks: "Keep packs separate",
-  keepPacksHint: "250 g twice stays 2 × 250 g. Untick to add them up (500 g).",
+  keepPacks: "தனித்தனியாக வை (2 × 250 கி)",
   methodWeight: "Weight",
   methodAmount: "Amount",
   methodQty: "Count",

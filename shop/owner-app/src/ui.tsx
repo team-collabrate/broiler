@@ -15,7 +15,7 @@ export function Sheet({ title, subtitle, onClose, busy = false, children, footer
             <h2 className="ow-sheet__title">{title}</h2>
             {subtitle && <p className="ow-sheet__sub">{subtitle}</p>}
           </div>
-          <button type="button" className="ow-sheet__close" aria-label="Close" disabled={busy} onClick={onClose}>
+          <button type="button" className="ow-sheet__close" aria-label="மூடு" disabled={busy} onClick={onClose}>
             ✕
           </button>
         </header>
@@ -46,7 +46,7 @@ export function BarChart({ bars, labelEvery = 1, format, caption }: { bars: Bar[
   const best = bars.reduce<Bar | null>((top, b) => (b.value > (top?.value ?? 0) ? b : top), null);
   return (
     <div className="ow-chart">
-      <div className="ow-chart__bars" role="img" aria-label={caption ?? "Sales chart"}>
+      <div className="ow-chart__bars" role="img" aria-label={caption ?? "விற்பனை வரைபடம்"}>
         {bars.map((b, i) => (
           <div key={`${i}-${b.label}`} className="ow-chart__col" title={`${b.label}: ${format(b.value)}`}>
             <div className={`ow-chart__bar${best === b ? " is-best" : ""}`} style={{ height: `${b.value > 0 ? Math.max(4, (b.value / max) * 100) : 0}%` }} />
@@ -60,7 +60,7 @@ export function BarChart({ bars, labelEvery = 1, format, caption }: { bars: Bar[
       </div>
       {best && (
         <p className="ow-chart__best">
-          Best: {best.label} · {format(best.value)}
+          அதிகம்: {best.label} · {format(best.value)}
         </p>
       )}
     </div>
@@ -68,7 +68,7 @@ export function BarChart({ bars, labelEvery = 1, format, caption }: { bars: Bar[
 }
 
 /** The small line icons of the tab bar. */
-export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "credit" }) {
+export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "credit" | "rates" }) {
   const paths: Record<typeof name, ReactNode> = {
     dashboard: (
       <>
@@ -91,6 +91,12 @@ export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "c
         <polyline points="14 2 14 8 20 8" />
         <line x1="8" y1="13" x2="16" y2="13" />
         <line x1="8" y1="17" x2="16" y2="17" />
+      </>
+    ),
+    rates: (
+      <>
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+        <circle cx="7" cy="7" r="1.2" />
       </>
     ),
     credit: (

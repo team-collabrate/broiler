@@ -15,6 +15,9 @@ interface Props {
   printer: "ok" | "none" | "problem";
   /** Opens the printer screen. */
   onPrinter: () => void;
+  /** Opens the list of recent bills (print a copy, or delete one of the last 3). */
+  onRecent: () => void;
+  /** Goes to the admin app. */
   onAdmin: () => void;
 }
 
@@ -25,7 +28,7 @@ const clockText = () => new Date().toLocaleTimeString("en-IN", { hour: "numeric"
  * this carries what the cashier needs to glance at: the shop, online or offline, bills still to upload, the printer,
  * the time, and the gear (Admin).
  */
-export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, printer, onPrinter, onAdmin }: Props) {
+export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, printer, onPrinter, onRecent, onAdmin }: Props) {
   const [clock, setClock] = useState(clockText);
   useEffect(() => {
     const timer = setInterval(() => setClock(clockText()), 15_000);
@@ -35,7 +38,7 @@ export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, print
   return (
     <header className="ct-top">
       <img className="ct-top__logo" src={logoUrl} alt="" draggable={false} />
-      <span className="ct-top__name">Honey Broilers</span>
+      <span className="ct-top__name">HONEY BROILERS</span>
       <span className="ct-top__spacer" />
 
       {waiting > 0 && (
@@ -59,6 +62,13 @@ export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, print
             <polyline points="4 13 10 19 20 6" />
           </svg>
         )}
+      </button>
+      <button type="button" className="ct-top__pill ct-top__recent" onClick={onRecent}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <polyline points="12 7 12 12 15.5 14" />
+        </svg>
+        {t.recentMenu}
       </button>
       <span className="ct-top__clock">{clock}</span>
       <button type="button" className="ct-top__gear" aria-label={t.admin} onClick={onAdmin}>

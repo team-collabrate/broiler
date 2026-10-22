@@ -65,6 +65,10 @@ type View = "sell" | "ownerPin" | "rates";
 /** Menu groups that appear in every tab. */
 const EVERY_TAB_GROUPS = ["excess"];
 
+/** The owner's admin app: the gear goes straight there (rates, reports, bills, credit). */
+const ADMIN_URL = "https://broiler-pos-admin.web.app";
+const goToAdmin = () => window.location.assign(ADMIN_URL);
+
 type Sheet = { item: MenuItem; editing?: CartLine; startMethod?: Method };
 
 /** A stand-in for an item that has left the menu since it was added to the cart, so its line can still be edited. */
@@ -406,7 +410,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
 
   return (
     <div className="ct-screen">
-      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onAdmin={() => setAdminOpen(true)} />
+      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => goToAdmin()} />
       <div className="ct-body">
         <main className="ct-main">
           <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />

@@ -113,7 +113,6 @@ export function BillCart({
         <input type="checkbox" checked={keepPacks} disabled={submitting} onChange={(e) => onKeepPacksChange(e.target.checked)} />
         <span className="ct-packs__text">
           <strong>{t.keepPacks}</strong>
-          <small>{t.keepPacksHint}</small>
         </span>
       </label>
 

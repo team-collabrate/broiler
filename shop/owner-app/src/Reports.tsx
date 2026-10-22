@@ -4,7 +4,6 @@ import {
   combineSales,
   daysInclusive,
   dayKey,
-  describeError,
   keyToDate,
   periodRange,
   salesByDay,
@@ -14,19 +13,19 @@ import {
   type ReportPeriod,
 } from "@kumbakonam/shared/core";
 import type { OwnerData } from "./data";
-import { formatMoney, kgText, longDayText, pcsText } from "./fmt";
+import { errorText, formatMoney, kgText, longDayText, pcsText } from "./fmt";
 import { BarChart, Notice, type Bar } from "./ui";
 
 type Kind = ReportPeriod["kind"];
 const CHOICES: { kind: Kind; label: string }[] = [
-  { kind: "today", label: "Today" },
-  { kind: "yesterday", label: "Yesterday" },
-  { kind: "last7", label: "Last 7 days" },
-  { kind: "month", label: "This month" },
-  { kind: "date", label: "Pick a date" },
+  { kind: "today", label: "இன்று" },
+  { kind: "yesterday", label: "நேற்று" },
+  { kind: "last7", label: "கடந்த 7 நாள்" },
+  { kind: "month", label: "இந்த மாதம்" },
+  { kind: "date", label: "தேதி தேர்வு" },
 ];
 
-const hourLabel = (h: number): string => (h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`);
+const hourLabel = (h: number): string => String(h % 12 === 0 ? 12 : h % 12);
 
 /** Sales for a period: totals, how it was paid, a chart, the items sold and the three categories. */
 export function Reports({ data }: { data: OwnerData }) {
@@ -51,7 +50,7 @@ export function Reports({ data }: { data: OwnerData }) {
     setLoading(true);
     data.loadArchived(split.archived).then(
       (days) => alive && (setArchived(days), setLoading(false)),
-      (e) => alive && (setError(describeError(e)), setArchived([]), setLoading(false)),
+      (e) => alive && (setError(errorText(e)), setArchived([]), setLoading(false)),
     );
     return () => {
       alive = false;
@@ -76,17 +75,17 @@ export function Reports({ data }: { data: OwnerData }) {
     }
     const days = daysInclusive(range.fromKey, range.toKey);
     return salesByDay(days, liveOrders, archived).map((d) => ({
-      label: days.length <= 8 ? keyToDate(d.dayKey).toLocaleDateString("en-IN", { weekday: "short" }) : String(keyToDate(d.dayKey).getDate()),
+      label: days.length <= 8 ? keyToDate(d.dayKey).toLocaleDateString("ta-IN", { weekday: "short" }) : String(keyToDate(d.dayKey).getDate()),
       value: d.totalMinor,
     }));
   }, [singleDay, split.live, liveOrders, archived, range.fromKey, range.toKey]);
 
-  const heading = singleDay ? longDayText(range.fromKey) : `${longDayText(range.fromKey)} to ${longDayText(range.toKey)}`;
+  const heading = singleDay ? longDayText(range.fromKey) : `${longDayText(range.fromKey)} முதல் ${longDayText(range.toKey)} வரை`;
   const itemTotal = Math.max(1, figures.totalMinor);
 
   return (
-    <div className="ow-stack">
-      <div className="ow-chips" role="tablist" aria-label="Period">
+    <div className="ow-stack ow-reports">
+      <div className="ow-chips" role="tablist" aria-label="காலம்">
         {CHOICES.map((c) => (
           <button key={c.kind} type="button" role="tab" aria-selected={kind === c.kind} className={`ow-chip${kind === c.kind ? " is-active" : ""}`} onClick={() => setKind(c.kind)}>
             {c.label}
@@ -95,27 +94,27 @@ export function Reports({ data }: { data: OwnerData }) {
       </div>
       {kind === "date" && (
         <label className="ow-field">
-          <span className="ow-label">Date</span>
+          <span className="ow-label">தேதி</span>
           <input className="ow-input" type="date" max={todayKey} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </label>
       )}
 
       {error && <Notice tone="error">{error}</Notice>}
 
-      <section className="ow-card ow-hero" aria-label="Sales">
+      <section className="ow-card ow-hero" aria-label="விற்பனை">
         <p className="ow-label">{heading}</p>
         <p className="ow-hero__total">{loading ? "…" : formatMoney(figures.totalMinor)}</p>
         <p className="ow-hero__sub">
-          {figures.orderCount} {figures.orderCount === 1 ? "bill" : "bills"} · {kgText(figures.totalGrams)}
+          {figures.orderCount} பில் · {kgText(figures.totalGrams)}
           {figures.totalPieces > 0 ? ` · ${pcsText(figures.totalPieces)}` : ""}
         </p>
       </section>
 
-      <section className="ow-card" aria-label="How it was paid">
-        <h2 className="ow-card__title">How it was paid</h2>
+      <section className="ow-card" aria-label="பணம் வந்த விதம்">
+        <h2 className="ow-card__title">பணம் வந்த விதம்</h2>
         <dl className="ow-rows">
           <div className="ow-row">
-            <dt>Cash</dt>
+            <dt>பணம்</dt>
             <dd>{formatMoney(figures.cashCollectedMinor)}</dd>
           </div>
           <div className="ow-row">
@@ -123,25 +122,25 @@ export function Reports({ data }: { data: OwnerData }) {
             <dd>{formatMoney(figures.upiCollectedMinor)}</dd>
           </div>
           <div className="ow-row">
-            <dt>Credit given</dt>
+            <dt>கடன் கொடுத்தது</dt>
             <dd className={figures.creditGivenMinor > 0 ? "is-credit" : ""}>{formatMoney(figures.creditGivenMinor)}</dd>
           </div>
         </dl>
       </section>
 
-      <section className="ow-card" aria-label="Chart">
-        <h2 className="ow-card__title">{singleDay ? "Sales by hour" : "Sales by day"}</h2>
+      <section className="ow-card" aria-label="வரைபடம்">
+        <h2 className="ow-card__title">{singleDay ? "மணி வாரியான விற்பனை" : "நாள் வாரியான விற்பனை"}</h2>
         {bars ? (
-          <BarChart bars={bars} labelEvery={singleDay ? 2 : bars.length > 12 ? 3 : 1} format={formatMoney} caption={singleDay ? "Sales by hour" : "Sales by day"} />
+          <BarChart bars={bars} labelEvery={singleDay ? 2 : bars.length > 12 ? 3 : 1} format={formatMoney} caption={singleDay ? "மணி வாரியான விற்பனை" : "நாள் வாரியான விற்பனை"} />
         ) : (
-          <p className="ow-text ow-text--muted">Bills are kept in full for 4 days. For an older day only its totals are kept, so there is no hourly chart.</p>
+          <p className="ow-text ow-text--muted">பில்கள் 4 நாள் மட்டும் முழுமையாக இருக்கும். பழைய நாளுக்கு மொத்தம் மட்டுமே இருக்கும், மணி வரைபடம் இல்லை.</p>
         )}
       </section>
 
-      <section className="ow-card" aria-label="Items sold">
-        <h2 className="ow-card__title">Items sold</h2>
+      <section className="ow-card" aria-label="விற்ற பொருட்கள்">
+        <h2 className="ow-card__title">விற்ற பொருட்கள்</h2>
         {figures.byItem.length === 0 ? (
-          <p className="ow-text ow-text--muted">Nothing sold in this period.</p>
+          <p className="ow-text ow-text--muted">இந்த காலத்தில் விற்பனை இல்லை.</p>
         ) : (
           <ul className="ow-list">
             {figures.byItem.map((item) => (
@@ -157,16 +156,16 @@ export function Reports({ data }: { data: OwnerData }) {
         )}
       </section>
 
-      <section className="ow-card" aria-label="By category">
-        <h2 className="ow-card__title">By category</h2>
+      <section className="ow-card" aria-label="வகை வாரியாக">
+        <h2 className="ow-card__title">வகை வாரியாக</h2>
         {figures.byCategory.length === 0 ? (
-          <p className="ow-text ow-text--muted">Nothing sold in this period.</p>
+          <p className="ow-text ow-text--muted">இந்த காலத்தில் விற்பனை இல்லை.</p>
         ) : (
           <ul className="ow-list">
             {figures.byCategory.map((c) => (
               <li key={c.category} className="ow-list__row ow-list__row--bar">
                 <span className="ow-list__main">
-                  <strong className="ow-list__name">{categoryLabel(c.category, undefined, "en")}</strong>
+                  <strong className="ow-list__name">{categoryLabel(c.category, undefined, "ta")}</strong>
                   <span className="ow-share" aria-hidden="true">
                     <span className="ow-share__fill" style={{ width: `${Math.round((c.totalMinor / itemTotal) * 100)}%` }} />
                   </span>

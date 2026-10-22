@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { describeError, dayKey, isVoided, paymentProblem, type Customer, type CustomerPayment, type Order, type SettleMethod } from "@kumbakonam/shared/core";
+import { dayKey, isVoided, paymentProblem, type Customer, type CustomerPayment, type Order, type SettleMethod } from "@kumbakonam/shared/core";
 import { getCustomerOrders, getCustomerPayments, newPaymentId, recordCustomerPayment } from "@kumbakonam/shared/shop";
 import type { OwnerData } from "./data";
-import { billNo, dayText, formatMoney, paiseToRupees, rupeesToPaise, timeText } from "./fmt";
+import { billNo, dayText, errorText, formatMoney, paiseToRupees, rupeesToPaise, timeText } from "./fmt";
 import { Notice, Sheet } from "./ui";
 
 /** The credit book: who owes how much. Tap a name for their history and to take a payment. */
@@ -13,18 +13,18 @@ export function Credit({ data }: { data: OwnerData }) {
 
   return (
     <div className="ow-stack">
-      <section className="ow-card ow-summary" aria-label="Total owed">
+      <section className="ow-card ow-summary" aria-label="மொத்த கடன்">
         <div>
-          <p className="ow-label">Total owed</p>
+          <p className="ow-label">மொத்த கடன்</p>
           <p className={`ow-summary__total${total > 0 ? " is-credit" : ""}`}>{formatMoney(total)}</p>
         </div>
         <p className="ow-summary__count">
-          {data.customers.length} {data.customers.length === 1 ? "customer" : "customers"}
+          {data.customers.length} பேர்
         </p>
       </section>
 
       {data.customers.length === 0 ? (
-        <p className="ow-empty">Nobody owes anything right now.</p>
+        <p className="ow-empty">இப்போது யாருக்கும் கடன் இல்லை.</p>
       ) : (
         <ul className="ow-bills">
           {data.customers.map((c) => (
@@ -32,7 +32,7 @@ export function Credit({ data }: { data: OwnerData }) {
               <button type="button" className="ow-bill" onClick={() => setOpenId(c.id)}>
                 <span className="ow-bill__main">
                   <strong className="ow-bill__no">{c.name}</strong>
-                  {c.updatedAt && <span className="ow-bill__meta">Last change {dayText(dayKey(c.updatedAt))}</span>}
+                  {c.updatedAt && <span className="ow-bill__meta">கடைசி மாற்றம் {dayText(dayKey(c.updatedAt))}</span>}
                 </span>
                 <strong className="ow-bill__total is-credit">{formatMoney(c.balanceMinor)}</strong>
               </button>
@@ -67,7 +67,7 @@ function CustomerSheet({ customer, onClose, onChanged }: { customer: Customer; o
     setHistoryError(null);
     Promise.all([getCustomerOrders(customer.id), getCustomerPayments(customer.id)]).then(
       ([o, p]) => alive && (setOrders(o), setPayments(p)),
-      (e) => alive && setHistoryError(describeError(e)),
+      (e) => alive && setHistoryError(errorText(e)),
     );
     return () => {
       alive = false;
@@ -88,31 +88,31 @@ function CustomerSheet({ customer, onClose, onChanged }: { customer: Customer; o
       paymentId.current = null;
       setText("");
       setExact(null);
-      setSaved(result.balanceMinor === 0 ? "Paid in full ✓" : `Saved ✓ ${formatMoney(result.balanceMinor)} left`);
+      setSaved(result.balanceMinor === 0 ? "முழுவதும் செலுத்தினார் ✓" : `சேமித்தது ✓ ${formatMoney(result.balanceMinor)} மீதி`);
       setReload((n) => n + 1);
       await onChanged();
     } catch (e) {
-      setError(describeError(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Sheet title={customer.name} subtitle={`Owes ${formatMoney(customer.balanceMinor)}`} onClose={onClose} busy={busy}>
+    <Sheet title={customer.name} subtitle={`கடன் ${formatMoney(customer.balanceMinor)}`} onClose={onClose} busy={busy}>
       <div className="ow-stack">
-        <section className="ow-pay" aria-label="Take a payment">
-          <h3 className="ow-card__title">Take a payment</h3>
-          <div className="ow-chips" role="radiogroup" aria-label="Paid by">
+        <section className="ow-pay" aria-label="பணம் வாங்கு">
+          <h3 className="ow-card__title">பணம் வாங்கு</h3>
+          <div className="ow-chips" role="radiogroup" aria-label="எப்படி தந்தார்">
             {(["cash", "upi"] as const).map((m) => (
               <button key={m} type="button" role="radio" aria-checked={method === m} className={`ow-chip${method === m ? " is-active" : ""}`} onClick={() => setMethod(m)}>
-                {m === "cash" ? "Cash" : "GPay / UPI"}
+                {m === "cash" ? "பணம்" : "GPay / UPI"}
               </button>
             ))}
           </div>
           <div className="ow-pay__row">
             <label className="ow-field ow-field--grow">
-              <span className="ow-label">Amount (₹)</span>
+              <span className="ow-label">தொகை (₹)</span>
               <input
                 className="ow-input"
                 inputMode="decimal"
@@ -135,24 +135,24 @@ function CustomerSheet({ customer, onClose, onChanged }: { customer: Customer; o
                 setSaved(null);
               }}
             >
-              Pay all
+              முழுவதும்
             </button>
           </div>
-          {text !== "" && problem === "tooMuch" && <p className="ow-text ow-text--error">That is more than {formatMoney(customer.balanceMinor)}, what they owe.</p>}
+          {text !== "" && problem === "tooMuch" && <p className="ow-text ow-text--error">அவர் தர வேண்டிய {formatMoney(customer.balanceMinor)} விட அதிகம்.</p>}
           {error && <Notice tone="error">{error}</Notice>}
           {saved && <Notice tone="info">{saved}</Notice>}
           <button type="button" className="ow-btn ow-btn--primary ow-btn--wide" disabled={busy || amountMinor === null || problem !== null} onClick={() => void record()}>
-            {busy ? "Saving…" : amountMinor !== null && problem === null ? `Record ${formatMoney(amountMinor)}` : "Record payment"}
+            {busy ? "சேமிக்கிறது…" : amountMinor !== null && problem === null ? `${formatMoney(amountMinor)} பதிவு செய்` : "பணம் பதிவு செய்"}
           </button>
         </section>
 
-        <section aria-label="Credit bills">
-          <h3 className="ow-card__title">Recent credit bills</h3>
+        <section aria-label="கடன் பில்கள்">
+          <h3 className="ow-card__title">சமீபத்திய கடன் பில்கள்</h3>
           {historyError && <Notice tone="error">{historyError}</Notice>}
           {orders === null && !historyError ? (
-            <p className="ow-text ow-text--muted">Loading…</p>
+            <p className="ow-text ow-text--muted">ஏற்றுகிறது…</p>
           ) : orders && orders.length === 0 ? (
-            <p className="ow-text ow-text--muted">No credit bills on record.</p>
+            <p className="ow-text ow-text--muted">கடன் பில் இல்லை.</p>
           ) : (
             <ul className="ow-list">
               {orders?.map((o) => (
@@ -161,7 +161,7 @@ function CustomerSheet({ customer, onClose, onChanged }: { customer: Customer; o
                     <strong className="ow-list__name">{billNo(o)}</strong>
                     <span className="ow-list__sub">
                       {dayText(o.dayKey)} · {timeText(o.soldAt ?? o.createdAt)}
-                      {isVoided(o) ? " · Deleted" : ""}
+                      {isVoided(o) ? " · நீக்கியது" : ""}
                     </span>
                   </span>
                   <span className="ow-list__amount">{formatMoney(o.totalMinor)}</span>
@@ -171,18 +171,18 @@ function CustomerSheet({ customer, onClose, onChanged }: { customer: Customer; o
           )}
         </section>
 
-        <section aria-label="Payments received">
-          <h3 className="ow-card__title">Payments received</h3>
+        <section aria-label="வந்த பணம்">
+          <h3 className="ow-card__title">வந்த பணம்</h3>
           {payments === null && !historyError ? (
-            <p className="ow-text ow-text--muted">Loading…</p>
+            <p className="ow-text ow-text--muted">ஏற்றுகிறது…</p>
           ) : payments && payments.length === 0 ? (
-            <p className="ow-text ow-text--muted">No payments yet.</p>
+            <p className="ow-text ow-text--muted">இன்னும் பணம் வரவில்லை.</p>
           ) : (
             <ul className="ow-list">
               {payments?.map((p) => (
                 <li key={p.id} className="ow-list__row">
                   <span className="ow-list__main">
-                    <strong className="ow-list__name">{p.method === "upi" ? "GPay / UPI" : "Cash"}</strong>
+                    <strong className="ow-list__name">{p.method === "upi" ? "GPay / UPI" : "பணம்"}</strong>
                     <span className="ow-list__sub">
                       {dayText(dayKey(p.createdAt))} · {timeText(p.createdAt)}
                     </span>

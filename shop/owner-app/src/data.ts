@@ -3,7 +3,6 @@ import {
   addDaysToKey,
   combineSales,
   dayKey,
-  describeError,
   firstKeptDay,
   itemsNeedingRate,
   monthStartKey,
@@ -15,6 +14,7 @@ import {
   type SalesFigures,
 } from "@kumbakonam/shared/core";
 import { ensureRolledUp, getDayTotals, getMenuItems, getOrdersInDays, getOutstandingCustomers } from "@kumbakonam/shared/shop";
+import { errorText } from "./fmt";
 
 // Everything the owner's screens show, fetched once when the app opens and again on Refresh (or when the phone is
 // picked up after a minute or more). There are no live listeners: an app left open costs no reads.
@@ -106,10 +106,10 @@ export function useOwnerData(): OwnerData {
         dayTotals,
         customers,
         ratesMissing: itemsNeedingRate(menu, now).length,
-        tidyNote: tidy.error ? "Old bills could not be tidied up this time. It will try again." : null,
+        tidyNote: tidy.error ? "பழைய பில்களை சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கும்." : null,
       });
     } catch (error) {
-      setState((s) => ({ ...s, status: s.status === "ready" ? "ready" : "error", busy: false, error: describeError(error) }));
+      setState((s) => ({ ...s, status: s.status === "ready" ? "ready" : "error", busy: false, error: errorText(error) }));
     } finally {
       busy.current = false;
     }

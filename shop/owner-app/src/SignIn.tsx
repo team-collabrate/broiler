@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { afterWrongPin, blockedForMs, describeError, isValidPin, MAX_PIN_LENGTH, NO_ATTEMPTS, parseAttempts, type AttemptState } from "@kumbakonam/shared/core";
+import { afterWrongPin, blockedForMs, isValidPin, MAX_PIN_LENGTH, NO_ATTEMPTS, parseAttempts, type AttemptState } from "@kumbakonam/shared/core";
 import { browserStore, signInWithPin } from "@kumbakonam/shared/shop";
+import { errorText } from "./fmt";
 
 const ATTEMPTS_KEY = "broiler.owner.pinAttempts";
 const store = browserStore();
@@ -38,7 +39,7 @@ export function SignIn() {
         store.setItem(ATTEMPTS_KEY, JSON.stringify(next));
         setNow(Date.now());
       }
-      setError(describeError(e));
+      setError(errorText(e));
       setPin("");
       setBusy(false);
     }
@@ -48,8 +49,8 @@ export function SignIn() {
     <main className="ow-signin">
       <form className="ow-signin__card" onSubmit={(e) => void submit(e)}>
         <img className="ow-signin__logo" src="/logo.png" alt="" />
-        <h1 className="ow-signin__title">Honey Broilers</h1>
-        <p className="ow-signin__sub">Owner. Enter the managing PIN.</p>
+        <h1 className="ow-signin__title">HONEY BROILERS</h1>
+        <p className="ow-signin__sub">நிர்வாகம். PIN போடவும்.</p>
         <input
           className="ow-signin__pin"
           type="password"
@@ -63,10 +64,10 @@ export function SignIn() {
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
         />
         <p className="ow-signin__error" role="alert">
-          {waitMs > 0 ? `Too many wrong PINs. Wait ${Math.ceil(waitMs / 1000)} seconds.` : (error ?? " ")}
+          {waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? " ")}
         </p>
         <button type="submit" className="ow-btn ow-btn--primary" disabled={busy || !isValidPin(pin) || waitMs > 0}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "உள்நுழைகிறது…" : "உள்நுழை"}
         </button>
       </form>
     </main>

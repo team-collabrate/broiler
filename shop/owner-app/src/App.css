@@ -732,14 +732,207 @@
 }
 
 @media (min-width: 700px) {
-  .ow-main {
-    width: min(100%, 560px);
-    margin: 0 auto;
-  }
   .ow-backdrop {
     align-items: center;
   }
   .ow-sheet {
+    width: min(100%, 640px);
     border-radius: var(--radius-lg);
+  }
+}
+
+/* ---------- Rates ---------- */
+.ow-rates {
+  padding-bottom: 84px;
+}
+.ow-rate {
+  gap: var(--space-3);
+}
+.ow-rate__field {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.ow-rate__input {
+  width: 112px;
+  min-height: 48px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ow-rate__input.is-bad {
+  border-color: var(--color-danger);
+}
+.ow-list__sub.is-warn {
+  color: var(--color-spend-text);
+  font-weight: 700;
+}
+.ow-savebar {
+  position: sticky;
+  bottom: calc(var(--space-2) * -1);
+  padding: var(--space-3) 0;
+  background: linear-gradient(to bottom, rgba(255, 250, 242, 0), var(--color-bg) 35%);
+}
+.ow-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 420px) {
+  .ow-header {
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
+  }
+  .ow-header__logo {
+    width: 34px;
+    height: 34px;
+  }
+  .ow-header__title {
+    font-size: var(--text-footnote);
+  }
+  .ow-header__button {
+    padding: 0 10px;
+  }
+  .ow-rate__input {
+    width: 96px;
+  }
+}
+
+/* ---------- Tablets (and any wide screen) ----------
+   The tab bar moves to a column on the left, and the screens use two columns so nothing is a long thin strip. */
+@media (min-width: 700px) {
+  .ow-app {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "head head" "nav main";
+  }
+  .ow-header {
+    grid-area: head;
+    padding-inline: var(--space-5);
+  }
+  .ow-header__logo {
+    width: 46px;
+    height: 46px;
+  }
+  .ow-header__title {
+    font-size: var(--text-title-3);
+  }
+  .ow-header__sub {
+    font-size: var(--text-footnote);
+  }
+  .ow-header__button {
+    min-height: 46px;
+    padding: 0 var(--space-4);
+    font-size: var(--text-callout);
+  }
+  .ow-tabs {
+    grid-area: nav;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-2);
+    border-top: 0;
+    border-right: 1px solid var(--color-border);
+  }
+  .ow-tab {
+    flex: none;
+    min-height: 84px;
+    gap: 6px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-footnote);
+  }
+  .ow-tab.is-active {
+    background: var(--color-bg);
+  }
+  .ow-tab__icon {
+    width: 30px;
+    height: 30px;
+  }
+  .ow-main {
+    grid-area: main;
+    width: auto;
+    margin: 0;
+    padding: var(--space-5) max(var(--space-5), calc((100% - 1040px) / 2)) var(--space-6);
+  }
+  .ow-stack {
+    gap: var(--space-4);
+  }
+  .ow-card {
+    padding: var(--space-5);
+  }
+
+  /* Dashboard: today across the top, money beside week and month, owed along the bottom. */
+  .ow-dash,
+  .ow-reports,
+  .ow-rates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
+  .ow-dash > .ow-hero,
+  .ow-dash > .ow-owed,
+  .ow-dash > .ow-notice,
+  .ow-reports > .ow-chips,
+  .ow-reports > .ow-field,
+  .ow-reports > .ow-notice,
+  .ow-reports > .ow-hero,
+  .ow-rates > .ow-text,
+  .ow-rates > .ow-notice,
+  .ow-rates > .ow-savebar {
+    grid-column: 1 / -1;
+  }
+  .ow-hero__kg {
+    font-size: 3rem;
+  }
+  .ow-hero__total {
+    font-size: 2.25rem;
+  }
+
+  /* Bills and credit: the list in two columns. */
+  .ow-bills {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .ow-bills > li {
+    min-width: 0;
+  }
+  .ow-rate__input {
+    width: 132px;
+  }
+}
+
+/* A wide tablet: a little more room around the content. */
+@media (min-width: 1100px) {
+  .ow-app {
+    grid-template-columns: 124px minmax(0, 1fr);
+  }
+  .ow-main {
+    padding-inline: max(var(--space-6), calc((100% - 1160px) / 2));
+  }
+}
+
+/* A phone held sideways has little height: the tab bar becomes a slim column so the screen keeps its room. */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 899px) {
+  .ow-tab {
+    min-height: 56px;
+  }
+  .ow-tab__icon {
+    width: 24px;
+    height: 24px;
+  }
+  .ow-header {
+    padding-block: 4px;
   }
 }

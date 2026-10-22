@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { daysInclusive, dayKey, describeError, describeLine, firstKeptDay, formatRate, isVoided, summarizeOrders, type Order } from "@kumbakonam/shared/core";
+import { daysInclusive, dayKey, describeLine, firstKeptDay, formatRate, isVoided, summarizeOrders, type Order } from "@kumbakonam/shared/core";
 import { voidOrder } from "@kumbakonam/shared/shop";
 import type { OwnerData } from "./data";
-import { billNo, dayText, formatMoney, paymentText, soldTime, timeText } from "./fmt";
+import { billNo, dayText, errorText, formatMoney, paymentText, soldTime, timeText } from "./fmt";
 import { Notice, Sheet } from "./ui";
 
 /** The bills of the last 4 days, a day at a time. Tap one for its lines; a bill can be deleted from there. */
@@ -19,27 +19,27 @@ export function Bills({ data }: { data: OwnerData }) {
 
   return (
     <div className="ow-stack">
-      <div className="ow-chips" role="tablist" aria-label="Day">
+      <div className="ow-chips" role="tablist" aria-label="நாள்">
         {days.map((d) => (
           <button key={d} type="button" role="tab" aria-selected={day === d} className={`ow-chip${day === d ? " is-active" : ""}`} onClick={() => setDay(d)}>
-            {d === today ? "Today" : dayText(d)}
+            {d === today ? "இன்று" : dayText(d)}
           </button>
         ))}
       </div>
 
-      <section className="ow-card ow-summary" aria-label="Day total">
+      <section className="ow-card ow-summary" aria-label="நாள் மொத்தம்">
         <div>
           <p className="ow-label">{dayText(day)}</p>
           <p className="ow-summary__total">{formatMoney(summary.totalMinor)}</p>
         </div>
         <p className="ow-summary__count">
-          {summary.orderCount} {summary.orderCount === 1 ? "bill" : "bills"}
-          {deletedCount > 0 && <span className="ow-summary__deleted"> · {deletedCount} deleted</span>}
+          {summary.orderCount} பில்
+          {deletedCount > 0 && <span className="ow-summary__deleted"> · {deletedCount} நீக்கியது</span>}
         </p>
       </section>
 
       {bills.length === 0 ? (
-        <p className="ow-empty">No bills on this day.</p>
+        <p className="ow-empty">இந்த நாளில் பில் இல்லை.</p>
       ) : (
         <ul className="ow-bills">
           {bills.map((order) => (
@@ -54,7 +54,7 @@ export function Bills({ data }: { data: OwnerData }) {
                 </span>
                 <span className="ow-bill__right">
                   <strong className="ow-bill__total">{formatMoney(order.totalMinor)}</strong>
-                  {isVoided(order) && <span className="ow-bill__tag">Deleted</span>}
+                  {isVoided(order) && <span className="ow-bill__tag">நீக்கியது</span>}
                 </span>
               </button>
             </li>
@@ -82,14 +82,14 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
       await onDeleted();
       onClose();
     } catch (e) {
-      setError(describeError(e));
+      setError(errorText(e));
       setBusy(false);
     }
   };
 
   return (
     <Sheet
-      title={confirming ? `Delete bill ${billNo(order)}?` : `Bill ${billNo(order)}`}
+      title={confirming ? `பில் ${billNo(order)} நீக்கவா?` : `பில் ${billNo(order)}`}
       subtitle={`${dayText(order.dayKey)} · ${timeText(soldTime(order))}`}
       onClose={onClose}
       busy={busy}
@@ -97,23 +97,23 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
         confirming ? (
           <>
             <button type="button" className="ow-btn" disabled={busy} onClick={() => setConfirming(false)}>
-              Keep bill
+              வேண்டாம்
             </button>
             <button type="button" className="ow-btn ow-btn--danger" disabled={busy} onClick={() => void remove()}>
-              {busy ? "Deleting…" : "Delete bill"}
+              {busy ? "நீக்குகிறது…" : "பில்லை நீக்கு"}
             </button>
           </>
         ) : deleted ? (
           <button type="button" className="ow-btn" onClick={onClose}>
-            Close
+            மூடு
           </button>
         ) : (
           <>
             <button type="button" className="ow-btn" onClick={onClose}>
-              Close
+              மூடு
             </button>
             <button type="button" className="ow-btn ow-btn--danger-outline" onClick={() => setConfirming(true)}>
-              Delete bill
+              பில்லை நீக்கு
             </button>
           </>
         )
@@ -122,21 +122,21 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
       {confirming ? (
         <div className="ow-stack">
           <p className="ow-text">
-            This bill ({formatMoney(order.totalMinor)}, {paymentText(order)}) will not count in any total. It stays in the list, marked Deleted. This cannot be undone.
+            இந்த பில் ({formatMoney(order.totalMinor)}, {paymentText(order)}) எந்த கணக்கிலும் சேராது. பட்டியலில் "நீக்கியது" என்று இருக்கும். மீண்டும் சரிசெய்ய முடியாது.
           </p>
-          {order.paymentMethod === "credit" && <p className="ow-text">It is a credit bill: {order.customerName ?? "the customer"}'s balance will go down by {formatMoney(order.totalMinor)}.</p>}
+          {order.paymentMethod === "credit" && <p className="ow-text">இது கடன் பில்: {order.customerName ?? "வாடிக்கையாளர்"} கடன் {formatMoney(order.totalMinor)} குறையும்.</p>}
           {error && <Notice tone="error">{error}</Notice>}
         </div>
       ) : (
         <div className="ow-stack">
-          {deleted && <Notice tone="warn">Deleted{order.voidedAt ? ` at ${timeText(order.voidedAt)}` : ""}. This bill is not counted in any total.</Notice>}
+          {deleted && <Notice tone="warn">நீக்கியது{order.voidedAt ? ` (${timeText(order.voidedAt)})` : ""}. இந்த பில் எந்த கணக்கிலும் சேராது.</Notice>}
           <ul className="ow-lines">
             {order.lines.map((line, i) => (
               <li key={`${line.itemId}-${i}`} className="ow-line">
                 <span className="ow-line__main">
                   <strong className="ow-line__name">{line.name}</strong>
-                  <span className="ow-line__detail">{describeLine(line, "en")}</span>
-                  {line.rateMinor !== line.listRateMinor && <span className="ow-line__detail">Usual rate {formatRate(line.listRateMinor, line.unit, "en")}</span>}
+                  <span className="ow-line__detail">{describeLine(line, "ta")}</span>
+                  {line.rateMinor !== line.listRateMinor && <span className="ow-line__detail">வழக்கமான விலை {formatRate(line.listRateMinor, line.unit, "ta")}</span>}
                 </span>
                 <strong className="ow-line__amount">{formatMoney(line.lineTotalMinor)}</strong>
               </li>
@@ -144,17 +144,17 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
           </ul>
           <dl className="ow-rows">
             <div className="ow-row ow-row--total">
-              <dt>Total</dt>
+              <dt>மொத்தம்</dt>
               <dd>{formatMoney(order.totalMinor)}</dd>
             </div>
             <div className="ow-row">
-              <dt>Paid by</dt>
+              <dt>பணம் தந்த விதம்</dt>
               <dd>{paymentText(order)}</dd>
             </div>
             {order.paymentMethod === "split" && (
               <>
                 <div className="ow-row">
-                  <dt>Cash</dt>
+                  <dt>பணம்</dt>
                   <dd>{formatMoney(order.cashAmountMinor ?? 0)}</dd>
                 </div>
                 <div className="ow-row">
@@ -165,7 +165,7 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
             )}
             {order.paymentMethod === "credit" && (
               <div className="ow-row">
-                <dt>Customer</dt>
+                <dt>வாடிக்கையாளர்</dt>
                 <dd>{order.customerName ?? "—"}</dd>
               </div>
             )}
