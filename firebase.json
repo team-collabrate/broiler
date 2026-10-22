@@ -13,7 +13,7 @@
   "hosting": [
     {
       "site": "broiler-pos",
-      "public": "apps/pos/dist",
+      "public": "shop/worker-app/dist",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -54,7 +54,34 @@
           ]
         },
         {
-          "source": "/_expo/static/**",
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/registerSW.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/manifest.webmanifest",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/assets/**",
           "headers": [
             {
               "key": "Cache-Control",
@@ -66,7 +93,7 @@
     },
     {
       "site": "broiler-pos-admin",
-      "public": "apps/admin/dist",
+      "public": "shop/owner-app/dist",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -107,7 +134,34 @@
           ]
         },
         {
-          "source": "/_expo/static/**",
+          "source": "/sw.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/registerSW.js",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/manifest.webmanifest",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        {
+          "source": "/assets/**",
           "headers": [
             {
               "key": "Cache-Control",

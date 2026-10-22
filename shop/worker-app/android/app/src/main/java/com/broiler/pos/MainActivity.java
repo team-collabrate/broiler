@@ -7,6 +7,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(PairedPrintersPlugin.class);
         super.onCreate(savedInstanceState);
         // The till stays awake while the app is open. A tablet that falls asleep between customers drops the Bluetooth
         // link to the printer and can stop the app's work in the background, which is the first thing to go wrong at

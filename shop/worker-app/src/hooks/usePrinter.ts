@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
-import { classifyPrintError, type PrintProblem } from "@kumbakonam/shared/core";
+import { classifyPrintError as classifyPlain, type PrintProblem } from "@kumbakonam/shared/core";
+import { recordPrinterError } from "../printing/lastError";
+
+/** Classifies a failure and keeps its technical text for the Printer setup screen. */
+function classifyPrintError(err: unknown): PrintProblem {
+  recordPrinterError(err);
+  return classifyPlain(err);
+}
 import {
   connectClassic,
   getStoredPrinterConnection,

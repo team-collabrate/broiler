@@ -31,6 +31,7 @@
  * depending on it).
  */
 import { BluetoothSerial, type BluetoothDevice as ScannedDevice } from "@fmesasc/capacitor-bluetooth-serial";
+import { registerPlugin } from "@capacitor/core";
 import { printWithRecovery, type PrintAttempt, type PrinterLink } from "@kumbakonam/shared/core";
 
 export interface ClassicPrinterConnection {
@@ -156,7 +157,18 @@ async function tryEnableBluetooth(): Promise<void> {
  *  reason): plenty of printers don't advertise in a way that would survive
  *  filtering, and this list is short enough on a real device that
  *  filtering isn't worth the risk of hiding the one that matters. */
+/** The devices the phone is already paired with (a small native plugin in the Android app: no scan needed). */
+const PairedPrinters = registerPlugin<{ list(): Promise<{ devices: { name: string; address: string }[] }> }>("PairedPrinters");
+
 export async function scanForPrinters(): Promise<ClassicPrinterConnection[]> {
+  // Paired devices first: it needs no scan, works with Location off, and finds a printer that is not advertising.
+  try {
+    const paired = await PairedPrinters.list();
+    if (paired.devices.length > 0) return paired.devices;
+  } catch (err) {
+    if (/permission|disabled/i.test(String((err as Error)?.message ?? err))) throw classifyBluetoothError(err);
+    console.warn("Paired-device list failed, trying a scan", err);
+  }
   await tryEnableBluetooth();
   try {
     const result = await BluetoothSerial.scan();

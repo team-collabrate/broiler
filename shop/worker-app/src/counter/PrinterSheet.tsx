@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { PrinterProblem, PrinterStatus } from "../hooks/usePrinter";
 import type { ClassicPrinterConnection } from "../printing/classicBluetoothPrinter";
+import { usePrinterErrorDetail } from "../printing/lastError";
 import { t } from "./strings";
 
 interface Props {
@@ -46,6 +47,7 @@ export function PrinterSheet({
   onCalibration,
   onClose,
 }: Props) {
+  const detail = usePrinterErrorDetail();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -73,6 +75,7 @@ export function PrinterSheet({
           {problem && (
             <div className="ct-notice ct-notice--error" role="alert">
               <span>{t.printProblem[problem]}</span>
+              {detail !== "" && <small className="ct-notice__detail">Details: {detail}</small>}
             </div>
           )}
 
