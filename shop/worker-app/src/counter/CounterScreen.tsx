@@ -47,6 +47,7 @@ import { ItemSheet } from "./ItemSheet";
 import { KhataModal } from "./KhataModal";
 import { PinScreen } from "./PinScreen";
 import { PrinterSheet } from "./PrinterSheet";
+import { ItemCards } from "./ItemCards";
 import { ItemPicker } from "./ItemPicker";
 import { CounterTabs } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
@@ -145,7 +146,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     const used = new Set((items ?? []).map((item) => item.category));
     const known = allCategories.filter((c) => used.has(c.key));
     const extra = [...used].filter((key) => !allCategories.some((c) => c.key === key)).map((key) => ({ key, name: key, nameTa: key }));
-    return [...known, ...extra];
+    // Others is always the last tab.
+    return [...known, ...extra].sort((a, b) => Number(a.key === "other") - Number(b.key === "other"));
   }, [items, allCategories]);
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const category = categoryKey !== null && tabs.some((c) => c.key === categoryKey) ? categoryKey : (tabs[0]?.key ?? null);
@@ -240,7 +242,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     setSheet({ item: items?.find((i) => i.id === line.itemId) ?? itemFromLine(line), editing: line });
   };
 
-  const charge = async () => {
+  /** Saves the sale. `print` false: kept without printing (it can still be printed later from Recent bills). */
+  const charge = async (print = true) => {
     if (submitting || cart.lines.length === 0) return;
     // A split with nothing on one side, or a credit bill with nobody on it, is not ready: ask first.
     if (paymentMethod === "split" && !isRealSplit(cart.totalMinor, splitUpiMinor)) {
@@ -290,6 +293,10 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       // The sale is saved and the bill is kept in the recent list; now the paper. If the printer is missing or refuses,
       // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
       rememberBill(bill);
+      if (!print) {
+        setNotice({ text: connected ? t.saved(created.label) : t.savedOffline(created.label), tone: "info" });
+        return;
+      }
       const result = await tryPrint(bill);
       if (result.ok) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
       else setBillView({ bill, problem: result.problem });
@@ -379,7 +386,11 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     ) : (
       <div className="ct-catalog">
         <CounterTabs categories={tabs} selected={category} onSelect={setCategoryKey} labelFor={labelFor} />
-        {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : <ItemPicker items={visibleItems} keepPacks={keepPacks} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />}
+        {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : category === "other" ? (
+          <ItemCards items={visibleItems} onSelect={(item) => setSheet({ item })} />
+        ) : (
+          <ItemPicker items={visibleItems} keepPacks={keepPacks} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
+        )}
       </div>
     );
 
@@ -420,7 +431,8 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
             newSale();
             cart.remove(key);
           }}
-          onPrintBill={charge}
+          onPrintBill={() => void charge(true)}
+        onSaveBill={() => void charge(false)}
         />
       </div>
 

@@ -94,10 +94,10 @@ export const t = {
   paySplit: "Split",
 
   // Split payment (GPay + cash)
-  splitChip: (gpay: string, cash: string) => `GPay ${gpay} + Cash ${cash}`,
+  splitChip: (gpay: string, cash: string) => `UPI ${gpay} + பணம் ${cash}`,
   splitTitle: "Split payment",
-  gpay: "GPay",
-  cashHalf: "Cash",
+  gpay: "UPI",
+  cashHalf: "பணம்",
   splitHint: "Type one amount. The other is filled in.",
   splitNeeded: "Enter both the GPay and cash amounts.",
   done: "Done",
@@ -194,6 +194,9 @@ export const t = {
   recentEmpty: "No bills yet.",
 
   // After a sale
+  save: "Save",
+  saved: (label: string) => `Bill ${label} saved ✓ (not printed)`,
+  savedOffline: (label: string) => `Bill ${label} saved ✓ (not printed) Will upload when internet is back`,
   printed: (label: string) => `Bill ${label} printed ✓`,
   printedOffline: (label: string) => `Bill ${label} printed ✓ Will upload when internet is back`,
   savedNotPrinted: (label: string) => `Bill ${label} saved. No printer.`,

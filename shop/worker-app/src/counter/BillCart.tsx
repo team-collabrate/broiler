@@ -1,6 +1,9 @@
 import { adjustmentMinor, formatMoney, orderLineTotalMinor, type CartLine, type PaymentMethod } from "@kumbakonam/shared/core";
-import { describeLine, formatRate, formatTotals, PAYMENT_NAMES } from "./fmt";
+import { describeLine, formatRate, formatTotals } from "./fmt";
 import { t } from "./strings";
+
+/** The words on the payment buttons: Tamil for cash, credit and split, UPI as it is. */
+const PAY_LABEL: Record<PaymentMethod, string> = { cash: "பணம்", upi: "UPI", card: "கார்டு", split: "பணம் + UPI", credit: "கடன்" };
 
 /** The four payment buttons, in the order of the counter sketch: cash and UPI, then kadan (credit) and split. */
 const PAYMENT_GRID: PaymentMethod[] = ["cash", "upi", "credit", "split"];
@@ -26,6 +29,8 @@ interface Props {
   onRemove: (key: string) => void;
   /** Saves the sale, then prints the bill. */
   onPrintBill: () => void;
+  /** Saves the sale without printing it. */
+  onSaveBill: () => void;
   logoUrl: string;
 }
 
@@ -49,6 +54,7 @@ export function BillCart({
   onEdit,
   onRemove,
   onPrintBill,
+  onSaveBill,
   logoUrl,
 }: Props) {
   const canPrint = lines.length > 0 && !submitting;
@@ -116,9 +122,19 @@ export function BillCart({
         <strong>{formatMoney(totalMinor)}</strong>
       </div>
 
-      <button type="button" className="ct-btn ct-btn--primary ct-btn--big" disabled={!canPrint} onClick={onPrintBill}>
-        {submitting ? t.saving : t.printBill(formatMoney(totalMinor))}
-      </button>
+      <div className="ct-printrow">
+        <button type="button" className="ct-btn ct-btn--primary ct-btn--big" disabled={!canPrint} onClick={onPrintBill}>
+          {submitting ? t.saving : t.printBill(formatMoney(totalMinor))}
+        </button>
+        <button type="button" className="ct-savebtn" disabled={!canPrint} onClick={onSaveBill}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          {t.save}
+        </button>
+      </div>
 
       <div className="ct-pay" role="radiogroup" aria-label={t.payWith}>
         {PAYMENT_GRID.map((method) => {
@@ -130,10 +146,10 @@ export function BillCart({
               role="radio"
               aria-checked={method === paymentMethod}
               disabled={submitting}
-              className={`ct-pay__chip${method === paymentMethod ? " is-on" : ""}`}
+              className={`ct-pay__chip is-${method}${method === paymentMethod ? " is-on" : ""}`}
               onClick={() => onPaymentChange(method)}
             >
-              <span>{PAYMENT_NAMES[method]}</span>
+              <span className="ct-pay__label">{PAY_LABEL[method]}</span>
               {detail && method === paymentMethod && <small>{detail}</small>}
             </button>
           );
