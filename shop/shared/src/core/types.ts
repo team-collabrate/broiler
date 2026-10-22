@@ -150,6 +150,19 @@ export interface Order {
   /** Credit bills only: who owes for it. */
   customerId?: string;
   customerName?: string;
+  /**
+   * `'voided'` when the bill was deleted: it stays on record, marked, and every total leaves it out. Absent on a
+   * live bill (a bill is never created voided).
+   */
+  status?: 'voided';
+  voidedAt?: Date | null;
+  /** The signed-in account (user id) that deleted it. */
+  voidedBy?: string;
+}
+
+/** A deleted bill: still on record, but not counted anywhere. */
+export function isVoided(order: Pick<Order, 'status'>): boolean {
+  return order.status === 'voided';
 }
 
 /** The name to show and print: Tamil when the item has one, else English. */

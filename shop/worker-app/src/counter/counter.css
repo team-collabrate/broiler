@@ -1202,6 +1202,76 @@ button {
   color: var(--color-accent);
   font-weight: 800;
 }
+/* A bill row with a button after it (Delete, or a tag): the row and the button sit side by side. */
+.ct-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-right: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+.ct-list__item:last-child {
+  border-bottom: 0;
+}
+.ct-list__item .ct-list__row {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+.ct-list__item.is-deleted .ct-list__row {
+  opacity: 0.5;
+  text-decoration: line-through;
+  cursor: default;
+}
+.ct-list__delete {
+  flex: none;
+  height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: 12px;
+  border: 1px solid var(--color-danger);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ct-list__delete:active {
+  background: var(--color-accent-soft);
+}
+.ct-list__tag {
+  flex: none;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.ct-btn--danger {
+  flex: 2;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+  font-weight: 800;
+}
+.ct-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ct-confirm__text {
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.ct-confirm__text--warn {
+  color: var(--color-danger);
+}
+.ct-confirm__text--error {
+  padding: var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-danger);
+}
 .ct-khata__all {
   flex: none;
   height: 48px;

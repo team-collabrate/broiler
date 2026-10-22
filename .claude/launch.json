@@ -1,9 +1,60 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "shop-worker", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "shop", "run", "dev:worker"], "port": 3000 },
-    { "name": "pos-web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "pos:web"], "port": 3000 },
-    { "name": "admin-web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "admin:web"], "port": 8082 },
-    { "name": "shop-worker-emulator", "runtimeExecutable": "node", "runtimeArgs": ["shop/node_modules/vite/bin/vite.js", "shop/worker-app", "--mode", "emulator", "--port", "3002"], "port": 3002 }
+    {
+      "name": "shop-worker",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "shop",
+        "run",
+        "dev:worker"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "pos-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "pos:web"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "admin-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "admin:web"
+      ],
+      "port": 8082
+    },
+    {
+      "name": "shop-worker-emulator",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "shop/node_modules/vite/bin/vite.js",
+        "shop/worker-app",
+        "--mode",
+        "emulator",
+        "--port",
+        "3002"
+      ],
+      "port": 3002
+    },
+    {
+      "name": "shop-owner-emulator",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "shop/node_modules/vite/bin/vite.js",
+        "shop/owner-app",
+        "--mode",
+        "emulator",
+        "--port",
+        "3003"
+      ],
+      "port": 3003
+    }
   ]
 }

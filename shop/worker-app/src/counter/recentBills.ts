@@ -38,6 +38,33 @@ export function rememberBill(bill: BillInput): void {
   listeners.forEach((listener) => listener());
 }
 
+// The bills deleted from this tablet, so the list can show them marked and not offer to print or delete them again.
+const DELETED_KEY = "broiler.deletedBills";
+const parseDeleted = (raw: string | null): ReadonlySet<string> => {
+  try {
+    const parsed: unknown = raw === null ? [] : JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []);
+  } catch {
+    return new Set();
+  }
+};
+let deleted: ReadonlySet<string> = parseDeleted(store.getItem(DELETED_KEY));
+
+/** Records that a bill was deleted from this tablet. */
+export function markDeleted(orderId: string): void {
+  deleted = new Set([...deleted, orderId]);
+  // Only ids still in the recent list matter, so the stored set never grows without bound.
+  const keep = new Set(list.map((e) => e.id));
+  deleted = new Set([...deleted].filter((id) => keep.has(id) || id === orderId));
+  store.setItem(DELETED_KEY, JSON.stringify([...deleted]));
+  listeners.forEach((listener) => listener());
+}
+
+/** The ids of bills deleted from this tablet. */
+export function useDeletedBills(): ReadonlySet<string> {
+  return useSyncExternalStore(subscribe, () => deleted);
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

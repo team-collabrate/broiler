@@ -30,6 +30,7 @@ import {
   subscribeMenu,
   useOutbox,
   useServerConnection,
+  voidOrder,
 } from "@kumbakonam/shared/shop";
 import { DEFAULT_MAX_ADJUST_MINOR } from "@kumbakonam/shared/core";
 import { PrintDiagnosticsOverlay } from "../components/PrintDiagnosticsOverlay";
@@ -51,7 +52,7 @@ import { PinScreen } from "./PinScreen";
 import { PrinterSheet } from "./PrinterSheet";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
-import { rememberBill, useRecentBills } from "./recentBills";
+import { markDeleted, rememberBill, useDeletedBills, useRecentBills } from "./recentBills";
 import { readStaff, rememberStaff, STAFF_NAMES } from "./staff";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
@@ -186,6 +187,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const [reprinting, setReprinting] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const recentBills = useRecentBills();
+  const deletedBills = useDeletedBills();
   const [testOutcome, setTestOutcome] = useState<"ok" | PrinterProblem | null>(null);
   const [testing, setTesting] = useState(false);
   const [showSpeed, setShowSpeed] = useState(readShowSpeed);
@@ -552,6 +554,13 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       {recentOpen && (
         <RecentBillsSheet
           bills={recentBills}
+          deleted={deletedBills}
+          waiting={new Set(pendingEntries(outbox).map((e) => e.orderId))}
+          connected={connected}
+          onDelete={async (orderId) => {
+            await voidOrder(orderId);
+            markDeleted(orderId);
+          }}
           onOpen={(bill) => {
             setRecentOpen(false);
             setBillView({ bill: { ...bill, isCopy: true }, problem: null });

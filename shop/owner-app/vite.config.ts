@@ -4,41 +4,33 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  server: { port: 5174 },
-  preview: { port: 5174 },
+  server: { port: 3003 },
+  preview: { port: 3003 },
   plugins: [
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["pwa-icon.svg", "icon-192.png", "icon-512.png", "icon-512-maskable.png"],
+      includeAssets: ["icon-192.png", "icon-512.png", "icon-512-maskable.png"],
       manifest: {
-        name: "Kumbakonam Dashboard",
-        short_name: "KDash",
-        // Stable identity separate from start_url, so the installed app
-        // survives a future start_url change without counting as a new
-        // install (PWABuilder flags a manifest with no id).
+        name: "Honey Broilers Owner",
+        short_name: "HB Owner",
+        // Stable identity separate from start_url, so the installed app survives a future start_url change.
         id: "/",
-        description: "Kumbakonam Cafe — sales dashboard & menu management",
-        theme_color: "#FAFAF8",
-        background_color: "#FAFAF8",
+        description: "Honey Broilers: sales, bills and credit for the owner",
+        theme_color: "#D71920",
+        background_color: "#FFFAF2",
         display: "standalone",
-        orientation: "any",
+        orientation: "portrait",
         start_url: "/",
-        // PNG icons alongside the SVG — Android/TWA packaging (PWABuilder)
-        // needs real raster icons at these sizes; it doesn't accept an
-        // SVG-only manifest. See scripts/prepare-pwa-icons.mjs.
         icons: [
-          { src: "pwa-icon.svg", sizes: "192x192", type: "image/svg+xml", purpose: "any" },
           { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
           { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
-        // `png` covers the brand logo on the lock screen — without it cached,
-        // reopening the installed app offline would show a logo-less PIN
-        // screen (the img hides itself on error rather than showing a broken
-        // glyph, so the failure would be silent).
+        // The app shell only. Sales figures always come from the server (a fetch on opening and on Refresh), and the
+        // service worker never answers a Firestore request, so the owner never sees yesterday's numbers as today's.
         globPatterns: ["**/*.{js,css,html,svg,png}"],
       },
     }),

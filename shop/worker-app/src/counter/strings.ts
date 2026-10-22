@@ -163,7 +163,17 @@ export const t = {
   // Recent bills
   recentMenu: "Recent bills",
   recentTitle: "Recent bills",
-  recentSubtitle: "The last bills printed on this tablet. A reprint has a copy mark.",
+  recentSubtitle: "The last bills printed on this tablet. A reprint has a copy mark. The last 3 bills can be deleted for 24 hours.",
+  deleteBill: "Delete",
+  billDeleted: "Deleted",
+  billWaiting: "Waiting to upload",
+  deleteTitle: (label: string) => `Delete bill ${label}?`,
+  deleteWarning: "It will not count in any total. For a credit bill the customer's balance goes back. This cannot be undone.",
+  deleteConfirm: "Delete bill",
+  keepBill: "Keep bill",
+  deleting: "Deleting…",
+  deleteNeedsInternet: "Deleting a bill needs internet.",
+  deleteFailed: (message: string) => `Bill not deleted. ${message}`,
   recentEmpty: "No bills yet.",
 
   // After a sale

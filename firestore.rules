@@ -118,20 +118,41 @@ service cloud.firestore {
         && d.totalPieces is int && d.totalPieces >= 0;
     }
 
-    // Orders are append-only. Only the owner can list and read sales. The till may fetch a single
-    // order it saved in the last two hours (by its id) so that retrying a sale after a lost
-    // response finds the first copy instead of saving a second one.
+    // Orders are append-only, with two exceptions that never touch the money fields:
+    //  - a bill can be DELETED (voided): it stays, marked `status: 'voided'` with who and when, and every total
+    //    leaves it out. The owner may void any bill; the counter only one made in the last 24 hours (the till's
+    //    screen offers its last 3). A credit bill's customer balance must be given back in the same transaction
+    //    (see the customers rule). Once a day's totals are saved (dailySummaries) its bills can no longer change.
+    //  - a bill older than 3 days may be removed by the owner, but only after that day's totals are saved.
+    // Only the owner can list and read sales. The till may fetch a single order it saved in the last 24 hours (by its
+    // id): to retry a sale after a lost response (it finds the first copy instead of saving a second one) and to delete
+    // one of its own recent bills, which needs the bill and its customer read inside the transaction.
     match /orders/{orderId} {
+      function voidedNow() {
+        let d = request.resource.data;
+        return d.diff(resource.data).affectedKeys().hasOnly(['status', 'voidedAt', 'voidedBy'])
+          && d.status == 'voided'
+          && resource.data.get('status', '') != 'voided'
+          && d.voidedAt == request.time
+          && d.voidedBy == request.auth.uid
+          && !exists(/databases/$(database)/documents/dailySummaries/$(resource.data.dayKey))
+          && (resource.data.paymentMethod != 'credit'
+            || getAfter(/databases/$(database)/documents/customers/$(resource.data.customerId)).data.get('lastVoidedOrderId', '') == orderId);
+      }
       allow list: if isOwner();
       allow get: if isOwner()
-        || (isCounter() && (resource == null || resource.data.createdAt > request.time - duration.value(2, 'h')));
+        || (isCounter() && (resource == null || resource.data.createdAt > request.time - duration.value(24, 'h')));
       allow create: if isStaff() && validOrder();
-      allow update, delete: if false;
+      allow update: if voidedNow()
+        && (isOwner() || (isCounter() && resource.data.createdAt > request.time - duration.value(24, 'h')));
+      allow delete: if isOwner()
+        && resource.data.get('soldAt', resource.data.createdAt) < request.time - duration.value(3, 'd')
+        && exists(/databases/$(database)/documents/dailySummaries/$(resource.data.dayKey));
     }
 
     // Credit (கடன்). A customer's balance only moves together with the document that explains the move,
     // written in the same transaction: a credit order raises it by exactly that order's total, a payment
-    // lowers it by exactly that receipt's amount. `createdAt == request.time` proves the order or receipt is
+    // lowers it by exactly that receipt's amount, and a voided credit bill lowers it by exactly that bill's total. `createdAt == request.time` proves the order or receipt is
     // from this very transaction, not an old one being replayed. The name never changes, and a customer is
     // never deleted (a settled one is history). The counter reads the list to pick who owes.
     function orderAfter(id) { return getAfter(/databases/$(database)/documents/orders/$(id)).data; }
@@ -149,7 +170,7 @@ service cloud.firestore {
         && orderAfter(request.resource.data.lastOrderId).createdAt == request.time
         && request.resource.data.balanceMinor == orderAfter(request.resource.data.lastOrderId).totalMinor;
       allow update: if isStaff()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balanceMinor', 'lastOrderId', 'lastPaymentId', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balanceMinor', 'lastOrderId', 'lastPaymentId', 'lastVoidedOrderId', 'updatedAt'])
         && request.resource.data.balanceMinor is int
         && request.resource.data.balanceMinor >= 0
         && (
@@ -163,6 +184,13 @@ service cloud.firestore {
             && paymentAfter(request.resource.data.lastPaymentId).customerId == customerId
             && paymentAfter(request.resource.data.lastPaymentId).createdAt == request.time
             && request.resource.data.balanceMinor == resource.data.balanceMinor - paymentAfter(request.resource.data.lastPaymentId).amountMinor)
+          ||
+          (request.resource.data.get('lastVoidedOrderId', '') != resource.data.get('lastVoidedOrderId', '')
+            && orderAfter(request.resource.data.lastVoidedOrderId).paymentMethod == 'credit'
+            && orderAfter(request.resource.data.lastVoidedOrderId).customerId == customerId
+            && orderAfter(request.resource.data.lastVoidedOrderId).status == 'voided'
+            && orderAfter(request.resource.data.lastVoidedOrderId).voidedAt == request.time
+            && request.resource.data.balanceMinor == resource.data.balanceMinor - orderAfter(request.resource.data.lastVoidedOrderId).totalMinor)
         );
       allow delete: if false;
     }
@@ -177,6 +205,29 @@ service cloud.firestore {
         && request.resource.data.customerName is string && request.resource.data.customerName.size() <= 120
         && request.resource.data.amountMinor is int && request.resource.data.amountMinor > 0
         && request.resource.data.method in ['cash', 'upi']
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // One document per day, written by the owner's app when a day falls out of the 4 days of full bills (document id
+    // "<day>", for example "2026-10-21"): the day's totals, so weeks and months can be shown without reading every
+    // bill, and so the bills can then be removed. Written once and never changed: a summary that could be edited
+    // would let history be rewritten.
+    match /dailySummaries/{day} {
+      allow read: if isOwner();
+      allow create: if isOwner()
+        && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['dayKey', 'orderCount', 'totalMinor', 'cashMinor', 'upiMinor', 'creditMinor', 'totalGrams', 'totalPieces', 'items', 'categories', 'createdAt'])
+        && request.resource.data.keys().hasAll(['dayKey', 'orderCount', 'totalMinor', 'cashMinor', 'upiMinor', 'creditMinor', 'totalGrams', 'totalPieces', 'items', 'categories', 'createdAt'])
+        && request.resource.data.dayKey == day
+        && request.resource.data.orderCount is int && request.resource.data.orderCount >= 0
+        && request.resource.data.totalMinor is int && request.resource.data.totalMinor >= 0
+        && request.resource.data.cashMinor is int && request.resource.data.cashMinor >= 0
+        && request.resource.data.upiMinor is int && request.resource.data.upiMinor >= 0
+        && request.resource.data.creditMinor is int && request.resource.data.creditMinor >= 0
+        && request.resource.data.totalGrams is int && request.resource.data.totalGrams >= 0
+        && request.resource.data.totalPieces is int && request.resource.data.totalPieces >= 0
+        && request.resource.data.items is map && request.resource.data.categories is map
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }

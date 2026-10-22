@@ -131,10 +131,10 @@ describe('orders', () => {
     await assertFails(getDocs(query(collection(counter(), 'orders'), limit(1))));
     await assertSucceeds(getDocs(query(collection(owner(), 'orders'), limit(1))));
   });
-  test('the counter can look up an order it just saved (a safe retry) but not an old one', async () => {
+  test('the counter can look up an order it saved in the last 24 hours (a safe retry, or deleting its own bill) but not an old one', async () => {
     await seed(async (db) => {
       await setDoc(doc(db, 'orders', 'recent'), { ...order(), createdAt: hoursAgo(1) });
-      await setDoc(doc(db, 'orders', 'old'), { ...order(), createdAt: hoursAgo(3) });
+      await setDoc(doc(db, 'orders', 'old'), { ...order(), createdAt: hoursAgo(30) });
     });
     await assertSucceeds(getDoc(doc(counter(), 'orders', 'recent')));
     await assertFails(getDoc(doc(counter(), 'orders', 'old')));
@@ -344,5 +344,187 @@ describe('the day\'s bill counter note', () => {
     await assertFails(setDoc(doc(counter(), 'counters', '2026-10-21_A'), { next: 0 }));
     await assertFails(setDoc(doc(counter(), 'counters', '2026-10-21_A'), { next: 5, extra: true }));
     await assertFails(setDoc(doc(stranger(), 'counters', '2026-10-21_A'), { next: 5 }));
+  });
+});
+
+// --- deleting (voiding) a bill, removing old bills, and the daily totals ---------------------------------------------------
+const OWNER_UID = 'uid-owner@broiler-pos.invalid';
+const COUNTER_UID = 'uid-counter@broiler-pos.invalid';
+const voidFields = (uid) => ({ status: 'voided', voidedAt: serverTimestamp(), voidedBy: uid });
+const daysAgo = (n) => Timestamp.fromMillis(Date.now() - n * 24 * 3600 * 1000);
+const summary = (over = {}) => ({
+  dayKey: '2026-10-15',
+  orderCount: 3,
+  totalMinor: 72000,
+  cashMinor: 48000,
+  upiMinor: 24000,
+  creditMinor: 0,
+  totalGrams: 3000,
+  totalPieces: 0,
+  items: { naatu: { name: 'Naatukoli', category: 'chicken', unit: 'kg', grams: 3000, qty: 0, totalMinor: 72000 } },
+  categories: { chicken: 72000 },
+  createdAt: serverTimestamp(),
+  ...over,
+});
+const seedSummary = (day = '2026-10-21') => seed((db) => setDoc(doc(db, 'dailySummaries', day), { ...summary({ dayKey: day }), createdAt: Timestamp.now() }));
+
+/** Deletes a credit bill the way the apps do: the bill marked voided and the customer's lowered balance, in one transaction. */
+const voidCredit = (db, uid, { orderId = 'o1', total = 24000, balanceAfter = null, orderOver = {}, customerOver = {} } = {}) =>
+  runTransaction(db, async (tx) => {
+    const snap = await tx.get(doc(db, 'customers', CID));
+    tx.update(doc(db, 'customers', CID), { balanceMinor: balanceAfter ?? snap.data().balanceMinor - total, lastVoidedOrderId: orderId, updatedAt: serverTimestamp(), ...customerOver });
+    tx.update(doc(db, 'orders', orderId), { ...voidFields(uid), ...orderOver });
+  });
+const seedCreditBill = async ({ balance = 24000, createdAt = hoursAgo(1) } = {}) => {
+  await seed(async (db) => {
+    await setDoc(doc(db, 'customers', CID), customer({ balanceMinor: balance, lastOrderId: 'o1' }));
+    await setDoc(doc(db, 'orders', 'o1'), { ...creditOrder(CID), createdAt, soldAt: createdAt });
+  });
+};
+
+describe('deleting (voiding) a bill', () => {
+  test('the owner can void any bill, and the counter a bill made in the last 24 hours', async () => {
+    await seed(async (db) => {
+      await setDoc(doc(db, 'orders', 'new'), { ...order(), createdAt: hoursAgo(1) });
+      await setDoc(doc(db, 'orders', 'older'), { ...order(), createdAt: hoursAgo(30) });
+    });
+    await assertSucceeds(updateDoc(doc(counter(), 'orders', 'new'), voidFields(COUNTER_UID)));
+    await assertSucceeds(updateDoc(doc(owner(), 'orders', 'older'), voidFields(OWNER_UID)));
+    const voided = await seed((db) => getDoc(doc(db, 'orders', 'new')));
+    assert.equal(voided.data().status, 'voided');
+    assert.equal(voided.data().totalMinor, 24000); // the money fields are untouched
+  });
+  test('the counter cannot void a bill older than 24 hours', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'older'), { ...order(), createdAt: hoursAgo(30) }));
+    await assertFails(updateDoc(doc(counter(), 'orders', 'older'), voidFields(COUNTER_UID)));
+  });
+  test('a void changes only the three void fields, with the server time and the caller\'s own id', async () => {
+    await seed(async (db) => {
+      for (const id of ['a', 'b', 'c', 'd', 'e']) await setDoc(doc(db, 'orders', id), { ...order(), createdAt: hoursAgo(1) });
+    });
+    await assertFails(updateDoc(doc(owner(), 'orders', 'a'), { ...voidFields(OWNER_UID), totalMinor: 1 }));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'b'), { ...voidFields(OWNER_UID), voidedAt: Timestamp.now() }));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'c'), { ...voidFields(OWNER_UID), voidedBy: 'someone-else' }));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'd'), { ...voidFields(OWNER_UID), status: 'active' }));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'e'), { status: 'voided' })); // no time, no name
+  });
+  test('a voided bill cannot be voided again or edited', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), { ...order(), createdAt: hoursAgo(1), status: 'voided', voidedAt: Timestamp.now(), voidedBy: OWNER_UID }));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'a'), voidFields(OWNER_UID)));
+    await assertFails(updateDoc(doc(owner(), 'orders', 'a'), { paymentMethod: 'upi' }));
+  });
+  test('a stranger, an anonymous session and a signed-out visitor cannot void', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), { ...order(), createdAt: hoursAgo(1) }));
+    for (const db of [stranger(), anonymous(), nobody()]) await assertFails(updateDoc(doc(db, 'orders', 'a'), voidFields('x')));
+  });
+  test('a bill cannot be created already voided', async () => {
+    await assertFails(setDoc(doc(owner(), 'orders', 'a'), { ...order(), ...voidFields(OWNER_UID) }));
+  });
+  test('once a day\'s totals are saved its bills can no longer be voided', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), { ...order(), createdAt: hoursAgo(1) }));
+    await seedSummary('2026-10-21');
+    await assertFails(updateDoc(doc(owner(), 'orders', 'a'), voidFields(OWNER_UID)));
+  });
+});
+
+describe('deleting (voiding) a credit bill gives the balance back', () => {
+  test('the bill and the customer\'s balance change together: the balance falls by exactly the bill', async () => {
+    await seedCreditBill({ balance: 50000 });
+    await assertSucceeds(voidCredit(counter(), COUNTER_UID, { total: 24000 }));
+    const after = await seed((db) => getDoc(doc(db, 'customers', CID)));
+    assert.equal(after.data().balanceMinor, 26000);
+    assert.equal(after.data().lastVoidedOrderId, 'o1');
+  });
+  test('the owner can do it too, and a customer who owes exactly the bill ends at zero', async () => {
+    await seedCreditBill({ balance: 24000 });
+    await assertSucceeds(voidCredit(owner(), OWNER_UID));
+    const after = await seed((db) => getDoc(doc(db, 'customers', CID)));
+    assert.equal(after.data().balanceMinor, 0);
+  });
+  test('voiding a credit bill without giving the balance back is refused', async () => {
+    await seedCreditBill();
+    await assertFails(updateDoc(doc(owner(), 'orders', 'o1'), voidFields(OWNER_UID)));
+  });
+  test('a balance that falls by more or less than the bill is refused', async () => {
+    await seedCreditBill({ balance: 50000 });
+    await assertFails(voidCredit(owner(), OWNER_UID, { balanceAfter: 20000 }));
+    await assertFails(voidCredit(owner(), OWNER_UID, { balanceAfter: 30000 }));
+    await assertFails(voidCredit(owner(), OWNER_UID, { balanceAfter: 50000 }));
+  });
+  test('a balance cannot go below zero: a customer who has already paid part of the bill off blocks the void', async () => {
+    await seedCreditBill({ balance: 10000 });
+    await assertFails(voidCredit(owner(), OWNER_UID));
+  });
+  test('a balance cannot be lowered "for a void" when the bill was not voided, or was not a credit bill', async () => {
+    await seedCreditBill({ balance: 50000 });
+    await seed((db) => setDoc(doc(db, 'orders', 'cash1'), { ...order(), createdAt: hoursAgo(1) }));
+    await assertFails(updateDoc(doc(owner(), 'customers', CID), { balanceMinor: 26000, lastVoidedOrderId: 'o1', updatedAt: serverTimestamp() }));
+    const db = owner();
+    await assertFails(
+      runTransaction(db, async (tx) => {
+        tx.update(doc(db, 'customers', CID), { balanceMinor: 26000, lastVoidedOrderId: 'cash1', updatedAt: serverTimestamp() });
+        tx.update(doc(db, 'orders', 'cash1'), voidFields(OWNER_UID));
+      }),
+    );
+  });
+  test('a void cannot lower another customer\'s balance', async () => {
+    await seedCreditBill({ balance: 50000 });
+    await seed((db) => setDoc(doc(db, 'customers', 'other'), customer({ name: 'Other', nameKey: 'other', balanceMinor: 50000, lastOrderId: 'x' })));
+    const db = owner();
+    await assertFails(
+      runTransaction(db, async (tx) => {
+        tx.update(doc(db, 'customers', 'other'), { balanceMinor: 26000, lastVoidedOrderId: 'o1', updatedAt: serverTimestamp() });
+        tx.update(doc(db, 'orders', 'o1'), voidFields(OWNER_UID));
+      }),
+    );
+  });
+});
+
+describe('removing old bills (after their day is summed up)', () => {
+  const oldOrder = (over = {}) => ({ ...order({ dayKey: '2026-10-15' }), soldAt: daysAgo(5), createdAt: daysAgo(5), ...over });
+  test('the owner removes a bill sold more than 3 days ago once that day\'s totals exist', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), oldOrder()));
+    await seedSummary('2026-10-15');
+    await assertSucceeds(deleteDoc(doc(owner(), 'orders', 'a')));
+  });
+  test('but not before the day\'s totals are saved', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), oldOrder()));
+    await assertFails(deleteDoc(doc(owner(), 'orders', 'a')));
+  });
+  test('and not a recent bill, even with totals saved', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), oldOrder({ soldAt: daysAgo(2), createdAt: daysAgo(2) })));
+    await seedSummary('2026-10-15');
+    await assertFails(deleteDoc(doc(owner(), 'orders', 'a')));
+  });
+  test('the counter can never remove a bill', async () => {
+    await seed((db) => setDoc(doc(db, 'orders', 'a'), oldOrder()));
+    await seedSummary('2026-10-15');
+    await assertFails(deleteDoc(doc(counter(), 'orders', 'a')));
+  });
+});
+
+describe('daily totals (dailySummaries)', () => {
+  test('the owner saves a day\'s totals once and reads them back; the counter can do neither', async () => {
+    await assertSucceeds(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary()));
+    await assertSucceeds(getDoc(doc(owner(), 'dailySummaries', '2026-10-15')));
+    await assertFails(getDoc(doc(counter(), 'dailySummaries', '2026-10-15')));
+    await assertFails(setDoc(doc(counter(), 'dailySummaries', '2026-10-16'), summary({ dayKey: '2026-10-16' })));
+    await assertFails(getDocs(collection(counter(), 'dailySummaries')));
+  });
+  test('a day\'s totals are never changed or removed', async () => {
+    await seedSummary('2026-10-15');
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ totalMinor: 1 })));
+    await assertFails(updateDoc(doc(owner(), 'dailySummaries', '2026-10-15'), { totalMinor: 1 }));
+    await assertFails(deleteDoc(doc(owner(), 'dailySummaries', '2026-10-15')));
+  });
+  test('the document id is the day, and the figures are whole, non-negative and complete', async () => {
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ dayKey: '2026-10-14' })));
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', 'today'), summary({ dayKey: 'today' })));
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ totalMinor: -5 })));
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ totalMinor: 10.5 })));
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ extra: 1 })));
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), summary({ createdAt: Timestamp.now() })));
+    const { items: _items, ...noItems } = summary();
+    await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), noItems));
   });
 });

@@ -7,6 +7,7 @@ export * from './categories';
 export * from './roles';
 export * from './summary';
 export * from './dateRange';
+export * from './rates';
 export * from './errors';
 export * from './billNo';
 export * from './outbox';

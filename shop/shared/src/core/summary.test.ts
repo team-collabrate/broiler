@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { summarizeOrders } from './summary.ts';
+import { combineSales, dayTotalsFromData, dayTotalsFromOrders, salesByDay, salesByHour, summarizeOrders } from './summary.ts';
 import type { Order, OrderLine } from './types.ts';
 
 function order(partial: Partial<Order> & Pick<Order, 'lines' | 'paymentMethod'>): Order {
@@ -126,4 +126,81 @@ test('split bills count their cash half as cash and their GPay half as UPI; cred
   assert.equal(s.creditGivenMinor, 12000);
   assert.equal(s.byPayment.split, 24000);
   assert.equal(s.byPayment.credit, 12000);
+});
+
+test('a deleted (voided) bill is left out of every total', () => {
+  const live = order({ id: 'a', lines: [line('naatu', 'Naatukoli', 1000, 24000)], paymentMethod: 'cash' });
+  const voided = order({ id: 'b', lines: [line('naatu', 'Naatukoli', 2000, 48000)], paymentMethod: 'upi', status: 'voided' });
+  const s = summarizeOrders([live, voided]);
+  assert.equal(s.orderCount, 1);
+  assert.equal(s.totalMinor, 24000);
+  assert.equal(s.totalGrams, 1000);
+  assert.equal(s.upiCollectedMinor, 0);
+  assert.equal(s.byItem.length, 1);
+});
+
+test('a day\'s totals are saved from its bills and read back unchanged', () => {
+  const bills = [
+    order({ id: 'a', lines: [line('naatu', 'Naatukoli', 1500, 36000)], paymentMethod: 'cash' }),
+    order({ id: 'b', lines: [line('naatu', 'Naatukoli', 500, 12000), pieces('egg', 'Egg', 4, 1000)], paymentMethod: 'credit' }),
+    order({ id: 'c', lines: [line('naatu', 'Naatukoli', 9000, 99999)], paymentMethod: 'cash', status: 'voided' }),
+  ];
+  const day = dayTotalsFromOrders('2026-10-08', bills);
+  assert.equal(day.orderCount, 2);
+  assert.equal(day.totalMinor, 52000);
+  assert.equal(day.cashMinor, 36000);
+  assert.equal(day.creditMinor, 16000);
+  assert.equal(day.totalGrams, 2000);
+  assert.equal(day.totalPieces, 4);
+  assert.deepEqual(day.items.naatu, { name: 'Naatukoli', category: 'broiler', unit: 'kg', grams: 2000, qty: 0, totalMinor: 48000 });
+  assert.deepEqual(day.categories, { broiler: 48000, more: 4000 });
+  assert.deepEqual(dayTotalsFromData('2026-10-08', JSON.parse(JSON.stringify(day))), day);
+});
+
+test('reading a saved day tolerates missing fields', () => {
+  const day = dayTotalsFromData('2026-10-08', { totalMinor: 500 });
+  assert.equal(day.totalMinor, 500);
+  assert.equal(day.orderCount, 0);
+  assert.deepEqual(day.items, {});
+});
+
+test('recent bills and saved days add up together, item by item', () => {
+  const recent = [order({ id: 'a', lines: [line('naatu', 'Naatukoli', 1000, 24000)], paymentMethod: 'cash' })];
+  const saved = dayTotalsFromOrders('2026-10-01', [order({ id: 'z', lines: [line('naatu', 'Naatukoli', 2000, 48000), line('kadai', 'Kadai', 500, 10000)], paymentMethod: 'upi' })]);
+  const both = combineSales(recent, [saved]);
+  assert.equal(both.orderCount, 2);
+  assert.equal(both.totalMinor, 82000);
+  assert.equal(both.totalGrams, 3500);
+  assert.equal(both.cashCollectedMinor, 24000);
+  assert.equal(both.upiCollectedMinor, 58000);
+  assert.deepEqual(both.byItem.map((i) => [i.itemId, i.grams, i.totalMinor]), [['naatu', 3000, 72000], ['kadai', 500, 10000]]);
+  assert.deepEqual(both.byCategory, [{ category: 'broiler', totalMinor: 82000 }]);
+  assert.equal(combineSales([], []).totalMinor, 0);
+});
+
+test('sales by hour use the time of the sale and skip deleted bills', () => {
+  const at = (h: number) => new Date(2026, 9, 8, h, 15);
+  const hours = salesByHour([
+    order({ id: 'a', lines: [line('n', 'N', 1000, 100)], paymentMethod: 'cash', createdAt: at(11), soldAt: at(9) }),
+    order({ id: 'b', lines: [line('n', 'N', 1000, 200)], paymentMethod: 'cash', createdAt: at(9) }),
+    order({ id: 'c', lines: [line('n', 'N', 1000, 400)], paymentMethod: 'cash', createdAt: at(9), status: 'voided' }),
+  ]);
+  assert.equal(hours.length, 24);
+  assert.equal(hours[9], 300);
+  assert.equal(hours[11], 0);
+});
+
+test('sales by day take full bills for recent days and saved totals for older ones', () => {
+  const keys = ['2026-10-05', '2026-10-06', '2026-10-07'];
+  const bills = [
+    order({ id: 'a', dayKey: '2026-10-07', lines: [line('n', 'N', 1000, 300)], paymentMethod: 'cash' }),
+    order({ id: 'b', dayKey: '2026-10-07', lines: [line('n', 'N', 1000, 100)], paymentMethod: 'cash', status: 'voided' }),
+    order({ id: 'c', dayKey: '2026-09-01', lines: [line('n', 'N', 1000, 999)], paymentMethod: 'cash' }),
+  ];
+  const saved = [dayTotalsFromOrders('2026-10-05', [order({ id: 'z', dayKey: '2026-10-05', lines: [line('n', 'N', 1000, 700)], paymentMethod: 'cash' })])];
+  assert.deepEqual(salesByDay(keys, bills, saved), [
+    { dayKey: '2026-10-05', totalMinor: 700 },
+    { dayKey: '2026-10-06', totalMinor: 0 },
+    { dayKey: '2026-10-07', totalMinor: 300 },
+  ]);
 });
