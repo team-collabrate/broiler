@@ -2686,3 +2686,13 @@ button {
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
+
+.ct-boot__logo {
+  width: 132px;
+  height: auto;
+  animation: boot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes boot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.96); }
+}

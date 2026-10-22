@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { afterWrongPin, blockedForMs, isValidPin, MAX_PIN_LENGTH, NO_ATTEMPTS, parseAttempts, type AttemptState } from "@kumbakonam/shared/core";
+import { afterWrongPin, blockedForMs, isValidPin, MAX_PIN_LENGTH, MIN_PIN_LENGTH, NO_ATTEMPTS, parseAttempts, type AttemptState } from "@kumbakonam/shared/core";
 import { browserStore, signInWithPin } from "@kumbakonam/shared/shop";
 import { errorText } from "./fmt";
 
@@ -23,13 +23,13 @@ export function SignIn() {
     return () => clearInterval(timer);
   }, [waitMs]);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy || !isValidPin(pin) || blockedForMs(attempts, Date.now()) > 0) return;
+  const submit = async (event?: FormEvent, typed: string = pin) => {
+    event?.preventDefault();
+    if (busy || !isValidPin(typed) || blockedForMs(attempts, Date.now()) > 0) return;
     setBusy(true);
     setError(null);
     try {
-      await signInWithPin("owner", pin);
+      await signInWithPin("owner", typed);
       store.setItem(ATTEMPTS_KEY, JSON.stringify(NO_ATTEMPTS));
     } catch (e) {
       const code = (e as { code?: string }).code ?? "";
@@ -61,14 +61,15 @@ export function SignIn() {
           maxLength={MAX_PIN_LENGTH}
           aria-label="PIN"
           value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => {
+            const next = e.target.value.replace(/\D/g, "");
+            setPin(next);
+            if (next.length === MIN_PIN_LENGTH) void submit(undefined, next);
+          }}
         />
         <p className="ow-signin__error" role="alert">
-          {waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? " ")}
+          {busy ? "உள்நுழைகிறது…" : waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? " ")}
         </p>
-        <button type="submit" className="ow-btn ow-btn--primary" disabled={busy || !isValidPin(pin) || waitMs > 0}>
-          {busy ? "உள்நுழைகிறது…" : "உள்நுழை"}
-        </button>
       </form>
     </main>
   );

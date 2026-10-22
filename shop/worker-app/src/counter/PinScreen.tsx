@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { applyPinKey, describeError, isValidPin, MAX_PIN_LENGTH, MIN_PIN_LENGTH } from "@kumbakonam/shared/core";
 import { Keypad } from "./Keypad";
 import { t } from "./strings";
@@ -11,15 +11,13 @@ interface Props {
   /** An optional way back, for a PIN view that sits inside the app (for example the owner PIN before today's rates). */
   onCancel?: () => void;
   logoUrl?: string;
-  /** The text of the confirm button; "Sign in" unless this is the lock screen. */
-  submitLabel?: string;
 }
 
 /**
  * A full-page PIN entry: dots, a keypad and a sign-in button. A 4 to 6 digit PIN. The PIN lives only in this
  * component's state and is cleared after a wrong attempt.
  */
-export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl, submitLabel = t.signIn }: Props) {
+export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl }: Props) {
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +41,11 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl, submit
     }
   };
 
+  // No sign-in button: the PIN goes in as soon as the last digit is typed.
+  useEffect(() => {
+    if (pin.length === MIN_PIN_LENGTH) void submit();
+  }, [pin]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const dots = Math.max(MIN_PIN_LENGTH, pin.length);
 
   return (
@@ -57,7 +60,7 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl, submit
           ))}
         </div>
         <p className="ct-pin__error" role="alert">
-          {error ?? " "}
+          {busy ? t.connecting : (error ?? " ")}
         </p>
         <Keypad leftKey="" onKey={press} tall />
         <div className="ct-pin__actions">
@@ -66,9 +69,6 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl, submit
               {t.back}
             </button>
           ) : null}
-          <button type="button" className="ct-btn ct-btn--primary" disabled={busy || !isValidPin(pin)} onClick={submit}>
-            {busy ? t.connecting : submitLabel}
-          </button>
         </div>
       </div>
     </div>

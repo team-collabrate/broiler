@@ -15,7 +15,11 @@ export function App() {
     if (wrongAccount) void signOut();
   }, [wrongAccount, signOut]);
 
-  if (session.status === "loading" || wrongAccount) return <div className="ow-boot">Loading…</div>;
+  if (session.status === "loading" || wrongAccount) return (
+      <div className="ow-boot">
+        <img className="ow-boot__logo" src="/logo.png" alt="" />
+      </div>
+    );
   if (session.status === "out") return <SignIn />;
   return <Shell onLogout={() => void signOut()} />;
 }

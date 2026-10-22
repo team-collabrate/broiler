@@ -21,7 +21,11 @@ export function App() {
   // today's rates.
   const counterPin = useRef<string | null>(null);
 
-  if (session.status === "loading") return <div className="ct-boot">{t.connecting}</div>;
+  if (session.status === "loading") return (
+      <div className="ct-boot">
+        <img className="ct-boot__logo" src="/logo.png" alt="" />
+      </div>
+    );
 
   if (session.status === "out") {
     return (
@@ -67,7 +71,6 @@ export function App() {
           logoUrl="/logo.png"
           title={t.lockedTitle}
           subtitle={t.lockedSubtitle}
-          submitLabel={t.unlock}
           onSubmit={async (pin) => {
             await lock.unlock(pin);
             counterPin.current = pin;
