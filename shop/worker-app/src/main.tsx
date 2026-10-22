@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@kumbakonam/shared/theme.css";
 import "@fontsource-variable/inter";
-import { initFirebase, LanguageProvider } from "@kumbakonam/shared";
+import { initFirebase } from "@kumbakonam/shared";
 import { installDevelopmentNetworkSwitch } from "@kumbakonam/shared/shop";
 import { App } from "./App";
 import { ReceiptPreview } from "./pages/ReceiptPreview";
@@ -17,9 +17,7 @@ if (new URLSearchParams(window.location.search).has("receipt")) {
 } else {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
+    <App />
   </StrictMode>,
 );
 }

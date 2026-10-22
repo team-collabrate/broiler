@@ -5,35 +5,17 @@ import { MAX_ORDER_LINES } from "@kumbakonam/shared/core";
 // Weights, money and payment names come from the core module, always asked for in English on the screen (fmt.ts).
 
 export const t = {
-  appTitle: "Broiler POS",
 
   // Sign-in, owner PIN, lock
   signInTitle: "HONEY BROILERS",
   signInSubtitle: "Enter your PIN",
-  signIn: "Sign in",
-  ownerPinTitle: "Owner PIN",
-  ownerPinSubtitle: "Enter the owner PIN to change rates",
-  pinDelete: "Delete",
   back: "Back",
   connecting: "Connecting…",
-  lockLabel: "Lock screen",
 
   // Admin button and menu
   admin: "Admin",
-  adminMenuTitle: "Admin",
-  printerSetup: "Printer setup",
 
-  // Today's rate
-  todaysRate: "Today's rate",
-  ratesSubtitle: (date: string) => `${date} · per kg or per piece`,
-  rateNever: "Not set yet",
-  rateNotToday: "Not set today",
-  rateToday: "Set today",
-  saveRates: "Save rates",
-  retrySave: "Save again",
   saving: "Saving…",
-  ratesError: (message: string) => `Rates not saved. ${message}`,
-  rateNeededNote: "Today's rate is not set",
 
   // Catalog
   menuError: (message: string) => `Cannot load the menu. ${message}`,
@@ -72,7 +54,6 @@ export const t = {
   updateLine: "Save",
   decreaseQty: "Less",
   increaseQty: "More",
-  amountLabel: "Amount (₹)",
   keyClear: "Clear",
   keyDelete: "Delete",
   adjustDown: (amount: string) => `${amount} less`,
@@ -92,8 +73,6 @@ export const t = {
   tooManyLines: `Only ${MAX_ORDER_LINES} items on one bill. Print this one, then start a new bill.`,
   dismiss: "Close",
   payWith: "Pay by",
-  payCredit: "Credit",
-  paySplit: "Split",
 
   // Split payment (GPay + cash)
   splitChip: (gpay: string, cash: string) => `UPI ${gpay} + பணம் ${cash}`,
@@ -120,20 +99,6 @@ export const t = {
   creditNeedsInternet: "Credit needs internet. Try again when it is back.",
   loadFailed: (message: string) => `Cannot load. ${message}`,
 
-  // Credit book (taking money against a balance)
-  khataMenu: "Credit book",
-  khataTitle: "Credit book",
-  khataSubtitle: "Who owes how much.",
-  khataOffline: "No internet. You can look, but saving a payment needs internet.",
-  totalOwed: "Total owed",
-  payAll: "Pay all",
-  amountReceived: "Amount received (₹)",
-  receivedBy: "Paid by",
-  record: "Save",
-  recorded: (name: string, left: string) => (left === "" ? `${name}: all paid ✓` : `${name}: saved ✓ ${left} left`),
-  tooMuch: "More than the amount owed.",
-  needAmount: "Enter an amount above zero.",
-  recordFailed: (message: string) => `Cannot save. ${message}`,
 
   // The printer
   printerOk: "Printer",
@@ -147,8 +112,6 @@ export const t = {
     connecting: "Connecting…",
     picking: "Choose your printer below.",
   },
-  printerRemembered: (name: string) => `Printer on this tablet: ${name}`,
-  printerPairHint: "First time: pair the printer in tablet Settings > Bluetooth (PIN is usually 0000 or 1234).",
   printerWebNote: "Only Bluetooth LE printers work in a browser. Use the Android app in the shop.",
   printerEmptyScan: "No devices found. Switch the printer on. First time: pair it in the tablet's Bluetooth settings.",
   connectPrinter: "Connect printer",
@@ -160,7 +123,6 @@ export const t = {
   printerStep1: "Switch the printer on and keep it close.",
   printerStep2: "First time: pair it in tablet Settings > Bluetooth.",
   printerStep3: "Tap Connect printer and choose it from the list.",
-  connectOtherPrinter: "Connect a different printer",
   testBill: "Print test bill",
   testPrinted: "Printed ✓",
   printProblem: {
@@ -208,12 +170,10 @@ export const t = {
   savedOffline: (label: string) => `Bill ${label} saved ✓ (not printed) Will upload when internet is back`,
   printed: (label: string) => `Bill ${label} printed ✓`,
   printedOffline: (label: string) => `Bill ${label} printed ✓ Will upload when internet is back`,
-  savedNotPrinted: (label: string) => `Bill ${label} saved. No printer.`,
 
   // Screen lock
   lockedTitle: "Screen locked",
   lockedSubtitle: "Enter your PIN to continue",
-  unlock: "Unlock",
 
   // Connection and uploading
   online: "Online",
@@ -227,10 +187,4 @@ export const t = {
     `${amount} · ${summary}. ${reason.replace(/[.\s]+$/, "")}. Write it down and tell the owner.`,
   refusedSeen: "Got it",
 
-  // Counter letter
-
-  // Start-up
-  cantConnect: "Cannot connect",
-  tryAgain: "Try again",
-  firebaseNotConfigured: "Firebase is not set up. Fill in shop/worker-app/.env and start again.",
 };

@@ -14,7 +14,6 @@ import {
   type Method,
   type OrderLineInput,
   type PaymentMethod,
-  type Role,
   DEFAULT_CATEGORIES,
 } from "@kumbakonam/shared/core";
 import {
@@ -31,12 +30,11 @@ import {
   useServerConnection,
   voidOrder,
 } from "@kumbakonam/shared/shop";
-import { DEFAULT_MAX_ADJUST_MINOR } from "@kumbakonam/shared/core";
+import { DEFAULT_MAX_ADJUST_MINOR, isRateStale } from "@kumbakonam/shared/core";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
 import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
 import { SAMPLE_BILLS } from "../printing/sampleBills";
-import { AdminMenu } from "./AdminMenu";
 import { toBillInput } from "./bill";
 import { BillCart } from "./BillCart";
 import { BillSheet } from "./BillSheet";
@@ -44,15 +42,12 @@ import { useCounterCart } from "./cart";
 import { CreditModal } from "./CreditModal";
 import { categoryLabel } from "./fmt";
 import { ItemSheet } from "./ItemSheet";
-import { KhataModal } from "./KhataModal";
-import { PinScreen } from "./PinScreen";
 import { PrinterSheet } from "./PrinterSheet";
 import { ItemCards } from "./ItemCards";
 import { ItemPicker } from "./ItemPicker";
 import { CounterTabs } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
 import { markDeleted, rememberBill, useDeletedBills, useRecentBills } from "./recentBills";
-import { isRateStale, RatesView } from "./RatesView";
 import { playSavedSound, primeSound } from "./sound";
 import { SideRail } from "./SideRail";
 import { SplitModal } from "./SplitModal";
@@ -62,7 +57,6 @@ import { t } from "./strings";
 /** Lets a catalog still being checked (items not switched on) show at the counter. Development only; never set in production. */
 const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
 
-type View = "sell" | "ownerPin" | "rates";
 /** Menu groups that appear in every tab. */
 const EVERY_TAB_GROUPS = ["excess"];
 
@@ -93,17 +87,7 @@ function itemFromLine(line: CartLine): MenuItem {
   };
 }
 
-interface Props {
-  role: Role;
-  /** Signs in as the owner (to set today's rates). Rejects on a wrong PIN. */
-  signInOwner: (pin: string) => Promise<void>;
-  /** Signs back in as the counter after the owner is done; signs out if that cannot be done. */
-  restoreCounter: () => Promise<void>;
-  /** Locks the screen (the tablet stays signed in). */
-  onLock: () => void;
-}
-
-export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Props) {
+export function CounterScreen() {
   const cart = useCounterCart();
   const printer = usePrinter();
   const connected = useServerConnection();
@@ -167,20 +151,15 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   }, [items, category]);
 
   // --- Screen state -------------------------------------------------------
-  const [view, setView] = useState<View>("sell");
-  /** True while the owner is signed in only to set the rates; the till then signs back in as the counter. */
-  const elevated = useRef(false);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   /** Repeated equal weights stay packs (2 × 250 g), as the bill is read. Always on unless the cashier unticks it. */
   const [keepPacks, setKeepPacks] = useState(true);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [printerOpen, setPrinterOpen] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "info" | "error" } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   // Split and credit each need a little more than a tap: the GPay amount, or who owes.
   const [splitOpen, setSplitOpen] = useState(false);
   const [creditOpen, setCreditOpen] = useState(false);
-  const [khataOpen, setKhataOpen] = useState(false);
   const [splitUpiMinor, setSplitUpiMinor] = useState(0);
   const [creditName, setCreditName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -203,7 +182,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   };
 
   const rateNeeded = items !== null && items.some((item) => isRateStale(item));
-  const canEditRates = items !== null && items.length > 0;
 
   // --- Printing -----------------------------------------------------------
   /** Prints a bill. Never throws: says whether it came out and, if not, why. */
@@ -377,22 +355,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     }
   };
 
-  // Changing a rate is the owner's job: the counter is asked for the owner's PIN, on the page, before the rates
-  // view opens. Signing in as the owner is what lets the server accept the change.
-  const leaveRates = () => {
-    setView("sell");
-    if (elevated.current) {
-      elevated.current = false;
-      // Back to the counter session. If that fails the app signs out (it must never stay signed in as the owner).
-      restoreCounter().catch(() => undefined);
-    }
-  };
-  const openRates = () => {
-    setAdminOpen(false);
-    if (!canEditRates) return;
-    setView(role === "owner" ? "rates" : "ownerPin");
-  };
-
   // --- Render -------------------------------------------------------------
   const split = splitPayment(cart.totalMinor, splitUpiMinor);
   const paymentDetail = {
@@ -404,21 +366,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const labelFor = (c: Category) => TAB_NAMES[c.key] ?? (c.nameTa || categoryLabel(c.key, allCategories));
 
   const main =
-    view === "ownerPin" ? (
-      <PinScreen
-        logoUrl="/logo.png"
-        title={t.ownerPinTitle}
-        subtitle={t.ownerPinSubtitle}
-        onSubmit={async (pin) => {
-          await signInOwner(pin);
-          elevated.current = role !== "owner";
-          setView("rates");
-        }}
-        onCancel={() => setView("sell")}
-      />
-    ) : view === "rates" ? (
-      <RatesView items={items ?? []} onClose={leaveRates} />
-    ) : menuError ? (
+    menuError ? (
       <p className="ct-message">{t.menuError(menuError)}</p>
     ) : items === null ? (
       <p className="ct-message">{t.loading}</p>
@@ -529,33 +477,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
             newSale();
             setCreditName(name);
             setCreditOpen(false);
-          }}
-        />
-      )}
-
-      {khataOpen && <KhataModal connected={connected} onClose={() => setKhataOpen(false)} />}
-
-      {adminOpen && (
-        <AdminMenu
-          rateNeeded={rateNeeded}
-          onClose={() => setAdminOpen(false)}
-          onKhata={() => {
-            setAdminOpen(false);
-            setKhataOpen(true);
-          }}
-          onRecent={() => {
-            setAdminOpen(false);
-            setRecentOpen(true);
-          }}
-          onRates={openRates}
-          onPrinter={() => {
-            setAdminOpen(false);
-            setTestOutcome(null);
-            setPrinterOpen(true);
-          }}
-          onLock={() => {
-            setAdminOpen(false);
-            onLock();
           }}
         />
       )}
