@@ -72,11 +72,17 @@ test('only the most recent days are kept', () => {
   assert.ok(!kept.includes('2026-10-01|A'));
 });
 
-test('the printed label is the plain number for counter A and letter + number for the others', () => {
-  assert.equal(billLabel('A', 12), '12');
-  assert.equal(billLabel(undefined, 12), '12');
-  assert.equal(billLabel('', 12), '12');
-  assert.equal(billLabel('B', 12), 'B12');
+test('the printed label is dd-mm/number, with the counter letter before the number for every counter but A', () => {
+  assert.equal(billLabel('2026-10-22', 'A', 12), '22-10/12');
+  assert.equal(billLabel('2026-10-22', undefined, 12), '22-10/12');
+  assert.equal(billLabel('2026-10-22', '', 12), '22-10/12');
+  assert.equal(billLabel('2026-10-22', 'B', 12), '22-10/B12');
+  assert.equal(billLabel('2026-01-05', 'A', 1), '05-01/1');
+});
+
+test('a day in the wrong form gives the bare number, never a wrong date', () => {
+  for (const bad of ['', '22-10-2026', '2026-1-5', 'today']) assert.equal(billLabel(bad, 'A', 7), '7');
+  assert.equal(billLabel('nope', 'B', 7), 'B7');
 });
 
 test('counter letters are one capital letter', () => {

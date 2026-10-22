@@ -64,7 +64,6 @@ const MENU = [
   kg('broiler-skinless', 'Broiler Chicken - Without Skin', 'பிராய்லர் கோழி - தோலில்லா', 'chicken', 'broiler', 'skinless', 26000, 500),
   kg('broiler-live', 'Broiler Chicken - Uyir Ooda', 'பிராய்லர் கோழி - உயிரோடு', 'chicken', 'broiler', 'live', 14000, 1000),
   piece('kadai', 'Kadai', 'காடை', 'chicken', 'kadai', null, 6000, 2),
-  piece('podi', 'Podi', 'பொடி', 'chicken', 'podi', null, 1000),
   // Mutton
   kg('mutton-bone', 'Mutton - With Bone', 'மட்டன் - எலும்புடன்', 'mutton', 'mutton', 'bone', 80000, 500),
   kg('mutton-boneless', 'Mutton - Without Bone', 'மட்டன் - எலும்பில்லா', 'mutton', 'mutton', 'boneless', 95000, 500),
@@ -72,14 +71,12 @@ const MENU = [
   kg('eral', 'Eral', 'ஈரல்', 'mutton', 'eral', null, 90000, 250),
   piece('blood', 'Blood', 'இரத்தம்', 'mutton', 'blood', null, 2000),
   piece('excess', 'Excess', 'கூடுதல்', 'mutton', 'excess', null, 1000, 1, ['qty', 'amount']),
-  // Others (sample items: replace with the real ones)
+  // Others. Podi is masala: one item, sold by the packet (or by an amount).
   piece('masala', 'Masala', 'மசாலா', 'other', 'masala', null, 1000, 1, ['qty', 'amount']),
-  piece('egg', 'Egg (sample)', 'முட்டை (மாதிரி)', 'other', 'egg', null, 700, 6),
-  piece('lemon', 'Lemon (sample)', 'எலுமிச்சை (மாதிரி)', 'other', 'lemon', null, 500, 2, ['qty', 'amount']),
 ];
 
 // Items from earlier versions of the catalog that are no longer sold: switched off, never deleted.
-const LEGACY_IDS = ['broiler-bone', 'chicken-boneless', 'country-live', 'country-chicken', 'country-boneless', 'kadai-live', 'kadai-dressed', 'chicken-liver', 'mutton-liver', 'kodal-old'];
+const LEGACY_IDS = ['podi', 'egg', 'lemon', 'broiler-bone', 'chicken-boneless', 'country-live', 'country-chicken', 'country-boneless', 'kadai-live', 'kadai-dressed', 'chicken-liver', 'mutton-liver', 'kodal-old'];
 
 const CATEGORIES = [
   { key: 'chicken', name: 'Chicken', nameTa: 'கோழி' },

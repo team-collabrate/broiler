@@ -1,18 +1,20 @@
-# Bluetooth bill printing (80 mm thermal printer)
+# Bluetooth bill printing (58 mm thermal printer: BonKaso BKT05)
 
 How printing works, what the staff see when something goes wrong, how to set the tablet up, and what is still to be
 checked on the real printer.
 
 ## How it works
 
-1. The sale is saved, then the bill is **drawn as a picture** (`worker-app/src/printing/receiptCanvas.ts`), 576 dots wide
-   for 80 mm paper. Thermal printers cannot print Tamil as text, so the whole bill, Tamil included, goes out as an image
+1. The sale is saved, then the bill is **drawn as a picture** (`worker-app/src/printing/receiptCanvas.ts`), 384 dots wide
+   for 58 mm paper (the shop's BonKaso BKT05). Thermal printers cannot print Tamil as text, so the whole bill, Tamil included, goes out as an image
    (`escposRaster.ts` turns it into printer commands).
 2. The picture is sent to the printer over Bluetooth:
    - **Android app (the installed APK):** classic Bluetooth serial (SPP) through the Capacitor plugin
      `@fmesasc/capacitor-bluetooth-serial`. This is the reliable path, tuned on real printers by the Kumbakonam project.
    - **Browser or installed web app:** Web Bluetooth, which only works with printers that use Bluetooth LE. Many cheap thermal
      printers are classic-only and will not show up there. So for the shop, **use the Android app for printing**.
+   **The BonKaso BKT05 comes in two versions: USB only, and USB + Bluetooth.** The shop needs the **Bluetooth** one. Printing
+   over a USB cable from the tablet is not supported by this app.
 3. A failed print is never a lost sale: the sale is saved first, and the bill stays on the screen with the reason and a
    **மீண்டும் அச்சிடு** (print again) button.
 
@@ -37,7 +39,7 @@ fails the app drops the old connection, reconnects once and sends the bill again
 ## What you can check without a printer
 
 Open the app at `/?receipt` (for example `http://localhost:3000/?receipt`). It draws the sample bills (weight, split, credit,
-pieces and price changes, ten lines with long names, a reprint) and the **calibration sheet**, using exactly the picture the
+pieces and price changes, five lines with long names, a reprint) and the **calibration sheet**, using exactly the picture the
 printer receives. Use it to check the layout.
 
 To try the screens with no Bluetooth at all, in a development build type this in the browser console:
@@ -53,7 +55,7 @@ Edit `worker-app/src/printing/shopDetails.ts`:
 | `SHOP_DETAILS.subtitle` | Address or area, one line (optional) |
 | `SHOP_DETAILS.phone` | Phone number (optional) |
 | `SHOP_DETAILS.thanks` / `footer` | Closing lines |
-| `PAPER_WIDTH_DOTS` | `576` for 80 mm paper. `384` for 58 mm. Set it from the printer's manual if the calibration sheet shows the head is narrower. |
+| `PAPER_WIDTH_DOTS` | `384` for 58 mm paper (the shop's printer). `576` for 80 mm: the layout scales to fit either. Set it from the printer's manual if the calibration sheet shows the head is narrower. |
 | `RECEIPT_LOGO_URL` | The black-and-white rooster, `worker-app/public/receipt-logo.png` (108 x 130, 1-bit) |
 
 To change the logo: make a high-contrast black-on-white image 108 pixels wide (thermal paper prints no greys) and replace
@@ -103,7 +105,7 @@ Print the **calibration sheet** (`அளவு சோதனை`) and look at the
 
 | Look for | If it is wrong |
 | --- | --- |
-| The frame touches both edges and every corner is there, and the ruler numbers run to 500 | The head is narrower than 576 dots: set `PAPER_WIDTH_DOTS` from the printer's manual in `shopDetails.ts`. |
+| The frame touches both edges and every corner is there, and the ruler numbers run to 300 | The head is narrower than 384 dots: set `PAPER_WIDTH_DOTS` from the printer's manual in `shopDetails.ts`. |
 | The solid black block is evenly black, and the fine lines and the dotted pattern are crisp, not pale or streaky | Darkness or paper: try the printer's own density setting (hold its feed button while powering on to print its settings), or fresh thermal paper. The app deliberately sends no density command (see `escposRaster.ts`). |
 | The Tamil lines are clear at all three sizes, and the rooster is crisp | If thin strokes break up, the printer's darkness is too low; if they blob, too high. |
 

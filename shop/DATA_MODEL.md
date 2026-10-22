@@ -36,26 +36,28 @@ Planned in later phases (rules to be written with them): `expenses`, `staff`, `d
 ## `orders/{orderId}` (a bill). Append-only: never edited or deleted.
 | Field | Meaning |
 | --- | --- |
-| `orderNo`, `device` | bill number for the day, made on the tablet; the counter letter (`A` for the first tablet). Printed as `12` for counter A and `B12` for the others |
+| `orderNo`, `device` | bill number for the day (starts at 1 each day), made on the tablet; the counter letter (`A` for the first tablet). Printed as `dd-mm/number`: `22-10/12` for counter A and `22-10/B12` for the others |
+| `staffName` | the worker who was billing (`Worker A` or `Worker B`), up to 40 letters; optional |
 | `dayKey` | the day of the sale, `YYYY-MM-DD`, by the tablet's clock |
 | `soldAt` | when the sale was made, by the tablet's clock. The rules accept it only if it is not in the future (5 minutes of drift allowed) and not more than 3 days old. **Reports use this.** |
 | `createdAt` | when the server received the sale (server time). For a sale made with no internet this is later than `soldAt` |
-| `lines[]` | 1 to **10** lines (a limit of the security rules, see below); each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
+| `lines[]` | 1 to **5** lines (a limit of the security rules, see below; a customer with more is billed as two bills); each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
 | `totalMinor` | the bill total; the rules check it equals the sum of the lines' `lineTotalMinor` |
-| `totalGrams`, `totalPieces` | weight and count totals, written by the till; the rules only check they are whole numbers |
+| `totalGrams`, `totalPieces` | weight and count totals, written by the till; the rules only check they are whole numbers (they are not re-added) |
 | `paymentMethod` | `cash`, `upi`, `split`, `credit` (`card` only on old data) |
 | `cashAmountMinor`, `upiAmountMinor` | split bills only; both above zero and adding to the total |
 | `customerId`, `customerName` | credit bills only |
 
 A line's rate may differ from its list rate only by the owner's limit (`settings/pricing.maxAdjustMinor`, default ₹20).
 
-**Why 10 lines, and what the rules check per line.** Firestore lets a security rule evaluate at most 1000 expressions per
-request and rules cannot loop, so every line is checked at a fixed position. Measured in the emulator, the checks below fit
-10 lines for every kind of bill (cash, GPay, split, credit) and not 12. A first version that also re-checked each line's weight
-times rate fitted only 4 lines and was dropped. Per line the rules check: a positive rate within the owner's limit of the list
-rate, a whole non-negative line total, and a unit of `kg` or `piece`. They do not check weight times rate (anyone can enter any
-weight through the till anyway). `MAX_ORDER_LINES` in `shared/src/core/sale.ts` and the rules must change together; the
-"the most an order can hold" test in `scripts/rules` fails if a change makes 10 lines too costly.
+**Why 5 lines, and what the rules check per line.** Firestore lets a security rule evaluate at most 1000 expressions per
+request and rules cannot loop, so every line is checked at a fixed position. Measured in the emulator, the full per-line check
+fits 5 lines for every kind of bill (cash, GPay, split, credit) with the money total added up; adding up the weight and count
+totals as well does not fit. With 10 lines only a lighter check fitted, so the limit is 5 and a customer with more is billed as
+two bills. Per line the rules check: a positive rate within the owner's limit of the list rate, that the line is a weight or a
+count (not both), a unit of `kg` or `piece`, and that its total is its rate times its weight or count (or exactly the amount it
+was billed for). `MAX_ORDER_LINES` in `shared/src/core/sale.ts` and the rules must change together; the "the most an order can
+hold" test in `scripts/rules` fails if a change makes 5 lines too costly.
 
 ## `customers/{customerId}` and `customerPayments/{id}` (credit, "kadan")
 - Customer id is derived from the typed name (lower-cased, spaces collapsed), so the same name finds the same person.

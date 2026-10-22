@@ -1,6 +1,5 @@
 import {
   adjustmentMinor,
-  billLabel,
   formatLineQuantity,
   formatMoney,
   formatQty,
@@ -16,9 +15,8 @@ import { t } from "./strings";
 
 export interface SavedSale {
   orderId: string;
-  orderNo: number;
-  /** The counter letter; the label printed is the number alone for counter A. */
-  device?: string;
+  /** The number printed on the bill, as made when the sale was saved (`22-10/12`). */
+  billNo: string;
   /** When the sale was made. */
   createdAt: Date;
   lines: CartLine[];
@@ -41,7 +39,7 @@ export interface SavedSale {
 export function toBillInput(sale: SavedSale): BillInput {
   return {
     orderId: sale.orderId,
-    billNo: billLabel(sale.device, sale.orderNo),
+    billNo: sale.billNo,
     createdAt: sale.createdAt,
     lines: sale.lines.map((line) => ({
       name: line.name,

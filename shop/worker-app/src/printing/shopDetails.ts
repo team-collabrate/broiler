@@ -6,8 +6,8 @@
  * customer: it always reads in Tamil, whatever language the app is showing.
  */
 export const SHOP_DETAILS = {
-  /** Shop name, printed largest. PLACEHOLDER: replace with the shop's real name. */
-  name: "பிராய்லர் கோழிக்கடை",
+  /** Shop name, printed largest. */
+  name: "Honey Broilers",
   /** One line under the name, such as the address or area. Leave empty to omit. */
   subtitle: "",
   /** Printed as "தொலைபேசி: <phone>". Leave empty to omit the line. */
@@ -23,7 +23,7 @@ export const SHOP_DETAILS = {
  * layout works out its columns from this, so changing it is all a different paper needs. Thermal
  * printers print at 203 dpi and reject a raster wider than their head.
  */
-export const PAPER_WIDTH_DOTS = 576;
+export const PAPER_WIDTH_DOTS = 384;
 
 /**
  * The logo printed at the top, served from worker-app/public/. It is the 1-bit rooster (black on white):

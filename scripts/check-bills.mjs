@@ -26,7 +26,8 @@ rows.sort((a, b) => (a.device ?? '').localeCompare(b.device ?? '') || a.orderNo 
 for (const r of rows) {
   const sold = r.soldAt?.toDate?.().toLocaleTimeString('en-GB') ?? '-';
   const made = r.createdAt?.toDate?.().toLocaleTimeString('en-GB') ?? '-';
-  console.log(`${r.device ?? '?'}${String(r.orderNo).padStart(3)}  ${r.paymentMethod.padEnd(6)} ₹${(r.totalMinor / 100).toFixed(2).padStart(8)}  sold ${sold}  arrived ${made}  ${r.id}`);
+  const label = `${r.dayKey.slice(8)}-${r.dayKey.slice(5, 7)}/${r.device && r.device !== 'A' ? r.device : ''}${r.orderNo}`;
+  console.log(`${label.padEnd(10)} ${r.paymentMethod.padEnd(6)} ₹${(r.totalMinor / 100).toFixed(2).padStart(8)}  ${(r.staffName ?? '-').padEnd(9)} sold ${sold}  arrived ${made}  ${r.id}`);
 }
 const byDevice = new Map();
 for (const r of rows) byDevice.set(r.device ?? '?', [...(byDevice.get(r.device ?? '?') ?? []), r.orderNo]);

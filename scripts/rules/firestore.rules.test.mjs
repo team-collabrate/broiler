@@ -151,6 +151,25 @@ describe('orders', () => {
     await seed((db) => setDoc(doc(db, 'settings', 'pricing'), { maxAdjustMinor: 0 }));
     await assertFails(setDoc(doc(counter(), 'orders', 'c'), order({}, [line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
   });
+  test('a line must be priced by its own weight or count (or be exactly the amount it was billed for)', async () => {
+    let n = 0; // a fresh order id each time: an order cannot be written twice
+    const withLine = (over) => setDoc(doc(counter(), 'orders', `priced-${n++}`), order({}, [line(over)]));
+    await assertFails(withLine({ lineTotalMinor: 1 })); // priced wrongly for its weight
+    await assertFails(withLine({ grams: 500 })); // 500 g is not ₹240.00 at ₹240/kg
+    await assertFails(withLine({ qty: 2 })); // a weight line has no count
+    await assertFails(withLine({ unit: 'piece', grams: 50, qty: 3, rateMinor: 6000, listRateMinor: 6000, lineTotalMinor: 18000 })); // a count line has no weight
+    await assertFails(withLine({ unit: 'piece', grams: 0, qty: 3, rateMinor: 6000, listRateMinor: 6000, lineTotalMinor: 17000 }));
+    await assertFails(withLine({ amountMinor: 10000, lineTotalMinor: 9000, grams: 417 })); // billed for ₹100 but totalled ₹90
+    await assertSucceeds(withLine({ amountMinor: 10000, lineTotalMinor: 10000, grams: 417 }));
+    await assertSucceeds(withLine({ grams: 1250, lineTotalMinor: 30000 })); // 1.25 kg at ₹240
+  });
+  test('the bill can say which worker was billing, up to 40 letters', async () => {
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'a'), order({ staffName: 'Worker A' })));
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'b'), order({ staffName: 'Worker B' })));
+    await assertFails(setDoc(doc(counter(), 'orders', 'c'), order({ staffName: '' })));
+    await assertFails(setDoc(doc(counter(), 'orders', 'd'), order({ staffName: 'x'.repeat(41) })));
+    await assertFails(setDoc(doc(counter(), 'orders', 'e'), order({ staffName: 7 })));
+  });
   test('a line needs a positive rate, a whole non-negative total and a known unit', async () => {
     const withLine = (over) => setDoc(doc(counter(), 'orders', 'x'), order({}, [line(over)]));
     await assertFails(withLine({ rateMinor: 0, listRateMinor: 0, lineTotalMinor: 0 })); // a free item
@@ -169,16 +188,16 @@ describe('orders', () => {
 });
 
 describe('the most an order can hold', () => {
-  // Each request may evaluate at most 1000 expressions, so the rules cap a bill at 10 lines (MAX_ORDER_LINES in
-  // shop/shared/src/core/sale.ts). This is the test that notices if a change to the rules makes 10 lines too costly.
+  // Each request may evaluate at most 1000 expressions, so the rules cap a bill at 5 lines (MAX_ORDER_LINES in
+  // shop/shared/src/core/sale.ts). This is the test that notices if a change to the rules makes 5 lines too costly.
   const many = (n) => Array.from({ length: n }, (_, i) => line({ itemId: `item${i}` }));
-  test('10 lines are accepted for every way of paying, and 11 are refused', async () => {
-    const ten = many(10);
-    await assertSucceeds(setDoc(doc(counter(), 'orders', 'cash'), order({}, ten)));
-    await assertSucceeds(setDoc(doc(counter(), 'orders', 'upi'), order({ paymentMethod: 'upi' }, ten)));
-    await assertSucceeds(setDoc(doc(counter(), 'orders', 'split'), order({ paymentMethod: 'split', cashAmountMinor: 10000, upiAmountMinor: 230000 }, ten)));
-    await assertSucceeds(setDoc(doc(counter(), 'orders', 'credit'), creditOrder(CID, {}, ten)));
-    await assertFails(setDoc(doc(counter(), 'orders', 'eleven'), order({}, many(11))));
+  test('5 lines are accepted for every way of paying, and 6 are refused', async () => {
+    const five = many(5);
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'cash'), order({}, five)));
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'upi'), order({ paymentMethod: 'upi', staffName: 'Worker A' }, five)));
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'split'), order({ paymentMethod: 'split', cashAmountMinor: 10000, upiAmountMinor: 110000, staffName: 'Worker B' }, five)));
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'credit'), creditOrder(CID, { staffName: 'Worker A' }, five)));
+    await assertFails(setDoc(doc(counter(), 'orders', 'six'), order({}, many(6))));
   });
 });
 

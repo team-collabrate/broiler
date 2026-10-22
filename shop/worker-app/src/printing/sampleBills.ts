@@ -8,7 +8,7 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     label: "Weight bill",
     bill: {
       orderId: "sample-1",
-      billNo: "12",
+      billNo: "19-10/12",
       createdAt: at,
       lines: [
         { name: "பிராய்லர் கோழி - தோலுடன்", quantity: "1.25 கிலோ", rate: "₹240.00/கிலோ", amount: "₹300.00" },
@@ -26,7 +26,7 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     label: "Split (GPay + cash)",
     bill: {
       orderId: "sample-2",
-      billNo: "13",
+      billNo: "19-10/13",
       createdAt: at,
       lines: [{ name: "மட்டன் - எலும்புடன்", quantity: "750 கிராம்", rate: "₹800.00/கிலோ", amount: "₹600.00" }],
       totalWeight: "750 கிராம்",
@@ -39,7 +39,7 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     label: "Credit (kadan)",
     bill: {
       orderId: "sample-3",
-      billNo: "14",
+      billNo: "19-10/14",
       createdAt: at,
       lines: [{ name: "பிராய்லர் கோழி - தோலில்லா", quantity: "3 கிலோ", rate: "₹260.00/கிலோ", amount: "₹780.00" }],
       totalWeight: "3 கிலோ",
@@ -52,7 +52,7 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     label: "Counter B, pieces, price changes",
     bill: {
       orderId: "sample-4",
-      billNo: "B7",
+      billNo: "19-10/B7",
       createdAt: at,
       lines: [
         { name: "கடாய்", quantity: "2 எண்", rate: "₹65.00/எண்", amount: "₹130.00", note: "பட்டியல் ₹60.00/எண்" },
@@ -66,26 +66,20 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     },
   },
   {
-    label: "10 lines, long names",
+    label: "5 lines, long names",
     bill: {
       orderId: "sample-5",
-      billNo: "21",
+      billNo: "19-10/21",
       createdAt: at,
       lines: [
         "பிராய்லர் கோழி - தோலுடன்",
         "பிராய்லர் கோழி - தோலில்லா",
         "பிராய்லர் கோழி - உயிரோடு",
         "நாட்டுக்கோழி கறி",
-        "நாட்டுக்கோழி - உயிருடன் (பெரியது)",
-        "மட்டன் - எலும்புடன் (முன் கால்)",
-        "மட்டன் - எலும்பில்லா",
-        "கொடல், குடல், ஈரல் கலவை",
-        "முட்டை - நாட்டு (கோழி முட்டை)",
-        "மசாலா பொடி - சிறிய பாக்கெட்",
       ].map((name, i) => ({ name, quantity: i % 3 === 0 ? "2 எண்" : "0.750 கிலோ", rate: i % 3 === 0 ? "₹12.00/எண்" : "₹260.00/கிலோ", amount: i % 3 === 0 ? "₹24.00" : "₹195.00" })),
-      totalWeight: "5.250 கிலோ",
-      totalPieces: "8 எண்",
-      total: "₹1,401.00",
+      totalWeight: "2.250 கிலோ",
+      totalPieces: "4 எண்",
+      total: "₹633.00",
       paymentLabel: "கடன்",
       customerName: "ரவிச்சந்திரன் ஸ்டோர்ஸ்",
     },

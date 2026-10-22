@@ -68,6 +68,7 @@ export const t = {
   listRate: (rate: string) => `பட்டியல் ${rate}`,
 
   // Cart
+  billedBy: "பில் போடுபவர்",
   currentSale: "தற்போதைய ஆர்டர்",
   cartEmpty: "இன்னும் பொருட்கள் இல்லை",
   cartEmptyHint: "சேர்க்க ஒரு பொருளைத் தட்டவும்",

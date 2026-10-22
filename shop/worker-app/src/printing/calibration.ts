@@ -95,19 +95,17 @@ export async function renderCalibrationCanvas(): Promise<HTMLCanvasElement> {
   ctx.textAlign = "left";
   ctx.font = font(24);
   ctx.fillText("நாட்டுக்கோழி கறி", 14, y + 24);
-  ctx.textAlign = "right";
-  ctx.fillText("1.250 கிலோ × ₹450.00", W - 14, y + 24);
-  ctx.textAlign = "left";
+  ctx.fillText("1.250 கிலோ × ₹450.00", 14, y + 56);
   ctx.font = font(28, "bold");
-  ctx.fillText("கோழி - தோலுடன்", 14, y + 70);
+  ctx.fillText("கோழி - தோலுடன்", 14, y + 108);
   ctx.textAlign = "right";
-  ctx.fillText("₹1,234.50", W - 14, y + 70);
+  ctx.fillText("₹1,234.50", W - 14, y + 108);
   ctx.textAlign = "left";
   ctx.font = font(40, "bold");
-  ctx.fillText("மொத்தம்", 14, y + 130);
+  ctx.fillText("மொத்தம்", 14, y + 170);
   ctx.textAlign = "right";
-  ctx.fillText("₹2,468.00", W - 14, y + 130);
-  y += 160;
+  ctx.fillText("₹2,468.00", W - 14, y + 170);
+  y += 200;
 
   // Logo
   if (logo && logo.width > 0) {

@@ -15,7 +15,15 @@ import { LOGO_SIZE, PAPER_WIDTH_DOTS, RECEIPT_LOGO_URL, SHOP_DETAILS } from "./s
 /** Printable dots across the paper. See PAPER_WIDTH_DOTS. */
 export const RECEIPT_WIDTH = PAPER_WIDTH_DOTS;
 
-const PAD = 8;
+/**
+ * The layout was drawn for 80 mm paper (576 dots). On narrower paper (58 mm is 384 dots) every size and gap shrinks
+ * by this factor so the same bill fits; the type stays large enough to read (a Tamil line is still about 20 dots
+ * tall). `size()` scales a size or gap in the 80 mm design.
+ */
+const SCALE = PAPER_WIDTH_DOTS >= 520 ? 1 : 0.82;
+const size = (n: number) => Math.round(n * SCALE);
+
+const PAD = SCALE === 1 ? 8 : 6;
 const CONTENT_LEFT = PAD;
 const CONTENT_RIGHT = RECEIPT_WIDTH - PAD;
 const CENTER = RECEIPT_WIDTH / 2;
@@ -23,7 +31,7 @@ const CENTER = RECEIPT_WIDTH / 2;
 /** Tamil first: the system Tamil face shapes the script correctly; the Latin fallbacks only handle digits and the few ASCII labels. */
 export const FONT_STACK = '"Noto Sans Tamil", "Latha", "Nirmala UI", system-ui, sans-serif';
 
-export const font = (size: number, weight: "normal" | "bold" = "normal") => `${weight} ${size}px ${FONT_STACK}`;
+export const font = (designSize: number, weight: "normal" | "bold" = "normal") => `${weight} ${Math.round(designSize * SCALE)}px ${FONT_STACK}`;
 
 /** Every label on the paper is Tamil: the receipt is for the customer, so it reads in one language. */
 const L = {
@@ -43,7 +51,7 @@ const L = {
 const WIDEST_AMOUNT = "₹99,999.00";
 
 /** Space between the item name column and the amount column. */
-const COL_GUTTER = 14;
+const COL_GUTTER = size(14);
 
 async function loadLogo(): Promise<HTMLImageElement | null> {
   const url = RECEIPT_LOGO_URL;
@@ -170,7 +178,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     const w = logo.width * scale;
     const h = logo.height * scale;
     draw(() => ctx.drawImage(logo, CENTER - w / 2, y, w, h));
-    y += h + 12;
+    y += h + size(12);
   }
 
   // --- Shop identity --------------------------------------------------------
@@ -184,7 +192,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     nameSize -= 2;
     ctx.font = font(nameSize, "bold");
   }
-  y += nameSize;
+  y += size(nameSize);
   const nameFont = font(nameSize, "bold");
   draw(() => {
     ctx.font = nameFont;
@@ -193,20 +201,20 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
 
   if (SHOP_DETAILS.subtitle) {
     ctx.font = font(26);
-    y += 36;
+    y += size(36);
     draw(() => ctx.fillText(SHOP_DETAILS.subtitle, CENTER, y));
   }
 
   if (SHOP_DETAILS.phone) {
     ctx.font = font(24);
-    y += 32;
+    y += size(32);
     draw(() => ctx.fillText(`${L.phone}: ${SHOP_DETAILS.phone}`, CENTER, y));
   }
 
   // --- Copy mark ------------------------------------------------------------
   // A reprint says so, in large type between rules, so it cannot be handed over as a second original.
   if (bill.isCopy) {
-    y += 54;
+    y += size(54);
     const copyY = y;
     draw(() => {
       ctx.font = font(36, "bold");
@@ -214,15 +222,15 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
       const label = L.copy;
       const half = ctx.measureText(label).width / 2;
       ctx.fillText(label, CENTER, copyY);
-      ctx.fillRect(CONTENT_LEFT, copyY - 14, CENTER - half - 16 - CONTENT_LEFT, 3);
-      ctx.fillRect(CENTER + half + 16, copyY - 14, CONTENT_RIGHT - (CENTER + half + 16), 3);
+      ctx.fillRect(CONTENT_LEFT, copyY - size(14), CENTER - half - size(16) - CONTENT_LEFT, 3);
+      ctx.fillRect(CENTER + half + size(16), copyY - 14, CONTENT_RIGHT - (CENTER + half + size(16)), 3);
     });
   }
 
   // --- Order meta -----------------------------------------------------------
-  y += 20;
+  y += size(20);
   ctx.font = font(24);
-  y += 32;
+  y += size(32);
   const metaY = y;
   // Date on the left, clock on the right of the same line.
   draw(() => {
@@ -231,7 +239,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.textAlign = "right";
     ctx.fillText(formatTime(bill.createdAt), CONTENT_RIGHT, metaY);
   });
-  y += 30;
+  y += size(30);
   const billNoY = y;
   draw(() => {
     ctx.textAlign = "left";
@@ -242,12 +250,12 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     }
   });
 
-  y += 20;
+  y += size(20);
   draw(() => dashedRule(ctx, y));
 
   // --- Column headers -------------------------------------------------------
   ctx.font = font(22, "bold");
-  y += 36;
+  y += size(36);
   const headY = y;
   draw(() => {
     ctx.textAlign = "left";
@@ -256,9 +264,9 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.fillText(L.amount, CONTENT_RIGHT, headY);
   });
 
-  y += 12;
+  y += size(12);
   draw(() => dashedRule(ctx, y));
-  y += 8;
+  y += size(8);
 
   // --- Line items -----------------------------------------------------------
   // Two rows per item: the name with the line total on the right, then a smaller line that says how much
@@ -268,7 +276,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.font = font(28, "bold");
     ctx.textAlign = "left";
     const nameLines = wrap(ctx, item.name, itemMax);
-    y += 40;
+    y += size(40);
     const firstLineY = y;
     draw(() => {
       ctx.font = font(28, "bold");
@@ -279,7 +287,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     });
 
     for (const extra of nameLines.slice(1)) {
-      y += 34;
+      y += size(34);
       const lineY = y;
       draw(() => {
         ctx.font = font(28, "bold");
@@ -291,7 +299,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.font = font(24);
     const detail = `${item.quantity} × ${item.rate}`;
     for (const detailLine of wrap(ctx, detail, CONTENT_RIGHT - CONTENT_LEFT - 16)) {
-      y += 30;
+      y += size(30);
       const lineY = y;
       draw(() => {
         ctx.font = font(24);
@@ -301,7 +309,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     }
 
     if (item.note) {
-      y += 28;
+      y += size(28);
       const noteY = y;
       draw(() => {
         ctx.font = font(22);
@@ -309,16 +317,16 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
         ctx.fillText(`  * ${item.note}`, CONTENT_LEFT, noteY);
       });
     }
-    y += 4;
+    y += size(4);
   }
 
-  y += 10;
+  y += size(10);
   draw(() => dashedRule(ctx, y));
 
   // --- Totals ---------------------------------------------------------------
   ctx.font = font(24);
   if (bill.totalWeight) {
-    y += 34;
+    y += size(34);
     const rowY = y;
     draw(() => {
       ctx.font = font(24);
@@ -329,7 +337,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     });
   }
   if (bill.totalPieces) {
-    y += 34;
+    y += size(34);
     const rowY = y;
     draw(() => {
       ctx.font = font(24);
@@ -340,7 +348,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     });
   }
 
-  y += 56;
+  y += size(56);
   const totalY = y;
   draw(() => {
     ctx.font = font(40, "bold");
@@ -351,7 +359,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.fillText(bill.total, CONTENT_RIGHT, totalY);
   });
 
-  y += 44;
+  y += size(44);
   const payY = y;
   draw(() => {
     ctx.font = font(24);
@@ -361,7 +369,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
 
   // A credit slip has to name who it is on account for.
   if (bill.customerName) {
-    y += 30;
+    y += size(30);
     const nameY = y;
     draw(() => {
       ctx.font = font(24);
@@ -374,7 +382,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
   if (bill.paymentDetail) {
     ctx.font = font(24);
     for (const detailLine of wrap(ctx, bill.paymentDetail, CONTENT_RIGHT - CONTENT_LEFT - 16)) {
-      y += 30;
+      y += size(30);
       const lineY = y;
       draw(() => {
         ctx.font = font(24);
@@ -386,7 +394,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
 
   // --- Footer ---------------------------------------------------------------
   if (SHOP_DETAILS.thanks) {
-    y += 56;
+    y += size(56);
     const thanksY = y;
     draw(() => {
       ctx.font = font(32, "bold");
@@ -396,7 +404,7 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
   }
 
   if (SHOP_DETAILS.footer) {
-    y += 34;
+    y += size(34);
     const footY = y;
     draw(() => {
       ctx.font = font(22);
@@ -407,6 +415,6 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
 
   // Blank tail so the tear-off edge clears the last line. The cut sequence already feeds three lines past
   // this point on top of it, so this is on top of that margin, not instead of it.
-  y += 40;
+  y += size(40);
   return Math.ceil(y);
 }

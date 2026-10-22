@@ -385,11 +385,12 @@ export function paymentProblem(amountMinor: number, balanceMinor: number): 'none
 // --- Cart -----------------------------------------------------------------------------
 
 /**
- * The most lines one order can hold. The Firestore rules check every line at a fixed position and each request may
- * evaluate at most 1000 expressions, so this is as many as the rules can check (see firestore.rules). The rules and
- * this number must change together.
+ * The most lines one order can hold: five is plenty for a chicken and mutton counter, and a customer with more is billed
+ * as two bills. The Firestore rules check every line at a fixed position and each request may evaluate at most 1000
+ * expressions; five lines is what lets the rules check each line fully (see firestore.rules). The rules and this number
+ * must change together.
  */
-export const MAX_ORDER_LINES = 10;
+export const MAX_ORDER_LINES = 5;
 
 /** A line in the cart. `key` tells apart two lines of the same item sold at different rates. */
 export type CartLine = OrderLineInput & { key: string };

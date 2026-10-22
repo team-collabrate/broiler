@@ -125,6 +125,8 @@ export interface Order {
   createdAt: Date;
   /** When the sale was made, by the tablet's clock (the rules limit how old it can be). Reports use this. */
   soldAt?: Date;
+  /** Who was billing: the worker picked at the till. Absent on bills saved before workers were named. */
+  staffName?: string;
   lines: OrderLine[];
   totalMinor: number;
   /** Weight of the `kg` lines. */

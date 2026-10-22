@@ -52,6 +52,7 @@ import { PrinterSheet } from "./PrinterSheet";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
 import { rememberBill, useRecentBills } from "./recentBills";
+import { readStaff, rememberStaff, STAFF_NAMES } from "./staff";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
 import { SplitModal } from "./SplitModal";
@@ -59,7 +60,7 @@ import { SyncBanner } from "./SyncBanner";
 import { t } from "./strings";
 
 /** Lets a catalog still being checked (items not switched on) show at the counter. Development only; never set in production. */
-const SHOW_DRAFT_MENU = import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
+const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
 
 const SHOW_SPEED_KEY = "broiler.showPrintSpeed";
 /** Whether the printing speed readout is switched on (a tuning aid, off by default). */
@@ -178,6 +179,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const [khataOpen, setKhataOpen] = useState(false);
   const [splitUpiMinor, setSplitUpiMinor] = useState(0);
   const [creditName, setCreditName] = useState<string | null>(null);
+  const [staffName, setStaffName] = useState(readStaff);
   const [submitting, setSubmitting] = useState(false);
   /** A bill on the screen: after a sale that could not be printed (with why), or an earlier bill opened to print as a copy. */
   const [billView, setBillView] = useState<{ bill: BillInput; problem: PrinterProblem | null } | null>(null);
@@ -275,19 +277,20 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         orderId: attemptId.current,
         lines,
         paymentMethod,
+        staffName,
         ...(paymentMethod === "split" && { split: { upiMinor } }),
         ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
       });
       const bill = toBillInput({
         orderId: created.id,
-        orderNo: created.orderNo,
-        device: created.device,
+        billNo: created.label,
         createdAt: created.soldAt,
         lines,
         totalMinor: created.totalMinor,
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
         paymentMethod,
+        staffName,
         ...(paymentMethod === "split" && { upiAmountMinor: upiMinor, cashAmountMinor: created.totalMinor - upiMinor }),
         ...(paymentMethod === "credit" && { customerName: created.customerName ?? creditName ?? "" }),
       });
@@ -420,6 +423,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         totalGrams={cart.totalGrams}
         totalPieces={cart.totalPieces}
         paymentMethod={paymentMethod}
+        staff={STAFF_NAMES}
+        staffName={staffName}
+        onStaffChange={(name) => {
+          setStaffName(name);
+          rememberStaff(name);
+        }}
         paymentDetail={paymentDetail}
         onPaymentChange={(method) => {
           newSale();

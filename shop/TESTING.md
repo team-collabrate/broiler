@@ -7,7 +7,7 @@ credit or payment code, or the bill format change.
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock, printer recovery and the recent-bills list (121 tests, a few seconds). |
+| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock, printer recovery and the recent-bills list (122 tests, a few seconds). |
 | `npm run typecheck` | Types in all four apps. |
 | `npm run build:worker` | The counter builds for production, including the service worker. |
 | `npm run android:apk` | Builds the installable Android app (several minutes the first time). See PRINTING.md. |
@@ -21,7 +21,7 @@ on that page, and unzip it into `.tools/jdk21`. Any Java 11 or newer on the mach
 
 | Command | What it does |
 | --- | --- |
-| `npm run test:rules` | Starts an emulator, runs the 39 rules tests in `scripts/rules`, stops it. Stop `npm run emulators` first if it is running. |
+| `npm run test:rules` | Starts an emulator, runs the 41 rules tests in `scripts/rules`, stops it. Stop `npm run emulators` first if it is running. |
 | `npm run emulators` | Starts the emulators and leaves them running (data is in memory, gone when they stop). |
 | `npm run emulators:seed` | Puts test accounts (owner PIN **2121**, counter PIN **1111**; valid only inside the emulator) and the catalog into the running emulators. |
 | `npm run dev:emulator -w shop` | The counter on port 3002 talking to the emulators with the real rules. Sign in with 1111. |
@@ -39,7 +39,7 @@ USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=apps/pos/.env scr
 
 | Command | What it checks |
 | --- | --- |
-| `npm run check:access` | The deployed rules, as the counter and the owner: what each may and may not do, including split, credit, the offline sale time and the 10-line limit. Asks for both PINs. |
+| `npm run check:access` | The deployed rules, as the counter and the owner: what each may and may not do, including split, credit, the offline sale time and the 5-line limit. Asks for both PINs. |
 | `node --env-file=apps/pos/.env scripts/check-bills.mjs [day]` | Lists a day's bills with when each was sold and when it arrived; reports duplicate or missing bill numbers per counter. |
 | `node --env-file=apps/pos/.env scripts/check-books.mjs [day]` | **Reconciles the day's money from the raw records**: every bill adds up, every customer's balance equals their credit bills minus their payments, and cash, GPay and credit totals. Use after a trial day. |
 

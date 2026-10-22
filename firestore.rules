@@ -50,53 +50,48 @@ service cloud.firestore {
     }
 
     // Each request may evaluate at most 1000 expressions, and rules cannot loop, so an order's lines are checked at
-    // fixed positions and an order holds at most 10 lines (MAX_ORDER_LINES in shop/shared/src/core/sale.ts). Positions
-    // an order does not have cost nothing. The per-line check is deliberately the cheap one that protects money: the
-    // owner's price limit, and a line total that adds up with the others into the order's total. (Checking every line's
-    // weight times rate as well cost about three times as much and fitted only 4 lines.) Weights and counts are
-    // whatever the till measured; the rules do not second-guess the scale.
+    // fixed positions and an order holds at most 5 lines (MAX_ORDER_LINES in shop/shared/src/core/sale.ts). Positions
+    // an order does not have cost nothing. Per line the rules check the owner's price limit, that a line is a weight or a count, and that its total is its rate times its weight or count (or exactly the amount it was billed for).
     function validLine(l, maxAdj) {
       return l.lineTotalMinor is int && l.lineTotalMinor >= 0 && l.rateMinor > 0
-        && math.abs(l.rateMinor - l.listRateMinor) <= maxAdj
-        && l.unit in ['kg', 'piece'];
+        && math.abs(l.rateMinor - l.listRateMinor) <= maxAdj && l.unit in ['kg', 'piece']
+        && l.grams is int && l.qty is int
+        && (l.unit == 'piece' ? (l.qty >= 1 && l.grams == 0) : (l.grams >= 1 && l.qty == 0))
+        && ('amountMinor' in l
+          ? (l.amountMinor is int && l.amountMinor > 0 && l.lineTotalMinor == l.amountMinor)
+          : (l.unit == 'piece'
+            ? l.lineTotalMinor == l.rateMinor * l.qty
+            : math.abs(l.lineTotalMinor - math.round(l.rateMinor * l.grams / 1000.0)) <= 1));
     }
 
     function linesOk(L, maxAdj) {
-      return L.size() >= 1 && L.size() <= 10
+      return L.size() >= 1 && L.size() <= 5
         && validLine(L[0], maxAdj)
         && (L.size() < 2 || (validLine(L[1], maxAdj)
         && (L.size() < 3 || (validLine(L[2], maxAdj)
         && (L.size() < 4 || (validLine(L[3], maxAdj)
-        && (L.size() < 5 || (validLine(L[4], maxAdj)
-        && (L.size() < 6 || (validLine(L[5], maxAdj)
-        && (L.size() < 7 || (validLine(L[6], maxAdj)
-        && (L.size() < 8 || (validLine(L[7], maxAdj)
-        && (L.size() < 9 || (validLine(L[8], maxAdj)
-        && (L.size() < 10 || (validLine(L[9], maxAdj)))))))))))))))))));
+        && (L.size() < 5 || (validLine(L[4], maxAdj)))))))));
     }
 
-    // The sum of the lines' totals.
-    function sumOfLines(L) {
-      return L.size() == 1 ? L[0].lineTotalMinor
-        : L.size() == 2 ? L[0].lineTotalMinor + L[1].lineTotalMinor
-        : L.size() == 3 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor
-        : L.size() == 4 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor
-        : L.size() == 5 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor
-        : L.size() == 6 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor
-        : L.size() == 7 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor
-        : L.size() == 8 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor
-        : L.size() == 9 ? L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor + L[8].lineTotalMinor
-        : L[0].lineTotalMinor + L[1].lineTotalMinor + L[2].lineTotalMinor + L[3].lineTotalMinor + L[4].lineTotalMinor + L[5].lineTotalMinor + L[6].lineTotalMinor + L[7].lineTotalMinor + L[8].lineTotalMinor + L[9].lineTotalMinor;
+    // The sum of one field over the order's lines.
+    function sumOf(L, f) {
+      return L.size() == 1 ? L[0][f]
+        : L.size() == 2 ? L[0][f] + L[1][f]
+        : L.size() == 3 ? L[0][f] + L[1][f] + L[2][f]
+        : L.size() == 4 ? L[0][f] + L[1][f] + L[2][f] + L[3][f]
+        : L[0][f] + L[1][f] + L[2][f] + L[3][f] + L[4][f];
     }
 
     function validOrder() {
       let d = request.resource.data;
       let L = d.lines;
-      return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
+      return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'staffName', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
         && d.orderNo is int && d.orderNo >= 1
         && d.dayKey is string && d.dayKey.size() == 10
         // The counter (tablet) letter that numbered the bill.
         && d.device is string && d.device.matches('^[A-Z]$')
+        // Who was billing (the worker picked at the till); optional.
+        && (!('staffName' in d) || (d.staffName is string && d.staffName.size() >= 1 && d.staffName.size() <= 40))
         // `createdAt` is when the server received the sale. A sale made with no internet arrives later, so `soldAt`
         // is when the tablet says it was made: never in the future (5 minutes of clock drift allowed) and never more
         // than 3 days old, so a wrong tablet clock cannot move a sale far from the truth. Keep these two limits in
@@ -118,7 +113,7 @@ service cloud.firestore {
           : (!('customerId' in d) && !('customerName' in d)))
         && L is list
         && linesOk(L, maxAdjust())
-        && d.totalMinor is int && d.totalMinor == sumOfLines(L)
+        && d.totalMinor is int && d.totalMinor == sumOf(L, 'lineTotalMinor')
         && d.totalGrams is int && d.totalGrams >= 0
         && d.totalPieces is int && d.totalPieces >= 0;
     }

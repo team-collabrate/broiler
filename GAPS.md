@@ -57,11 +57,11 @@ Kumbakonam file names are from `team-collabrate/kumbakonam`.
 
 | Item | Status | Needed |
 | --- | --- | --- |
-| New Firestore rules | Written, **not deployed**, untested live | Counter account, deploy, run `npm run check:access` |
-| Counter PIN account | **Missing** (owner exists: 2121) | Choose a PIN |
-| Turn anonymous sign-in off | **Open** | At cut-over, after the rules |
-| Real catalog | Sample items only | Your real list, then `npm run seed -- --go-live` |
-| Shop name, address, phone on the bill | **Placeholder** (`apps/pos/src/config.ts`) | Real text |
+| New Firestore rules | **Deployed and checked live** 2026-10-22 | Nothing |
+| Counter PIN account | **Done** 2026-10-22 (billing account created) | Choose a PIN |
+| Turn anonymous sign-in off | **Open** | One click in the Firebase console (see `shop/GO_LIVE.md`) |
+| Real catalog | **Done** (12 products live; rates are examples until the owner sets today's rates) | Product photos; the owner's real rates |
+| Shop name on the bill | **Done**: Honey Broilers (no address or phone wanted) | Nothing |
 | Installable PWA (manifest, icons, service worker) | **Missing** | Kumbakonam has all of it (`vite-plugin-pwa`, `prepare-pwa-icons.mjs`) |
 | Android app (APK) | **Missing** | Kumbakonam uses Capacitor around its web build; signed release build |
 | Hosting | Prototype only, old build | Redeploy; a third site for reports |
@@ -70,14 +70,14 @@ Kumbakonam file names are from `team-collabrate/kumbakonam`.
 
 ## 5. Decision (2026-10-19): build on the `shop/` copy of Kumbakonam
 
-Android + PWA, 80 mm Bluetooth printer. The Expo app (`apps/`) stays as the reference for the features it
+Android + PWA, 58 mm Bluetooth printer (BonKaso BKT05). The Expo app (`apps/`) stays as the reference for the features it
 proved (popup, wheel, units, price adjustment, PIN login, rules); they move across into `shop/`.
 
 ### Printing: set up in `shop/` (see `shop/PRINTING.md`)
 
 | Done | Still to do on real hardware |
 | --- | --- |
-| Bill drawn for 80 mm (576 dots) in Tamil: item, quantity x rate, amount, totals, payment, split halves, credit customer | Print on the actual printer and check width, density and Tamil clarity |
+| Bill drawn for 58 mm (384 dots, scaled from the 80 mm design) in Tamil: item, quantity x rate, amount, totals, payment, split halves, credit customer | Print on the actual printer and check width, density and Tamil clarity |
 | 1-bit rooster logo for the paper | Build the APK (needs Android Studio) and pair the printer |
 | Receipt preview at `/?receipt`, test-print button in printer setup, shop details in one file | Real shop name, address and phone |
 | Android app renamed Broiler POS (`com.broiler.pos`), rooster icons and splash, PWA name and icons | Signed release build |
@@ -96,5 +96,7 @@ proved (popup, wheel, units, price adjustment, PIN login, rules); they move acro
    - *Done and tested without the printer:* the printer is remembered (it used to be forgotten if it was off when the app opened); a failed print no longer switches printing off (before, one hiccup disabled it until restart); a dead Bluetooth link is dropped, reconnected and the bill sent once more (unit-tested with a fake printer); every failure has its own plain Tamil message (no printer, printer off or out of paper, Bluetooth off, permission refused); the bill stays on the screen with **மீண்டும் அச்சிடு**; a printer button on the left rail (green, gold or red); **கடைசி பில்கள்** (the last 20 bills printed on the tablet) to print a copy, marked **நகல்**; a printer screen in Tamil with a test bill and a **calibration sheet** for the day the printer arrives; the screen stays on while the app is open; and sample receipts for every kind of bill, including ten long Tamil lines (`/?receipt`). `npm run android:apk` builds the installable app here (5.3 MB; app id `com.broiler.pos`; the Bluetooth permissions are in it).
    - *Needs the real printer and tablet (not possible from here):* print the calibration sheet and tune the width and darkness; the 50-bill test including a printer switch-off and a Bluetooth drop; the Android permission prompts on the Redmi Pad 2; installing the app on the tablet and the tablet settings (battery, screen pinning). The app could not be run in an Android emulator here (the SDK's Android 34 image is incomplete).
    - *Not detectable:* "out of paper" (most cheap printers do not report it over Bluetooth), so it shows as "printer not responding".
-6. **Phase 6: login and rules.** Deploy the new Firestore rules, create the counter account, run `check:access`, switch anonymous sign-in off, remove the dev flags.
+6. **Phase 6, done on 2026-10-22 (go-live day; see `shop/GO_LIVE.md`):** the new Firestore rules are **deployed** to `broiler-pos`; the billing (counter) account was created and the managing (owner) PIN changed (PINs are not stored in the repository); `npm run check:access` **passed against the live project** (every counter, split, credit, offline-time and owner rule); the real catalog is live (12 products; podi is masala, one item; sample items off); the test data was removed; the dev flags are out of the shipping build (the draft-menu switch is now development-only in code too). New scripts: `scripts/change-pin.mjs`.
+   *Still open:* **anonymous sign-in is still switched on** in Firebase (the CLI can only switch sign-in methods on): turn it off in the Firebase console (Authentication > Sign-in method > Anonymous). The rules already refuse anonymous visitors. Also open: the rules tests are not in CI; an audit trail; a stronger PIN than 4 digits (the shop chose 4).
+   *Decisions made on go-live day:* shop name **Honey Broilers** (no address or phone on the bill); printer **BonKaso BKT05, 58 mm** (needs the Bluetooth version); bill number `dd-mm/number` from 1 each day (`22-10/1`); workers **Worker A** and **Worker B** (a switch at the top of the cart, printed on the bill, stored on the order); **5 items per bill** (more: make two bills; with 5 lines the rules check every line fully, including weight × rate); stay on Firebase's **free plan** (so no scheduled Firebase backups: use an Excel export; no Cloud Functions: the nightly email would run from GitHub Actions); keep full bills **4 days** then summaries (not built yet: the rules currently allow no deletes); product pictures are permanent and will be supplied (shipped inside the app).
 7. **Phases 7 to 9:** owner side (menu management, void, reports with charts, staff names, expenses), reports site (item sales, loan report, Excel, nightly email), backups and cost control.

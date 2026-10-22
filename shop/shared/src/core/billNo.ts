@@ -1,7 +1,8 @@
 // Bill numbers for a till that must keep selling with no internet. The number is made on the tablet, so it works
-// offline; the server never hands one out. A bill is identified by its counter letter, its day and its number, and
-// the printed label is the number alone for the first counter (A) and letter + number for any other ("B12"), so a
-// second tablet can never print the same label as the first. Pure TypeScript: the storage is passed in.
+// offline; the server never hands one out. A bill is identified by its counter letter, its day and its number. The
+// printed label is the day and month, a slash and the number: "22-10/12" is the 12th bill of 22 October. The first
+// counter (A) prints the number alone; any other puts its letter first ("22-10/B12"), so a second tablet can never print
+// the same label as the first. Pure TypeScript: the storage is passed in.
 
 export const DEFAULT_DEVICE = 'A';
 export const FIRST_BILL_NO = 1;
@@ -11,9 +12,15 @@ export function isDeviceLetter(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Z]$/.test(value);
 }
 
-/** The number printed on the bill: `12` for the first counter, `B12` for the others. */
-export function billLabel(device: string | undefined, orderNo: number): string {
-  return device === undefined || device === '' || device === DEFAULT_DEVICE ? String(orderNo) : `${device}${orderNo}`;
+/**
+ * The number printed on the bill: the day and month, a slash, then the bill's number for that day (`22-10/12`), with the
+ * counter's letter before the number for every counter but the first (`22-10/B12`). `day` is the sale's `YYYY-MM-DD`; if it
+ * is not in that form the bare number is returned rather than a wrong date.
+ */
+export function billLabel(day: string, device: string | undefined, orderNo: number): string {
+  const number = device === undefined || device === '' || device === DEFAULT_DEVICE ? String(orderNo) : `${device}${orderNo}`;
+  const parts = /^\d{4}-(\d{2})-(\d{2})$/.exec(day);
+  return parts ? `${parts[2]}-${parts[1]}/${number}` : number;
 }
 
 /** The server's note of how far a counter got on a day, so a reinstalled tablet can carry on from it. */

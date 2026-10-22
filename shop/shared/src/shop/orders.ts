@@ -31,6 +31,8 @@ export interface CreateOrderInput {
   split?: { upiMinor: number };
   /** Required for a `credit` bill: who it is on account for. A name seen before finds the same customer. */
   customer?: { name: string };
+  /** The worker who was billing (up to 40 letters). Optional. */
+  staffName?: string;
 }
 
 export interface CreatedOrder {
@@ -82,6 +84,7 @@ function checkLine(l: OrderLineInput): void {
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
   const { orderId, lines, paymentMethod, split, customer } = input;
+  const staffName = input.staffName?.trim().slice(0, 40) ?? "";
   if (lines.length === 0) throw new Error("ஆர்டரில் குறைந்தது ஒரு பொருள் வேண்டும்");
   if (lines.length > MAX_ORDER_LINES) throw new Error(`ஒரு ஆர்டரில் அதிகபட்சம் ${MAX_ORDER_LINES} பொருட்கள்`);
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new Error(`தெரியாத பணம் செலுத்தும் முறை: ${paymentMethod}`);
@@ -124,7 +127,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   const day = dayKey(now);
   const device = getDeviceLetter();
   const orderNo = reserveBillNo(orderId, day, device);
-  const label = billLabel(device, orderNo);
+  const label = billLabel(day, device, orderNo);
   const orderRef = doc(db, "orders", orderId);
   const counterRef = doc(db, "counters", counterDocId(day, device));
   const customerId = paymentMethod === "credit" ? customerIdFromName(customerName) : "";
@@ -139,6 +142,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     device,
     soldAt: Timestamp.fromDate(now),
     createdAt: serverTimestamp(),
+    ...(staffName !== "" && { staffName }),
     lines: orderLines,
     totalMinor,
     totalGrams,
@@ -184,6 +188,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
       const data = existing.data();
       return {
         orderNo: data.orderNo as number,
+        day: (data.dayKey as string | undefined) ?? day,
         device: (data.device as string | undefined) ?? device,
         totalMinor: data.totalMinor as number,
         soldAt: (data.soldAt as Timestamp | undefined)?.toDate() ?? now,
@@ -211,8 +216,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     }
     const bookName = customerSnap.exists() ? (customerSnap.data().name as string) : customerName;
     tx.set(orderRef, orderData(bookName));
-    return { orderNo, device, totalMinor, soldAt: now, customerName: bookName };
+    return { orderNo, day, device, totalMinor, soldAt: now, customerName: bookName };
   });
   settleBillNo(orderId);
-  return { id: orderId, ...saved, label: billLabel(saved.device, saved.orderNo) };
+  const { day: savedDay, ...rest } = saved;
+  return { id: orderId, ...rest, label: billLabel(savedDay, saved.device, saved.orderNo) };
 }

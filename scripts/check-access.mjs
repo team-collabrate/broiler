@@ -113,13 +113,16 @@ await denied('cannot save an order whose total does not match its lines', () =>
   save(newId(), order([line()], { totalMinor: 100 })));
 await denied('cannot save a rate beyond the adjustment limit', () =>
   save(newId(), order([line({ rateMinor: 99000, lineTotalMinor: 99000 })])));
+await denied('cannot save a line priced wrongly for its weight', () =>
+  save(newId(), order([line({ lineTotalMinor: 1 })])));
 await denied('cannot save a line with a negative total', () =>
   save(newId(), order([line({ lineTotalMinor: -24000 })])));
 await denied('cannot save a line with an unknown unit', () =>
   save(newId(), order([line({ unit: 'litre' })])));
 const manyLines = (n) => Array.from({ length: n }, (_, i) => line({ itemId: `check-${i}` }));
-await allowed('can save a bill with the most lines the rules allow (10)', () => save(newId(), order(manyLines(10))));
-await denied('cannot save a bill with more than 10 lines', () => save(newId(), order(manyLines(11))));
+await allowed('can save a bill with the most lines the rules allow (5)', () => save(newId(), order(manyLines(5))));
+await denied('cannot save a bill with more than 5 lines', () => save(newId(), order(manyLines(6))));
+await allowed('can save a bill that names the worker', () => save(newId(), order([line()], { staffName: 'Worker A' })));
 await denied('cannot save an order with a backdated time', () =>
   save(newId(), order([line()], { createdAt: new Date(2000, 0, 1) })));
 

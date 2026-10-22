@@ -30,7 +30,7 @@ when the line is back.
 
 1. **Bill numbers are made on the tablet** (`core/billNo.ts`, `shop/billCounter.ts`). Each tablet has a counter letter (`A`
    for the first; the owner can change it in the Admin menu). Numbers run 1, 2, 3… for each day and counter and are kept in
-   the tablet's storage, so they survive a restart. A bill prints as `12` on counter A and `B12` on counter B, so two tablets
+   the tablet's storage, so they survive a restart. A bill prints as `22-10/12` (day-month/number) on counter A and `22-10/B12` on counter B, so two tablets
    can never print the same label. A sale that is dropped before it is saved gives its number back, so a failed attempt
    leaves no gap.
 2. **A sale is written to the tablet first** (`shop/orders.ts`). The order and the day's counter note go to Firestore in one

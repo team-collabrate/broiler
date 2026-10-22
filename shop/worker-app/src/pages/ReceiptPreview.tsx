@@ -43,7 +43,7 @@ export function ReceiptPreview() {
         <button type="button" onClick={() => setIndex(SAMPLE_BILLS.length)} style={{ padding: "8px 14px", fontWeight: index === SAMPLE_BILLS.length ? 700 : 400 }}>
           Calibration sheet
         </button>
-        <span style={{ alignSelf: "center", color: "#555" }}>{RECEIPT_WIDTH} dots wide (80 mm paper)</span>
+        <span style={{ alignSelf: "center", color: "#555" }}>{RECEIPT_WIDTH} dots wide ({RECEIPT_WIDTH >= 520 ? "80" : "58"} mm paper)</span>
       </div>
       <div ref={host} />
     </div>
