@@ -1218,3 +1218,67 @@ button {
   line-height: 1.4;
   color: var(--color-text-muted);
 }
+
+/* --- Printing: the rail button, the bill on the screen, the printer screen --------------------------------------- */
+.ct-rail__printer {
+  max-width: 84px;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+.ct-rail__printer.is-ok {
+  color: var(--color-positive-text);
+}
+.ct-rail__printer.is-none {
+  background: var(--color-secondary);
+  color: var(--color-secondary-contrast);
+}
+.ct-rail__printer.is-problem {
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+}
+.ct-bill {
+  display: flex;
+  justify-content: center;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: #e9e4dc;
+}
+.ct-bill__image {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  align-self: flex-start;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+.ct-printer__status {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.ct-printer__button {
+  flex: none;
+  width: 100%;
+}
+.ct-printer__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  font-weight: 600;
+}
+.ct-printer__toggle input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-accent);
+}

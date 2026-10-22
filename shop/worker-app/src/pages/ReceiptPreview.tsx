@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { renderCalibrationCanvas } from "../printing/calibration";
 import { renderReceiptCanvas, RECEIPT_WIDTH } from "../printing/receiptCanvas";
 import { SAMPLE_BILLS } from "../printing/sampleBills";
 
 /**
  * Open the app at /?receipt to see the bill exactly as the printer will receive it (the same canvas),
- * for three sample bills: weight, split payment and credit. Handy for checking the layout without a
+ * for sample bills of every kind (weight, split, credit, pieces and price changes, ten long lines, a reprint) and the
+ * calibration sheet used to set up a new printer. Handy for checking the layout without a
  * printer, and for tuning shopDetails.ts.
  */
 export function ReceiptPreview() {
@@ -13,7 +15,8 @@ export function ReceiptPreview() {
 
   useEffect(() => {
     let alive = true;
-    renderReceiptCanvas(SAMPLE_BILLS[index].bill).then((canvas) => {
+    const drawing = index < SAMPLE_BILLS.length ? renderReceiptCanvas(SAMPLE_BILLS[index].bill) : renderCalibrationCanvas();
+    drawing.then((canvas) => {
       if (!alive || !host.current) return;
       host.current.replaceChildren(canvas);
       canvas.style.width = `${RECEIPT_WIDTH}px`;
@@ -37,6 +40,9 @@ export function ReceiptPreview() {
             {s.label}
           </button>
         ))}
+        <button type="button" onClick={() => setIndex(SAMPLE_BILLS.length)} style={{ padding: "8px 14px", fontWeight: index === SAMPLE_BILLS.length ? 700 : 400 }}>
+          Calibration sheet
+        </button>
         <span style={{ alignSelf: "center", color: "#555" }}>{RECEIPT_WIDTH} dots wide (80 mm paper)</span>
       </div>
       <div ref={host} />

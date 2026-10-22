@@ -11,3 +11,5 @@ export * from './errors';
 export * from './billNo';
 export * from './outbox';
 export * from './pinLock';
+export * from './printRecovery';
+export * from './recentBills';

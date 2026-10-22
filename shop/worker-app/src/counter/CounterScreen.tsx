@@ -33,22 +33,25 @@ import {
   useServerConnection,
 } from "@kumbakonam/shared/shop";
 import { DEFAULT_MAX_ADJUST_MINOR } from "@kumbakonam/shared/core";
-import { BillView } from "../components/BillView";
 import { PrintDiagnosticsOverlay } from "../components/PrintDiagnosticsOverlay";
-import { PrinterSetupModal } from "../components/PrinterSetupModal";
-import { usePrinter } from "../hooks/usePrinter";
+import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
+import { prepareCalibrationRaster } from "../printing/calibration";
 import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
 import { SAMPLE_BILLS } from "../printing/sampleBills";
 import { AdminMenu } from "./AdminMenu";
 import { toBillInput } from "./bill";
 import { BillCart } from "./BillCart";
+import { BillSheet } from "./BillSheet";
 import { useCounterCart } from "./cart";
 import { CreditModal } from "./CreditModal";
 import { ItemSheet } from "./ItemSheet";
 import { KhataModal } from "./KhataModal";
 import { PinScreen } from "./PinScreen";
+import { PrinterSheet } from "./PrinterSheet";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
+import { RecentBillsSheet } from "./RecentBillsSheet";
+import { rememberBill, useRecentBills } from "./recentBills";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
 import { SplitModal } from "./SplitModal";
@@ -57,6 +60,16 @@ import { t } from "./strings";
 
 /** Lets a catalog still being checked (items not switched on) show at the counter. Development only; never set in production. */
 const SHOW_DRAFT_MENU = import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
+
+const SHOW_SPEED_KEY = "broiler.showPrintSpeed";
+/** Whether the printing speed readout is switched on (a tuning aid, off by default). */
+function readShowSpeed(): boolean {
+  try {
+    return localStorage.getItem(SHOW_SPEED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 type View = "sell" | "ownerPin" | "rates";
 type Sheet = { item: MenuItem; editing?: CartLine };
@@ -166,7 +179,14 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const [splitUpiMinor, setSplitUpiMinor] = useState(0);
   const [creditName, setCreditName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [billToShow, setBillToShow] = useState<BillInput | null>(null);
+  /** A bill on the screen: after a sale that could not be printed (with why), or an earlier bill opened to print as a copy. */
+  const [billView, setBillView] = useState<{ bill: BillInput; problem: PrinterProblem | null } | null>(null);
+  const [reprinting, setReprinting] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
+  const recentBills = useRecentBills();
+  const [testOutcome, setTestOutcome] = useState<"ok" | PrinterProblem | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [showSpeed, setShowSpeed] = useState(readShowSpeed);
 
   // One id per sale, kept across a failed save so a retry cannot save the sale twice. Any change to what is
   // being sold or how it is paid makes it a different sale, so it starts a new id.
@@ -183,23 +203,23 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   // --- Printing -----------------------------------------------------------
   const [diagnosticsVisible, setDiagnosticsVisible] = useState(false);
   useEffect(() => {
-    if (!printer.printProgress) return;
+    if (!showSpeed || !printer.printProgress) return;
     setDiagnosticsVisible(true);
     if (printer.printProgress.bytesSent < printer.printProgress.totalBytes) return;
     const timer = setTimeout(() => setDiagnosticsVisible(false), 4000);
     return () => clearTimeout(timer);
-  }, [printer.printProgress]);
+  }, [printer.printProgress, showSpeed]);
 
-  /** Prints the bill if the printer is ready; true when it came out. */
+  /** Prints a bill. Never throws: says whether it came out and, if not, why. */
   const tryPrint = useCallback(
-    async (bill: BillInput): Promise<boolean> => {
-      if (printer.status !== "ready") return false;
+    async (bill: BillInput): Promise<PrintResult> => {
+      if (printer.status !== "ready") return { ok: false, problem: "no-printer" };
       try {
         const { bytes, timing } = await prepareReceiptRaster(bill);
         return await printer.print(bytes, timing);
       } catch (err) {
         console.error("Receipt rendering failed", err);
-        return false;
+        return { ok: false, problem: "unreachable" };
       }
     },
     [printer],
@@ -276,10 +296,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       setPaymentMethod("cash");
       setSplitUpiMinor(0);
       setCreditName(null);
-      // The sale is saved; now the paper. If the printer is missing or refuses, the bill shows on screen with a
-      // Print again button, so a failed print is never a lost sale.
-      if (await tryPrint(bill)) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
-      else setBillToShow(bill);
+      // The sale is saved and the bill is kept in the recent list; now the paper. If the printer is missing or refuses,
+      // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
+      rememberBill(bill);
+      const result = await tryPrint(bill);
+      if (result.ok) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
+      else setBillView({ bill, problem: result.problem });
     } catch (e) {
       // The cart is kept, so pressing Print bill again retries the same sale (same id, never saved twice).
       setNotice({ text: t.saleError(describeError(e)), tone: "error" });
@@ -288,8 +310,48 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     }
   };
 
-  const retryPrint = async () => {
-    if (billToShow && (await tryPrint(billToShow))) setBillToShow(null);
+  /** Print again, from the bill on the screen (a bill that did not print, or an earlier bill being copied). */
+  const printFromSheet = async () => {
+    if (!billView) return;
+    setReprinting(true);
+    const result = await tryPrint(billView.bill);
+    setReprinting(false);
+    if (result.ok) {
+      setNotice({ text: t.printed(billView.bill.billNo), tone: "info" });
+      setBillView(null);
+    } else {
+      setBillView({ bill: billView.bill, problem: result.problem });
+    }
+  };
+
+  /** The two test prints on the printer screen: a sample bill, and the calibration sheet. */
+  const testPrint = async (kind: "bill" | "calibration") => {
+    setTesting(true);
+    setTestOutcome(null);
+    try {
+      let result: PrintResult;
+      if (kind === "bill") {
+        const { bytes, timing } = await prepareReceiptRaster(SAMPLE_BILLS[0].bill);
+        result = await printer.print(bytes, timing);
+      } else {
+        result = await printer.print(await prepareCalibrationRaster());
+      }
+      setTestOutcome(result.ok ? "ok" : result.problem);
+    } catch (err) {
+      console.error("Test print failed", err);
+      setTestOutcome("unreachable");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const changeShowSpeed = (on: boolean) => {
+    setShowSpeed(on);
+    try {
+      localStorage.setItem(SHOW_SPEED_KEY, on ? "1" : "0");
+    } catch {
+      /* the choice only lasts until the app closes */
+    }
   };
 
   // Changing a rate is the owner's job: the counter is asked for the owner's PIN, on the page, before the rates
@@ -346,7 +408,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
 
   return (
     <div className="ct-screen">
-      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} onAdmin={() => setAdminOpen(true)} />
+      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onAdmin={() => setAdminOpen(true)} />
       <main className="ct-main">
         <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
         {main}
@@ -442,9 +504,14 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
             setAdminOpen(false);
             setKhataOpen(true);
           }}
+          onRecent={() => {
+            setAdminOpen(false);
+            setRecentOpen(true);
+          }}
           onRates={openRates}
           onPrinter={() => {
             setAdminOpen(false);
+            setTestOutcome(null);
             setPrinterOpen(true);
           }}
           onLock={() => {
@@ -455,23 +522,49 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       )}
 
       {printerOpen && (
-        <PrinterSetupModal
+        <PrinterSheet
           status={printer.status}
-          error={printer.error}
+          problem={printer.problem}
           deviceName={printer.deviceName}
           platform={printer.platform}
           printerDevices={printer.printerDevices}
+          testOutcome={testOutcome}
+          busy={testing}
+          showSpeed={showSpeed}
+          onShowSpeed={changeShowSpeed}
           onConnect={printer.connect}
           onSelectPrinter={printer.selectPrinter}
-          onTestPrint={async () => {
-            const { bytes, timing } = await prepareReceiptRaster(SAMPLE_BILLS[0].bill);
-            await printer.print(bytes, timing);
-          }}
+          onTestPrint={() => void testPrint("bill")}
+          onCalibration={() => void testPrint("calibration")}
           onClose={() => setPrinterOpen(false)}
         />
       )}
 
-      {billToShow && <BillView bill={billToShow} canRetryPrint={printer.status === "ready"} onRetryPrint={retryPrint} onClose={() => setBillToShow(null)} />}
+      {recentOpen && (
+        <RecentBillsSheet
+          bills={recentBills}
+          onOpen={(bill) => {
+            setRecentOpen(false);
+            setBillView({ bill: { ...bill, isCopy: true }, problem: null });
+          }}
+          onClose={() => setRecentOpen(false)}
+        />
+      )}
+
+      {billView && (
+        <BillSheet
+          bill={billView.bill}
+          problem={billView.problem}
+          printing={reprinting}
+          onPrint={() => void printFromSheet()}
+          onPrinterSetup={() => {
+            setBillView(null);
+            setTestOutcome(null);
+            setPrinterOpen(true);
+          }}
+          onClose={() => setBillView(null)}
+        />
+      )}
 
       {diagnosticsVisible && printer.printProgress && <PrintDiagnosticsOverlay progress={printer.printProgress} logs={printer.printLogs} />}
     </div>

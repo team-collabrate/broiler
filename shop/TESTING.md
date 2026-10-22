@@ -7,9 +7,10 @@ credit or payment code, or the bill format change.
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock (106 tests, a few seconds). |
+| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock, printer recovery and the recent-bills list (121 tests, a few seconds). |
 | `npm run typecheck` | Types in all four apps. |
 | `npm run build:worker` | The counter builds for production, including the service worker. |
+| `npm run android:apk` | Builds the installable Android app (several minutes the first time). See PRINTING.md. |
 
 ## Security rules and the real flows, on your own computer (from the repo root)
 
@@ -47,5 +48,5 @@ Neither of the last two changes anything.
 ## What is not covered by an automatic test
 
 - The screens themselves (taps, layout): checked by hand in the browser and, for the tablet, on the device (Phases 5 and 10).
-- The Bluetooth printer and the installed Android app (Phase 5).
+- The Bluetooth printer itself and the installed app on the tablet (the printing screens and the recovery logic are tested; the paper is not). The checklist for the day the printer arrives is in PRINTING.md.
 - The rules tests are not yet part of CI (they need Java on the runner); run `npm run test:rules` before changing the rules.

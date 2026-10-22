@@ -25,7 +25,8 @@
     "android:open": "npm run android:open -w worker-app",
     "dev": "npm run dev:worker",
     "test": "npm test -w shared",
-    "dev:emulator": "npm run dev:emulator -w worker-app"
+    "dev:emulator": "npm run dev:emulator -w worker-app",
+    "android:apk": "node scripts/build-android.mjs"
   },
   "devDependencies": {
     "firebase-admin": "^12.7.0",

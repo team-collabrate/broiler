@@ -41,4 +41,6 @@ export interface BillInput {
   customerName?: string;
   /** Who was at the counter. Optional. */
   staffName?: string;
+  /** A reprint of an earlier bill: the paper is marked as a copy so it cannot pass for a second original. */
+  isCopy?: boolean;
 }

@@ -48,4 +48,49 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
       customerName: "ரவி கடை",
     },
   },
+  {
+    label: "Counter B, pieces, price changes",
+    bill: {
+      orderId: "sample-4",
+      billNo: "B7",
+      createdAt: at,
+      lines: [
+        { name: "கடாய்", quantity: "2 எண்", rate: "₹65.00/எண்", amount: "₹130.00", note: "பட்டியல் ₹60.00/எண்" },
+        { name: "பொடி", quantity: "5 எண்", rate: "₹10.00/எண்", amount: "₹50.00" },
+        { name: "நாட்டுக்கோழி கறி", quantity: "1 கிலோ", rate: "₹445.00/கிலோ", amount: "₹445.00", note: "பட்டியல் ₹450.00/கிலோ" },
+      ],
+      totalWeight: "1 கிலோ",
+      totalPieces: "7 எண்",
+      total: "₹625.00",
+      paymentLabel: "UPI",
+    },
+  },
+  {
+    label: "10 lines, long names",
+    bill: {
+      orderId: "sample-5",
+      billNo: "21",
+      createdAt: at,
+      lines: [
+        "பிராய்லர் கோழி - தோலுடன்",
+        "பிராய்லர் கோழி - தோலில்லா",
+        "பிராய்லர் கோழி - உயிரோடு",
+        "நாட்டுக்கோழி கறி",
+        "நாட்டுக்கோழி - உயிருடன் (பெரியது)",
+        "மட்டன் - எலும்புடன் (முன் கால்)",
+        "மட்டன் - எலும்பில்லா",
+        "கொடல், குடல், ஈரல் கலவை",
+        "முட்டை - நாட்டு (கோழி முட்டை)",
+        "மசாலா பொடி - சிறிய பாக்கெட்",
+      ].map((name, i) => ({ name, quantity: i % 3 === 0 ? "2 எண்" : "0.750 கிலோ", rate: i % 3 === 0 ? "₹12.00/எண்" : "₹260.00/கிலோ", amount: i % 3 === 0 ? "₹24.00" : "₹195.00" })),
+      totalWeight: "5.250 கிலோ",
+      totalPieces: "8 எண்",
+      total: "₹1,401.00",
+      paymentLabel: "கடன்",
+      customerName: "ரவிச்சந்திரன் ஸ்டோர்ஸ்",
+    },
+  },
 ];
+
+// A reprint of the first sample: the paper carries the "நகல்" (copy) mark.
+SAMPLE_BILLS.push({ label: "Copy (reprint)", bill: { ...SAMPLE_BILLS[0].bill, isCopy: true } });

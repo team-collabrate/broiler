@@ -31,30 +31,47 @@
  * depending on it).
  */
 import { BluetoothSerial, type BluetoothDevice as ScannedDevice } from "@fmesasc/capacitor-bluetooth-serial";
+import { printWithRecovery, type PrintAttempt, type PrinterLink } from "@kumbakonam/shared/core";
 
 export interface ClassicPrinterConnection {
   address: string;
   name: string;
 }
 
-const STORAGE_KEY = "kumbakonam.classicPrinterAddress";
+const STORAGE_KEY = "broiler.printer";
 
-/** The last address a print actually succeeded to — not proof it's still in
- *  range, just where to try reconnecting without asking the worker to pick
- *  it from the list again on every app load. */
-export function getStoredPrinterAddress(): string | null {
+/**
+ * The printer this tablet prints to: its Bluetooth address and the name it showed in the list. Remembered across
+ * launches so nobody has to pick it again. Being remembered is not the same as being switched on: whether the printer
+ * answers is found out when a bill is printed.
+ */
+export function getStoredPrinter(): ClassicPrinterConnection | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+    if (typeof parsed === "object" && parsed !== null) {
+      const { address, name } = parsed as Record<string, unknown>;
+      if (typeof address === "string" && address !== "") return { address, name: typeof name === "string" && name !== "" ? name : address };
+    }
   } catch {
-    return null;
+    /* damaged: treated as no printer */
+  }
+  return null;
+}
+
+function storePrinter(printer: ClassicPrinterConnection): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(printer));
+  } catch {
+    // Falls back to asking again next load; not worth surfacing.
   }
 }
 
-function storePrinterAddress(address: string): void {
+/** Forgets the remembered printer (the next bill asks for one to be chosen). */
+export function forgetStoredPrinter(): void {
   try {
-    localStorage.setItem(STORAGE_KEY, address);
+    localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Falls back to asking again next load — not worth surfacing.
+    /* nothing to forget */
   }
 }
 
@@ -172,48 +189,42 @@ async function connectWithFallback(address: string): Promise<void> {
   }
 }
 
-export async function connectClassic(address: string): Promise<ClassicPrinterConnection> {
+/** Connects to the chosen printer and remembers it. `name` is what the list showed (shown again on the setup screen). */
+export async function connectClassic(address: string, name: string = address): Promise<ClassicPrinterConnection> {
   await tryEnableBluetooth();
   await connectWithFallback(address);
-  storePrinterAddress(address);
-  return { address, name: address };
-}
-
-/** Re-attaches to the last address that worked, without prompting — the
- *  classic-SPP equivalent of webBluetoothPrinter.ts's getPairedPrinter().
- *  A classic RFCOMM connect is a single socket-open, not BLE's multi
- *  round-trip service/characteristic discovery, so unlike the BLE path
- *  this has never needed a background keep-alive watcher to avoid a slow
- *  reconnect sitting on the print button's critical path. */
-export async function getStoredPrinterConnection(): Promise<ClassicPrinterConnection | null> {
-  const address = getStoredPrinterAddress();
-  if (!address) return null;
-  try {
-    await tryEnableBluetooth();
-    const already = await BluetoothSerial.isConnected({ address });
-    if (!already.connected) {
-      await connectWithFallback(address);
-    }
-    return { address, name: address };
-  } catch (err) {
-    console.warn("Reconnecting to the stored classic printer failed", err);
-    return null;
-  }
+  const printer = { address, name };
+  storePrinter(printer);
+  return printer;
 }
 
 /**
- * Sends the ESC/POS byte stream in a single write — no chunking, no
- * per-write delay, no ATT/GATT size ceiling to work around. If the link
- * has dropped, reconnects first (a fast, single-step RFCOMM connect, not
- * BLE's slower service discovery).
+ * The remembered printer, WITHOUT connecting to it. This used to open a connection at launch and forget the printer
+ * if that failed, which meant a printer still switched off when the app opened was lost until someone paired it again
+ * by hand. Now the printer stays remembered; printClassic connects (and reconnects) when a bill is actually printed.
  */
-export async function printClassic(connection: ClassicPrinterConnection, data: Uint8Array): Promise<void> {
-  const { address } = connection;
-  const connected = await BluetoothSerial.isConnected({ address });
-  if (!connected.connected) {
-    await connectWithFallback(address);
-  }
-  await BluetoothSerial.write({ address, value: Array.from(data) });
+export function getStoredPrinterConnection(): ClassicPrinterConnection | null {
+  return getStoredPrinter();
+}
+
+/** The plugin's socket, as the small interface the recovery logic works with. */
+function linkTo(address: string): PrinterLink {
+  return {
+    isConnected: async () => (await BluetoothSerial.isConnected({ address })).connected,
+    connect: () => connectWithFallback(address),
+    disconnect: () => BluetoothSerial.disconnect({ address }).then(() => undefined),
+    write: (data) => BluetoothSerial.write({ address, value: Array.from(data) }).then(() => undefined),
+  };
+}
+
+/**
+ * Sends the ESC/POS byte stream in a single write: no chunking, no per-write delay, no ATT/GATT size ceiling to work
+ * around. If the link has dropped (the printer was switched off and on, or went out of range) it is reconnected and the
+ * bill is sent once more; see core/printRecovery.ts. Never throws: the result says whether the bill went out and, if
+ * not, which of the three problems it was.
+ */
+export function printClassic(connection: ClassicPrinterConnection, data: Uint8Array): Promise<PrintAttempt> {
+  return printWithRecovery(linkTo(connection.address), data);
 }
 
 export async function disconnectClassic(address: string): Promise<void> {

@@ -21,9 +21,9 @@ const CONTENT_RIGHT = RECEIPT_WIDTH - PAD;
 const CENTER = RECEIPT_WIDTH / 2;
 
 /** Tamil first: the system Tamil face shapes the script correctly; the Latin fallbacks only handle digits and the few ASCII labels. */
-const FONT_STACK = '"Noto Sans Tamil", "Latha", "Nirmala UI", system-ui, sans-serif';
+export const FONT_STACK = '"Noto Sans Tamil", "Latha", "Nirmala UI", system-ui, sans-serif';
 
-const font = (size: number, weight: "normal" | "bold" = "normal") => `${weight} ${size}px ${FONT_STACK}`;
+export const font = (size: number, weight: "normal" | "bold" = "normal") => `${weight} ${size}px ${FONT_STACK}`;
 
 /** Every label on the paper is Tamil: the receipt is for the customer, so it reads in one language. */
 const L = {
@@ -36,6 +36,7 @@ const L = {
   totalPieces: "மொத்த எண்ணிக்கை",
   payment: "பணம் செலுத்தும் முறை",
   phone: "தொலைபேசி",
+  copy: "நகல்",
 } as const;
 
 /** Widest line total the amount column has to hold, used as a floor on its width so a big bill can't push an amount into the name beside it. */
@@ -200,6 +201,22 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     ctx.font = font(24);
     y += 32;
     draw(() => ctx.fillText(`${L.phone}: ${SHOP_DETAILS.phone}`, CENTER, y));
+  }
+
+  // --- Copy mark ------------------------------------------------------------
+  // A reprint says so, in large type between rules, so it cannot be handed over as a second original.
+  if (bill.isCopy) {
+    y += 54;
+    const copyY = y;
+    draw(() => {
+      ctx.font = font(36, "bold");
+      ctx.textAlign = "center";
+      const label = L.copy;
+      const half = ctx.measureText(label).width / 2;
+      ctx.fillText(label, CENTER, copyY);
+      ctx.fillRect(CONTENT_LEFT, copyY - 14, CENTER - half - 16 - CONTENT_LEFT, 3);
+      ctx.fillRect(CENTER + half + 16, copyY - 14, CONTENT_RIGHT - (CENTER + half + 16), 3);
+    });
   }
 
   // --- Order meta -----------------------------------------------------------

@@ -13,6 +13,7 @@ interface Props {
   canSetDevice: boolean;
   onDevice: (letter: string) => void;
   onKhata: () => void;
+  onRecent: () => void;
   onRates: () => void;
   onPrinter: () => void;
   onLock: () => void;
@@ -20,7 +21,7 @@ interface Props {
 }
 
 /** What the round Admin button opens: the owner's jobs at the counter, kept off the selling screen. */
-export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata, onRates, onPrinter, onLock, onClose }: Props) {
+export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata, onRecent, onRates, onPrinter, onLock, onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -34,12 +35,15 @@ export function AdminMenu({ rateNeeded, device, canSetDevice, onDevice, onKhata,
         <button type="button" className="ct-menu__item" onClick={onKhata}>
           {t.khataMenu}
         </button>
+        <button type="button" className="ct-menu__item" onClick={onRecent}>
+          {t.recentMenu}
+        </button>
         <button type="button" className="ct-menu__item" onClick={onRates}>
           {t.todaysRate}
           {rateNeeded && <span className="ct-menu__dot" />}
         </button>
         <button type="button" className="ct-menu__item" onClick={onPrinter}>
-          {t.printerSetup}
+          {t.printerTitle}
         </button>
         <div className="ct-menu__row">
           <span>{t.counterLetter(device)}</span>

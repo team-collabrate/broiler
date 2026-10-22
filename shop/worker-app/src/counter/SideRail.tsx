@@ -10,6 +10,10 @@ interface Props {
   waiting: number;
   /** The oldest waiting bill has been waiting a day or more. */
   stale: boolean;
+  /** The printer: working as far as is known, none chosen yet, or the last print failed. */
+  printer: "ok" | "none" | "problem";
+  /** Opens the printer screen. */
+  onPrinter: () => void;
   onAdmin: () => void;
 }
 
@@ -17,7 +21,7 @@ interface Props {
  * The slim rail down the left edge: the shop logo on top, the connection status with the number of bills still to
  * upload, and the round Admin button at the bottom, so none of them take room from the products or cover a card.
  */
-export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, onAdmin }: Props) {
+export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, printer, onPrinter, onAdmin }: Props) {
   return (
     <aside className="ct-rail">
       <img className="ct-rail__logo" src={logoUrl} alt={t.appTitle} draggable={false} />
@@ -30,6 +34,9 @@ export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, onAdm
           <small>{t.waitingShort}</small>
         </span>
       )}
+      <button type="button" className={`ct-rail__printer is-${printer}`} onClick={onPrinter}>
+        {printer === "ok" ? t.printerOk : printer === "none" ? t.printerNone : t.printerProblem}
+      </button>
       <span className="ct-rail__spacer" />
       <button type="button" className="ct-rail__admin" aria-label={t.admin} onClick={onAdmin}>
         {t.adminShort}
