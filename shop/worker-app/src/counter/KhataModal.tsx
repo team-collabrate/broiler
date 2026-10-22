@@ -8,11 +8,11 @@ import {
   formatRateInput,
   parseRupeesInput,
   paymentProblem,
-  PAYMENT_LABELS,
   type Customer,
   type SettleMethod,
 } from "@kumbakonam/shared/core";
 import { getOutstandingCustomers, newPaymentId, recordCustomerPayment } from "@kumbakonam/shared/shop";
+import { PAYMENT_NAMES } from "./fmt";
 import { Keypad } from "./Keypad";
 import { t } from "./strings";
 
@@ -25,8 +25,8 @@ interface Props {
 }
 
 /**
- * The credit book (கடன் புத்தகம்): who owes what, and where a customer settles. Pick a name, type what they paid (or
- * tap "முழுவதும்" for all of it), choose cash or GPay, and record it. A name disappears from the list once their
+ * The credit book (kadan): who owes what, and where a customer settles. Pick a name, type what they paid (or
+ * tap "Pay all" for all of it), choose cash or GPay, and record it. A name disappears from the list once their
  * balance is cleared. A payment larger than what is owed is refused.
  */
 export function KhataModal({ connected, onClose }: Props) {
@@ -34,7 +34,7 @@ export function KhataModal({ connected, onClose }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [collecting, setCollecting] = useState<Customer | null>(null);
   const [text, setText] = useState("");
-  /** "முழுவதும்" was pressed: the amount is the exact balance, which may have paise the keypad cannot type. */
+  /** "Pay all" was pressed: the amount is the exact balance, which may have paise the keypad cannot type. */
   const [exact, setExact] = useState(false);
   const [method, setMethod] = useState<SettleMethod>("cash");
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +143,7 @@ export function KhataModal({ connected, onClose }: Props) {
                 leftKey="C"
                 onKey={(k) => {
                   changed();
-                  // Typing after "முழுவதும்" starts a fresh amount.
+                  // Typing after "Pay all" starts a fresh amount.
                   setText(k === CLEAR_KEY ? "" : applyRupeesKey(exact ? "" : text, k));
                   setExact(false);
                 }}
@@ -162,7 +162,7 @@ export function KhataModal({ connected, onClose }: Props) {
                       setMethod(m);
                     }}
                   >
-                    {PAYMENT_LABELS[m]}
+                    {PAYMENT_NAMES[m]}
                   </button>
                 ))}
               </div>

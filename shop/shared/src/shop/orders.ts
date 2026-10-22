@@ -13,6 +13,7 @@ import {
   orderLineTotalMinor,
   PAYMENT_METHODS,
   tidyCustomerName,
+  UserError,
   type OrderLine,
   type OrderLineInput,
   type PaymentMethod,
@@ -61,14 +62,14 @@ export function abandonOrder(orderId: string): void {
 
 function checkLine(l: OrderLineInput): void {
   const isInt = Number.isInteger;
-  if (l.unit !== "kg" && l.unit !== "piece") throw new Error(`${l.name}: அலகு தவறானது`);
-  if (!isInt(l.rateMinor) || l.rateMinor <= 0 || !isInt(l.listRateMinor) || l.listRateMinor <= 0) throw new Error(`${l.name}: விலை தவறானது`);
+  if (l.unit !== "kg" && l.unit !== "piece") throw new UserError(`${l.name}: invalid unit`);
+  if (!isInt(l.rateMinor) || l.rateMinor <= 0 || !isInt(l.listRateMinor) || l.listRateMinor <= 0) throw new UserError(`${l.name}: invalid rate`);
   if (l.unit === "piece") {
-    if (!isInt(l.qty) || l.qty < 1 || l.qty > MAX_QTY || l.grams !== 0) throw new Error(`${l.name}: எண்ணிக்கை தவறானது`);
+    if (!isInt(l.qty) || l.qty < 1 || l.qty > MAX_QTY || l.grams !== 0) throw new UserError(`${l.name}: invalid count`);
   } else if (!isInt(l.grams) || l.grams <= 0 || l.qty !== 0) {
-    throw new Error(`${l.name}: எடை தவறானது`);
+    throw new UserError(`${l.name}: invalid weight`);
   }
-  if (l.amountMinor !== undefined && (!isInt(l.amountMinor) || l.amountMinor <= 0)) throw new Error(`${l.name}: தொகை தவறானது`);
+  if (l.amountMinor !== undefined && (!isInt(l.amountMinor) || l.amountMinor <= 0)) throw new UserError(`${l.name}: invalid amount`);
 }
 
 /**
@@ -85,13 +86,13 @@ function checkLine(l: OrderLineInput): void {
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
   const { orderId, lines, paymentMethod, split, customer } = input;
   const staffName = input.staffName?.trim().slice(0, 40) ?? "";
-  if (lines.length === 0) throw new Error("ஆர்டரில் குறைந்தது ஒரு பொருள் வேண்டும்");
-  if (lines.length > MAX_ORDER_LINES) throw new Error(`ஒரு ஆர்டரில் அதிகபட்சம் ${MAX_ORDER_LINES} பொருட்கள்`);
-  if (!PAYMENT_METHODS.includes(paymentMethod)) throw new Error(`தெரியாத பணம் செலுத்தும் முறை: ${paymentMethod}`);
+  if (lines.length === 0) throw new UserError("The bill needs at least one item");
+  if (lines.length > MAX_ORDER_LINES) throw new UserError(`A bill can hold at most ${MAX_ORDER_LINES} items`);
+  if (!PAYMENT_METHODS.includes(paymentMethod)) throw new UserError(`Unknown payment method: ${paymentMethod}`);
   lines.forEach(checkLine);
   const customerName = customer ? tidyCustomerName(customer.name) : "";
   if (paymentMethod === "credit" && (customerName === "" || customerName.length > MAX_CUSTOMER_NAME)) {
-    throw new Error("கடனுக்கு வாடிக்கையாளர் பெயர் வேண்டும்");
+    throw new UserError("A credit bill needs a customer name");
   }
 
   // Totals are computed here, not by the caller, so every order is priced the same way. Each field is named, so
@@ -114,7 +115,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   const totalPieces = orderLines.reduce((sum, l) => sum + l.qty, 0);
 
   if (paymentMethod === "split" && !(split && isRealSplit(totalMinor, split.upiMinor))) {
-    throw new Error("GPay மற்றும் ரொக்கம் இரண்டிலும் தொகை வேண்டும்");
+    throw new UserError("A split bill needs an amount in both GPay and cash");
   }
   const upiMinor = paymentMethod === "split" && split ? Math.round(split.upiMinor) : 0;
 
@@ -167,7 +168,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
           totalMinor,
           soldAtMs: now.getTime(),
           state: "pending",
-          summary: lines.map((l) => `${l.name} ${formatLineQuantity(l)}`).join(", ").slice(0, 160),
+          // Shown on the counter screen only (in the "bill not accepted" notice), so the units are English.
+          summary: lines.map((l) => `${l.name} ${formatLineQuantity(l, "en")}`).join(", ").slice(0, 160),
         },
         committed,
       );

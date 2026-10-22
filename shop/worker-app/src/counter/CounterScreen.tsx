@@ -14,7 +14,6 @@ import {
   type OrderLineInput,
   type PaymentMethod,
   type Role,
-  categoryLabel,
   DEFAULT_CATEGORIES,
 } from "@kumbakonam/shared/core";
 import {
@@ -45,6 +44,7 @@ import { BillCart } from "./BillCart";
 import { BillSheet } from "./BillSheet";
 import { useCounterCart } from "./cart";
 import { CreditModal } from "./CreditModal";
+import { categoryLabel } from "./fmt";
 import { ItemSheet } from "./ItemSheet";
 import { KhataModal } from "./KhataModal";
 import { PinScreen } from "./PinScreen";

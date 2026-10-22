@@ -19,8 +19,10 @@ import {
   describeLine,
   formatLineQuantity,
   formatMoney,
+  formatQty,
   formatRate,
   formatRateInput,
+  formatTotals,
   formatWeight,
   gramsForAmount,
   isValidRupeesInput,
@@ -36,6 +38,7 @@ import {
   replaceLine,
   splitGrams,
   splitPayment,
+  unitSuffix,
   upiFromTyped,
   filterCustomersByName,
   isRealSplit,
@@ -245,6 +248,25 @@ test('a piece line is priced as rate times count', () => {
   assert.equal(orderLineTotalMinor(eggs(3)), 3000);
   assert.equal(orderLineTotalMinor(eggs(12, 750)), 9000);
   assert.equal(pieceTotalMinor(1000, 0), 0);
+});
+
+test('the formatters speak English on the counter screen and Tamil on the bill', () => {
+  assert.equal(formatWeight(850, 'en'), '850 g');
+  assert.equal(formatWeight(1250, 'en'), '1.25 kg');
+  assert.equal(formatWeight(1000, 'en'), '1 kg');
+  assert.equal(formatQty(1, 'en'), '1 pc');
+  assert.equal(formatQty(3, 'en'), '3 pcs');
+  assert.equal(formatQty(3), '3 எண்');
+  assert.equal(unitSuffix('kg', 'en'), '/kg');
+  assert.equal(unitSuffix('piece', 'en'), '/pc');
+  assert.equal(formatRate(24000, 'kg', 'en'), '₹240.00/kg');
+  assert.equal(formatTotals(1500, 3, 'en'), '1.5 kg · 3 pcs');
+  assert.equal(formatTotals(1500, 3), '1.5 கிலோ · 3 எண்');
+  assert.equal(formatTotals(0, 0, 'en'), '');
+  assert.equal(describeLine(byWeight(1250), 'en'), '1.25 kg × ₹240.00/kg');
+  assert.equal(describeLine(byAmount(10000), 'en'), '≈ 417 g (by amount)');
+  assert.equal(describeLine(eggs(3), 'en'), '3 pcs × ₹10.00/pc');
+  assert.equal(formatLineQuantity(byAmount(10000), 'en'), '≈ 417 g');
 });
 
 test('describeLine explains how a line was sold', () => {

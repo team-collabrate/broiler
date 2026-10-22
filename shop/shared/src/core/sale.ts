@@ -202,48 +202,63 @@ export function formatMoney(minor: number): string {
   return `${sign}${CURRENCY_SYMBOL}${amount}`;
 }
 
-/** `850 கிராம்` below one kilo, otherwise `1.25 கிலோ` (up to three decimals, trailing zeros trimmed). */
-export function formatWeight(grams: number): string {
-  if (grams < 1000) return `${grams} கிராம்`;
+/**
+ * The printed bill is Tamil (the default everywhere) and the counter screen is English, so every
+ * formatter below takes the language of the words it makes. Numbers and money read the same in both.
+ */
+export type Lang = 'ta' | 'en';
+
+const UNIT_WORDS = {
+  ta: { gram: 'கிராம்', kilo: 'கிலோ', piece: 'எண்', pieces: 'எண்', byAmount: 'தொகைப்படி' },
+  en: { gram: 'g', kilo: 'kg', piece: 'pc', pieces: 'pcs', byAmount: 'by amount' },
+} as const;
+
+/** `850 கிராம்` (`850 g`) below one kilo, otherwise `1.25 கிலோ` (`1.25 kg`); up to three decimals, trailing zeros trimmed. */
+export function formatWeight(grams: number, lang: Lang = 'ta'): string {
+  const words = UNIT_WORDS[lang];
+  if (grams < 1000) return `${grams} ${words.gram}`;
   const kg = (grams / 1000).toFixed(3).replace(/\.?0+$/, '');
-  return `${kg} கிலோ`;
+  return `${kg} ${words.kilo}`;
 }
 
-/** `3 எண்`: a count of pieces or packets. */
-export function formatQty(qty: number): string {
-  return `${qty} எண்`;
+/** `3 எண்` (`3 pcs`): a count of pieces or packets. */
+export function formatQty(qty: number, lang: Lang = 'ta'): string {
+  const words = UNIT_WORDS[lang];
+  return `${qty} ${qty === 1 ? words.piece : words.pieces}`;
 }
 
-/** The per-unit suffix of a rate: `/கிலோ` or `/எண்`. */
-export function unitSuffix(unit: Unit): string {
-  return unit === 'piece' ? '/எண்' : '/கிலோ';
+/** The per-unit suffix of a rate: `/கிலோ` or `/எண்` (`/kg` or `/pc`). */
+export function unitSuffix(unit: Unit, lang: Lang = 'ta'): string {
+  const words = UNIT_WORDS[lang];
+  return unit === 'piece' ? `/${words.piece}` : `/${words.kilo}`;
 }
 
-/** A rate with its unit: `₹240.00/கிலோ`. */
-export function formatRate(rateMinor: number, unit: Unit): string {
-  return `${formatMoney(rateMinor)}${unitSuffix(unit)}`;
+/** A rate with its unit: `₹240.00/கிலோ` (`₹240.00/kg`). */
+export function formatRate(rateMinor: number, unit: Unit, lang: Lang = 'ta'): string {
+  return `${formatMoney(rateMinor)}${unitSuffix(unit, lang)}`;
 }
 
 /** A weight and/or a count together, e.g. `1.5 கிலோ · 3 எண்`; empty when there is neither. */
-export function formatTotals(totalGrams: number, totalPieces: number): string {
-  return [totalGrams > 0 ? formatWeight(totalGrams) : '', totalPieces > 0 ? formatQty(totalPieces) : ''].filter(Boolean).join(' · ');
+export function formatTotals(totalGrams: number, totalPieces: number, lang: Lang = 'ta'): string {
+  return [totalGrams > 0 ? formatWeight(totalGrams, lang) : '', totalPieces > 0 ? formatQty(totalPieces, lang) : ''].filter(Boolean).join(' · ');
 }
 
 /** How much of a line was sold: its weight (`≈` for a fixed-amount line) or its count. */
-export function formatLineQuantity(line: PricedLine): string {
-  if (line.unit === 'piece') return formatQty(line.qty);
-  return line.amountMinor !== undefined ? `≈ ${formatWeight(line.grams)}` : formatWeight(line.grams);
+export function formatLineQuantity(line: PricedLine, lang: Lang = 'ta'): string {
+  if (line.unit === 'piece') return formatQty(line.qty, lang);
+  return line.amountMinor !== undefined ? `≈ ${formatWeight(line.grams, lang)}` : formatWeight(line.grams, lang);
 }
 
 /** The small print under a line: `1.25 கிலோ × ₹240.00/கிலோ`, `3 எண் × ₹10.00/எண்`, or `≈ 417 கிராம் (தொகைப்படி)`. */
-export function describeLine(line: PricedLine): string {
+export function describeLine(line: PricedLine, lang: Lang = 'ta'): string {
+  const byAmount = UNIT_WORDS[lang].byAmount;
   if (line.unit === 'piece') {
     return line.amountMinor !== undefined
-      ? `${formatQty(line.qty)} (தொகைப்படி)`
-      : `${formatQty(line.qty)} × ${formatRate(line.rateMinor, 'piece')}`;
+      ? `${formatQty(line.qty, lang)} (${byAmount})`
+      : `${formatQty(line.qty, lang)} × ${formatRate(line.rateMinor, 'piece', lang)}`;
   }
-  if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams)} (தொகைப்படி)`;
-  return `${formatWeight(line.grams)} × ${formatRate(line.rateMinor, 'kg')}`;
+  if (line.amountMinor !== undefined) return `≈ ${formatWeight(line.grams, lang)} (${byAmount})`;
+  return `${formatWeight(line.grams, lang)} × ${formatRate(line.rateMinor, 'kg', lang)}`;
 }
 
 // --- Keypad entry ---------------------------------------------------------------------

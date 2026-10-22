@@ -5,6 +5,7 @@ import {
   normalizeDefaultGrams,
   normalizeDefaultQty,
   normalizeMethods,
+  UserError,
   type Category,
   type MenuItem,
   type Variant,
@@ -82,7 +83,7 @@ export interface RateUpdate {
  */
 export async function setMenuRates(rates: RateUpdate[]): Promise<void> {
   for (const r of rates) {
-    if (!Number.isInteger(r.rateMinor) || r.rateMinor <= 0) throw new Error("ஒவ்வொரு விலையும் பூஜ்யத்துக்கு மேல் இருக்க வேண்டும்");
+    if (!Number.isInteger(r.rateMinor) || r.rateMinor <= 0) throw new UserError("Every rate must be above zero");
   }
   const db = getFirestoreDb();
   const stamp = Timestamp.fromDate(new Date());

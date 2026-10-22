@@ -10,8 +10,8 @@ import {
   type CartLine,
   type PaymentMethod,
 } from "@kumbakonam/shared/core";
+import { billText } from "../printing/billText";
 import type { BillInput } from "../printing/receipt";
-import { t } from "./strings";
 
 export interface SavedSale {
   orderId: string;
@@ -46,7 +46,7 @@ export function toBillInput(sale: SavedSale): BillInput {
       quantity: formatLineQuantity(line),
       rate: formatRate(line.rateMinor, line.unit),
       amount: formatMoney(orderLineTotalMinor(line)),
-      ...(adjustmentMinor(line) !== 0 && { note: t.listRate(formatRate(line.listRateMinor, line.unit)) }),
+      ...(adjustmentMinor(line) !== 0 && { note: billText.listRate(formatRate(line.listRateMinor, line.unit)) }),
     })),
     ...(sale.totalGrams > 0 && { totalWeight: formatWeight(sale.totalGrams) }),
     ...(sale.totalPieces > 0 && { totalPieces: formatQty(sale.totalPieces) }),
@@ -55,7 +55,7 @@ export function toBillInput(sale: SavedSale): BillInput {
     ...(sale.paymentMethod === "split" &&
       sale.cashAmountMinor !== undefined &&
       sale.upiAmountMinor !== undefined && {
-        paymentDetail: `ரொக்கம் ${formatMoney(sale.cashAmountMinor)} + GPay ${formatMoney(sale.upiAmountMinor)}`,
+        paymentDetail: billText.splitDetail(formatMoney(sale.cashAmountMinor), formatMoney(sale.upiAmountMinor)),
       }),
     ...(sale.paymentMethod === "credit" && sale.customerName && { customerName: sale.customerName }),
     ...(sale.staffName && { staffName: sale.staffName }),

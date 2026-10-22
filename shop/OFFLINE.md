@@ -7,23 +7,23 @@ does and does not work offline, how it is built, and how it was tested.
 
 | Situation | What the screen does |
 | --- | --- |
-| Internet drops | The rail says **⚠ ஆஃப்லைன்** (after about 4 seconds) and a note at the top says selling can carry on. |
-| A bill is made offline | It prints at once with its bill number and is saved on the tablet. The rail shows a gold **number + காத்திருப்பு** pill: how many bills are waiting to upload. |
+| Internet drops | The rail says **⚠ Offline** (after about 4 seconds) and a note at the top says selling can carry on. |
+| A bill is made offline | It prints at once with its bill number and is saved on the tablet. The rail shows a gold **number + Waiting** pill: how many bills are waiting to upload. |
 | Internet returns | Waiting bills upload by themselves, in order, once each. The pill goes away. Nothing to press. |
 | Bills have waited a day or more | The pill turns red and the note asks for the internet to be connected soon. |
-| The server refuses a bill | A red card at the top names the bill, its amount and what was sold, and says to write it down and tell the owner. It stays until someone taps **பார்த்தேன்**. |
-| The screen locks (30 idle minutes, or **திரையைப் பூட்டு**) | The sales screen is hidden but the half-made bill is kept. The PIN opens it again, with or without internet. |
+| The server refuses a bill | A red card at the top names the bill, its amount and what was sold, and says to write it down and tell the owner. It stays until someone taps **Got it**. |
+| The screen locks (30 idle minutes, or **Lock screen**) | The sales screen is hidden but the half-made bill is kept. The PIN opens it again, with or without internet. |
 
 ## What works offline, what does not
 
 | Works with no internet | Needs the internet |
 | --- | --- |
-| Cash, UPI and split bills (number made on the tablet, printed at once) | **Credit (கடன்) bills** and **credit payments** |
+| Cash, UPI and split bills (number made on the tablet, printed at once) | **Credit (kadan) bills** and **credit payments** |
 | The product grid, rates and photos (kept on the tablet) | Setting today's rates (the owner's PIN is checked by the server) |
 | Printing over Bluetooth | The first PIN sign-in on a tablet, and a sign-in after signing out |
 | Unlocking the locked screen | Menu changes made by the owner |
 
-A credit bill asks for the internet and says so: *"கடன் பில்லுக்கு இணைய இணைப்பு தேவை"*. Write it on paper and ring it up
+A credit bill asks for the internet and says so: *"Credit needs internet. Try again when it is back."*. Write it on paper and ring it up
 when the line is back.
 
 ## How it is built
@@ -90,7 +90,7 @@ would quietly lose money owed to the shop.
   - 10 mixed cash/UPI sales offline: bill numbers 2 to 11 in a row, all waiting; reconnecting uploaded all 10 in about a second, once each,
     with no duplicate or missing number, and each kept its real sale time.
   - 3 sales offline, then the page reloaded: they were picked up again and uploaded once.
-  - A refused bill (a re-sent order id): the red card named it with the reason; **பார்த்தேன்** cleared it.
+  - A refused bill (a re-sent order id): the red card named it with the reason; **Got it** cleared it.
   - A bill queued as the owner, then sign out and back in as the owner: uploaded once. While a different account was signed in
     the bill was not wrongly reported as refused.
   - Lock, wrong PIN, right PIN (online and with the sign-in server blocked), the 30-second block after five wrong PINs, and a

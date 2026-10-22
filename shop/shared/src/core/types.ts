@@ -7,12 +7,22 @@ export type PaymentMethod = 'cash' | 'upi' | 'card' | 'split' | 'credit';
 
 export const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'upi', 'card', 'split', 'credit'];
 
+/** Payment names as printed on the bill (Tamil). The counter screen uses `PAYMENT_LABELS_EN`. */
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cash: 'பணம்',
   upi: 'UPI',
   card: 'கார்டு',
   split: 'பிரித்து',
   credit: 'கடன்',
+};
+
+/** Payment names on the counter screen (English). */
+export const PAYMENT_LABELS_EN: Record<PaymentMethod, string> = {
+  cash: 'Cash',
+  upi: 'UPI',
+  card: 'Card',
+  split: 'Split',
+  credit: 'Credit',
 };
 
 /** How money received against a credit balance was paid. */

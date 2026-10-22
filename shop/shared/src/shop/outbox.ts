@@ -22,7 +22,7 @@ import { browserStore } from "./storage";
 
 const KEY = "broiler.outbox";
 const store = browserStore();
-const REFUSED = "சர்வர் இந்த பில்லை ஏற்கவில்லை";
+const REFUSED = "The server did not accept this bill";
 
 let list: Outbox = dropExpired(parseOutbox(store.getItem(KEY)), Date.now());
 const listeners = new Set<() => void>();

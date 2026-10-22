@@ -24,6 +24,14 @@ const LEGACY_LABELS: Record<string, string> = {
   more: 'மற்றவை',
 };
 
+const LEGACY_LABELS_EN: Record<string, string> = {
+  broiler: 'Broiler',
+  naatukoli: 'Country chicken',
+  kadai: 'Quail',
+  offal: 'Offal',
+  more: 'Others',
+};
+
 /** The three counter tabs an earlier version's categories fold into, so old menu items land under a current tab. */
 const LEGACY_CATEGORY: Record<string, string> = {
   broiler: 'chicken',
@@ -38,9 +46,11 @@ export function canonicalCategory(key: string): string {
   return LEGACY_CATEGORY[key] ?? key;
 }
 
-/** Tab label for a category key. Unknown keys fall back to the key itself. */
-export function categoryLabel(key: string, categories: Category[] = DEFAULT_CATEGORIES): string {
-  return categories.find((c) => c.key === key)?.nameTa ?? LEGACY_LABELS[key] ?? key;
+/** Tab label for a category key: Tamil by default, English (`Chicken`) for the counter screen. Unknown keys fall back to the key itself. */
+export function categoryLabel(key: string, categories: Category[] = DEFAULT_CATEGORIES, lang: 'ta' | 'en' = 'ta'): string {
+  const found = categories.find((c) => c.key === key);
+  if (lang === 'en') return found?.name || LEGACY_LABELS_EN[key] || key;
+  return found?.nameTa ?? LEGACY_LABELS[key] ?? key;
 }
 
 /** Position of a category among the tabs; unknown keys sort last. */

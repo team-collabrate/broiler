@@ -1,16 +1,28 @@
-// Turns a Firebase or app error into a short Tamil message for staff. The wording follows the
-// Kumbakonam POS's own error messages so both shops' apps read the same.
+// Turns a Firebase or app error into a short English message for the counter screen.
 
-const NO_ACCESS = 'இந்தத் தரவை அணுக அனுமதி இல்லை.';
-const NO_NETWORK = 'சர்வரை அணுக முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்க்கவும்.';
-const WRONG_PIN = 'பின் எண் தவறு.';
-const TOO_MANY = 'பல முறை தவறான பின் எண் உள்ளிடப்பட்டது. சிறிது நேரம் கழித்து முயற்சிக்கவும்.';
-const BAD_PIN_FORMAT = 'பின் எண் 4 முதல் 6 இலக்கங்களாக இருக்க வேண்டும்.';
-const NEEDS_CONNECTION = 'கடன் பில்லுக்கு இணைய இணைப்பு தேவை. இணைப்பு வந்ததும் மீண்டும் முயற்சிக்கவும்.';
-const GENERIC = 'ஏதோ தவறு ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.';
+const NO_ACCESS = "You don't have access to this data.";
+const NO_NETWORK = "Can't reach the server. Check the connection.";
+const WRONG_PIN = 'Wrong PIN.';
+const TOO_MANY = 'Too many wrong PINs. Try again in a little while.';
+const BAD_PIN_FORMAT = 'The PIN must be 4 to 6 digits.';
+const NEEDS_CONNECTION = 'A credit bill needs the internet. Try again when the connection is back.';
+const GENERIC = 'Something went wrong. Please try again.';
+
+/**
+ * An error whose message was written for the person at the counter, such as a failed check inside
+ * createOrder. `describeError` shows it as it is; any other error is replaced by a generic message, so
+ * raw Firebase text never reaches the screen.
+ */
+export class UserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UserError';
+  }
+}
 
 /** Firestore codes look like `unavailable`; Auth codes look like `auth/network-request-failed`. */
 export function describeError(error: unknown): string {
+  if (error instanceof UserError) return error.message;
   const code = String((error as { code?: unknown } | null)?.code ?? '');
   if (code === 'permission-denied' || code.endsWith('/permission-denied')) return NO_ACCESS;
   if (code === 'unavailable' || code === 'deadline-exceeded' || code === 'auth/network-request-failed') return NO_NETWORK;
@@ -20,8 +32,5 @@ export function describeError(error: unknown): string {
   if (code === 'app/invalid-pin') return BAD_PIN_FORMAT;
   if (code === 'app/needs-connection') return NEEDS_CONNECTION;
   if (code === 'app/too-many-attempts') return TOO_MANY;
-  // Messages we wrote ourselves (checks inside createOrder, setMenuRates) are already Tamil.
-  const message = error instanceof Error ? error.message : '';
-  if (/[\u0B80-\u0BFF]/.test(message)) return message;
   return GENERIC;
 }

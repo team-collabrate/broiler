@@ -1,27 +1,29 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describeError } from './errors.ts';
+import { describeError, UserError } from './errors.ts';
 
-test('describeError maps Firestore and Auth codes to short Tamil messages', () => {
-  assert.match(describeError({ code: 'permission-denied' }), /அனுமதி/);
-  assert.match(describeError({ code: 'unavailable' }), /இணைப்பை/);
-  assert.match(describeError({ code: 'auth/network-request-failed' }), /இணைப்பை/);
-  assert.match(describeError({ code: 'auth/api-key-not-valid' }), /தவறு/);
+test('describeError maps Firestore and Auth codes to short English messages', () => {
+  assert.match(describeError({ code: 'permission-denied' }), /access/);
+  assert.match(describeError({ code: 'unavailable' }), /connection/);
+  assert.match(describeError({ code: 'auth/network-request-failed' }), /connection/);
+  assert.match(describeError({ code: 'auth/api-key-not-valid' }), /went wrong/);
 });
 
-test('describeError keeps messages that are already Tamil and hides raw English ones', () => {
-  assert.equal(describeError(new Error('ஆர்டரில் குறைந்தது ஒரு பொருள் வேண்டும்')), 'ஆர்டரில் குறைந்தது ஒரு பொருள் வேண்டும்');
-  assert.match(describeError(new Error('Firebase: Error (internal)')), /தவறு/);
-  assert.match(describeError(undefined), /தவறு/);
-  assert.match(describeError(null), /தவறு/);
+test('describeError shows our own messages as written and hides raw ones', () => {
+  assert.equal(describeError(new UserError('The bill needs at least one item')), 'The bill needs at least one item');
+  assert.ok(new UserError('x') instanceof Error);
+  assert.match(describeError(new Error('Firebase: Error (internal)')), /went wrong/);
+  assert.match(describeError(new Error('The bill needs at least one item')), /went wrong/); // only UserError passes through
+  assert.match(describeError(undefined), /went wrong/);
+  assert.match(describeError(null), /went wrong/);
 });
 
 test('describeError gives sign-in failures their own messages', () => {
   for (const code of ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found']) {
-    assert.equal(describeError({ code }), 'பின் எண் தவறு.');
+    assert.equal(describeError({ code }), 'Wrong PIN.');
   }
-  assert.match(describeError({ code: 'auth/too-many-requests' }), /சிறிது நேரம்/);
-  assert.match(describeError({ code: 'app/invalid-pin' }), /4 முதல் 6/);
-  assert.match(describeError({ code: 'app/needs-connection' }), /இணைய இணைப்பு/);
-  assert.match(describeError({ code: 'app/too-many-attempts' }), /சிறிது நேரம்/);
+  assert.match(describeError({ code: 'auth/too-many-requests' }), /little while/);
+  assert.match(describeError({ code: 'app/invalid-pin' }), /4 to 6/);
+  assert.match(describeError({ code: 'app/needs-connection' }), /needs the internet/);
+  assert.match(describeError({ code: 'app/too-many-attempts' }), /little while/);
 });

@@ -364,7 +364,7 @@ export function usePrinter(): UsePrinterResult {
   return {
     status: fake ? "ready" : status,
     problem,
-    deviceName: fake ? "சோதனை பிரிண்டர்" : deviceName,
+    deviceName: fake ? "Test printer" : deviceName,
     platform: PLATFORM,
     printerDevices,
     connect,

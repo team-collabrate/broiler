@@ -16,25 +16,25 @@ checked on the real printer.
    **The BonKaso BKT05 comes in two versions: USB only, and USB + Bluetooth.** The shop needs the **Bluetooth** one. Printing
    over a USB cable from the tablet is not supported by this app.
 3. A failed print is never a lost sale: the sale is saved first, and the bill stays on the screen with the reason and a
-   **மீண்டும் அச்சிடு** (print again) button.
+   **Print again** button.
 
 ## What the staff will see
 
 | Situation | What happens |
 | --- | --- |
-| Printer chosen and working | The bill prints; a green "பில் … அச்சிடப்பட்டது ✓" note. The rail shows **● பிரிண்டர்**. |
-| No printer chosen on this tablet | The bill is saved and shown on the screen: "பிரிண்டர் இணைக்கப்படவில்லை…" with a **பிரிண்டர் அமைப்பு** button. The rail shows a gold **⚠ பிரிண்டர் இல்லை** (tap it to set up). |
-| Printer switched off, out of range or out of paper | The bill is shown with "பிரிண்டர் பதிலளிக்கவில்லை. ஆன் செய்யப்பட்டுள்ளதா, அருகில் உள்ளதா, பேப்பர் உள்ளதா எனப் பார்க்கவும்". The rail turns red (**⚠ பிரிண்டர் சிக்கல்**). Fix it and press **மீண்டும் அச்சிடு**. No re-pairing needed. |
-| Bluetooth switched off on the tablet | "புளூடூத் ஆஃப் செய்யப்பட்டுள்ளது…": turn it on in the tablet's settings, then print again. |
-| The app has no Bluetooth permission | "…அமைப்புகள் > ஆப்ஸ் > Broiler POS > அனுமதிகளில் இயக்கவும்". |
-| Someone wants a copy of an earlier bill | Admin ▸ **கடைசி பில்கள்** lists the last bills printed on this tablet; open one and print. It prints with a large **நகல்** (copy) mark so it cannot pass for a second original. |
+| Printer chosen and working | The bill prints; a green "Bill … printed ✓" note. The rail shows **● Printer**. |
+| No printer chosen on this tablet | The bill is saved and shown on the screen: "No printer connected. Go to Admin > Printer setup." with a **Printer setup** button. The rail shows a gold **⚠ No printer** (tap it to set up). |
+| Printer switched off, out of range or out of paper | The bill is shown with "The printer is not responding. Check it is on, close by, and has paper." The rail turns red (**⚠ Printer problem**). Fix it and press **Print again**. No re-pairing needed. |
+| Bluetooth switched off on the tablet | "Bluetooth is off. Turn it on and try again.": turn it on in the tablet's settings, then print again. |
+| The app has no Bluetooth permission | "Allow Bluetooth for this app in Settings > Apps > Broiler POS > Permissions." |
+| Someone wants a copy of an earlier bill | Admin ▸ **Recent bills** lists the last bills printed on this tablet; open one and print. It prints with a large **நகல்** (copy) mark so it cannot pass for a second original. |
 
 The printer is **remembered**: it stays chosen after a restart, and it does not matter if the printer is still switched off when
 the app opens. The Bluetooth connection is made (and made again if it has dropped) when a bill is printed: if the first try
 fails the app drops the old connection, reconnects once and sends the bill again before giving up.
 
 **Out of paper cannot be detected** by most cheap printers over Bluetooth, so it shows as "not responding". The on-screen bill and
-**மீண்டும் அச்சிடு** cover it.
+**Print again** cover it.
 
 ## What you can check without a printer
 
@@ -51,7 +51,7 @@ Edit `worker-app/src/printing/shopDetails.ts`:
 
 | Setting | Meaning |
 | --- | --- |
-| `SHOP_DETAILS.name` | **Placeholder** (`பிராய்லர் கோழிக்கடை`). Put the real shop name. A long name shrinks to fit. |
+| `SHOP_DETAILS.name` | `Honey Broilers` (set on go-live day). A long name shrinks to fit. |
 | `SHOP_DETAILS.subtitle` | Address or area, one line (optional) |
 | `SHOP_DETAILS.phone` | Phone number (optional) |
 | `SHOP_DETAILS.thanks` / `footer` | Closing lines |
@@ -95,13 +95,13 @@ whoever makes it must keep the key file safe: without it the app cannot be updat
 ## Pair the printer on the tablet
 
 1. Switch the printer on and pair it in the tablet's own **Settings > Bluetooth** first (the PIN is usually `0000` or `1234`).
-2. In the app tap the printer button on the left rail (**⚠ பிரிண்டர் இல்லை**) or Admin ▸ **பிரிண்டர் அமைப்பு**, tap
-   **புளூடூத் பிரிண்டரை இணை**, allow the permission, and tap the printer in the list.
-3. Tap **சோதனை பில் அச்சிடு** (prints a sample bill) and **அளவு சோதனை அச்சிடு** (prints the calibration sheet).
+2. In the app tap the printer button on the left rail (**⚠ No printer**) or Admin ▸ **Printer setup**, tap
+   **Connect printer**, allow the permission, and tap the printer in the list.
+3. Tap **Print test bill** (prints a sample bill) and **Print size test** (prints the calibration sheet).
 
 ## The day the printer arrives: check list
 
-Print the **calibration sheet** (`அளவு சோதனை`) and look at the paper:
+Print the **calibration sheet** (**Print size test**) and look at the paper:
 
 | Look for | If it is wrong |
 | --- | --- |
@@ -111,7 +111,7 @@ Print the **calibration sheet** (`அளவு சோதனை`) and look at the
 
 Then the **fifty-bill test** (the Phase 5 finish line): ring up and print 50 bills in a row, with the printer switched off and on
 again part-way, and once with Bluetooth switched off and on. Every bill should print or be reprintable from the screen; none
-should be missing from Admin ▸ **கடைசி பில்கள்**. Also check the print speed: turn on **அச்சு வேகத் தகவலைக் காட்டு** in the
+should be missing from Admin ▸ **Recent bills**. Also check the print speed: turn on **Show print speed** in the
 printer screen to see the time and speed of each print.
 
 ## Known limits

@@ -25,20 +25,26 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 
 ## Before the first bill
 
-1. **Set today's rates.** The rates in the app are example values. Admin ▸ **இன்றைய விலை**, enter the **managing PIN**, set each rate, save.
-   A dot on the Admin button means today's rates are not all set.
+1. **Set today's rates.** The rates in the app are example values. Admin ▸ **Today's rate**, enter the **managing PIN**, set each rate, save.
+   A dot on the ⚙️ button (bottom left, opens the Admin menu) means today's rates are not all set.
 2. Install the app (`PRINTING.md`: *Build the Android app*, *Set up the tablet*), sign in with the **billing PIN**.
 3. Pair the BonKaso BKT05 (the **Bluetooth** version) and print the **test bill** and the **calibration sheet** (`PRINTING.md`).
 4. Ring up one cash bill, print it, and look at the paper: *Honey Broilers*, the bill number like `22-10/1`, the worker name.
 
+## What language the screen uses
+
+- **The counter screen is in plain English** (Chicken, Mutton, Others, Cash, UPI, Split, Credit, Print bill, Admin…).
+- **Product names stay in Tamil** (they come from the menu).
+- **The printed bill is fully Tamil** (date, bill number, items, weights, totals, payment, thanks line). Only the shop name, *Honey Broilers*, is in English.
+
 ## How the shop runs
 
-- **Two workers:** tap **Worker A** or **Worker B** at the top of the cart before billing. The name is kept, goes on every bill and prints beside the bill number.
+- **Two workers:** tap **Worker A** or **Worker B** at the top of the bill before billing. The name is kept, goes on every bill and prints beside the bill number.
 - **Bill number:** `dd-mm/number`, starting at 1 each day (`22-10/1`, `22-10/2`, …).
 - **Five items to a bill.** For more, make a second bill.
-- **Cash, GPay, split (GPay + cash) and credit (கடன்)** all work. Credit and taking a credit payment need the internet; everything else works offline and uploads by itself.
-- **Printer trouble:** the sale is already saved. Read the message on the screen, fix it (switch the printer on, switch Bluetooth on) and press **மீண்டும் அச்சிடு**.
-- **A copy of an earlier bill:** Admin ▸ **கடைசி பில்கள்**; it prints marked **நகல்**.
+- **Cash, UPI (GPay), split (GPay + cash) and credit (kadan)** all work. Credit and taking a credit payment need the internet; everything else works offline and uploads by itself.
+- **Printer trouble:** the sale is already saved. Read the message on the screen, fix it (switch the printer on, switch Bluetooth on) and press **Print again**.
+- **A copy of an earlier bill:** Admin ▸ **Recent bills**; it prints marked **நகல்** (copy).
 - **Owner's view of the day:** until the owner phone app is built, use the hosted admin dashboard (`apps/admin`, managing PIN) or
   `node --env-file=apps/pos/.env scripts/check-books.mjs` (needs a computer, and asks for the managing PIN) for the day's cash, GPay and credit.
 

@@ -7,7 +7,7 @@ credit or payment code, or the bill format change.
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock, printer recovery and the recent-bills list (122 tests, a few seconds). |
+| `npm test` | The pure sale logic: weights, money, split, credit names, bill numbering, the outbox, the PIN lock, printer recovery and the recent-bills list (124 tests, a few seconds). |
 | `npm run typecheck` | Types in all four apps. |
 | `npm run build:worker` | The counter builds for production, including the service worker. |
 | `npm run android:apk` | Builds the installable Android app (several minutes the first time). See PRINTING.md. |

@@ -7,9 +7,6 @@ import {
   clampRate,
   CURRENCY_SYMBOL,
   formatMoney,
-  formatQty,
-  formatRate,
-  formatWeight,
   gramsForAmount,
   itemName,
   lineTotalMinor,
@@ -24,6 +21,7 @@ import {
   type Method,
   type OrderLineInput,
 } from "@kumbakonam/shared/core";
+import { formatQty, formatRate, formatWeight } from "./fmt";
 import { Keypad } from "./Keypad";
 import { t } from "./strings";
 import { WheelPicker } from "./WheelPicker";
@@ -191,7 +189,7 @@ export function ItemSheet({ item, editing, maxAdjustMinor, onCancel, onConfirm }
           {method === "amount" && (
             <div className="ct-amount">
               <div className="ct-amount__display">
-                <span className="ct-amount__value" aria-label={`${amountText || "0"} ரூபாய்`}>
+                <span className="ct-amount__value" aria-label={`${amountText || "0"} rupees`}>
                   {CURRENCY_SYMBOL}
                   {amountText || "0"}
                 </span>

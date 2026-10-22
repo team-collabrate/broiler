@@ -3,7 +3,7 @@ export function isOnlineNow(): boolean {
   return typeof navigator === "undefined" || navigator.onLine !== false;
 }
 
-/** The error for work that cannot be done without the internet (a credit bill, a credit payment). `describeError` words it in Tamil. */
+/** The error for work that cannot be done without the internet (a credit bill, a credit payment). `describeError` words it in English. */
 export function needsConnectionError(): Error {
   return Object.assign(new Error("this needs a connection"), { code: "app/needs-connection" });
 }

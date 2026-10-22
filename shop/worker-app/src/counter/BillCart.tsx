@@ -1,14 +1,5 @@
-import {
-  adjustmentMinor,
-  describeLine,
-  formatMoney,
-  formatRate,
-  formatTotals,
-  orderLineTotalMinor,
-  PAYMENT_LABELS,
-  type CartLine,
-  type PaymentMethod,
-} from "@kumbakonam/shared/core";
+import { adjustmentMinor, formatMoney, orderLineTotalMinor, type CartLine, type PaymentMethod } from "@kumbakonam/shared/core";
+import { describeLine, formatRate, formatTotals, PAYMENT_NAMES } from "./fmt";
 import { t } from "./strings";
 
 /** The four payment buttons, in the order of the counter sketch: cash and UPI, then kadan (credit) and split. */
@@ -143,7 +134,7 @@ export function BillCart({
               className={`ct-pay__chip${method === paymentMethod ? " is-on" : ""}`}
               onClick={() => onPaymentChange(method)}
             >
-              <span>{PAYMENT_LABELS[method]}</span>
+              <span>{PAYMENT_NAMES[method]}</span>
               {detail && method === paymentMethod && <small>{detail}</small>}
             </button>
           );

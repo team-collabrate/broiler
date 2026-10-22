@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, orderBy, query, runTransaction, serverTimestamp, Timestamp, where, type DocumentData } from "firebase/firestore";
-import { dayKey, paymentProblem, type Customer, type SettleMethod } from "../core";
+import { dayKey, paymentProblem, UserError, type Customer, type SettleMethod } from "../core";
 import { getFirestoreDb } from "../firebase";
 import { isOnlineNow, needsConnectionError } from "./online";
 
@@ -56,13 +56,13 @@ export async function recordCustomerPayment(input: RecordPaymentInput): Promise<
   const paymentRef = doc(db, "customerPayments", input.paymentId);
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(customerRef);
-    if (!snap.exists()) throw new Error("வாடிக்கையாளர் கிடைக்கவில்லை");
+    if (!snap.exists()) throw new UserError("Customer not found");
     const customer = toCustomer(snap.id, snap.data());
     // The counter may not read receipts, so a retry is recognised by the customer's own note of the last receipt.
     if (snap.data().lastPaymentId === input.paymentId) return { balanceMinor: customer.balanceMinor, alreadyRecorded: true };
     const problem = paymentProblem(input.amountMinor, customer.balanceMinor);
-    if (problem === "zero") throw new Error("பூஜ்ஜியத்திற்கு மேல் தொகையை உள்ளிடவும்");
-    if (problem === "tooMuch") throw new Error("கடனை விட அதிகம்");
+    if (problem === "zero") throw new UserError("Enter an amount above zero");
+    if (problem === "tooMuch") throw new UserError("That is more than the customer owes");
     tx.update(customerRef, {
       balanceMinor: customer.balanceMinor - input.amountMinor,
       lastPaymentId: input.paymentId,

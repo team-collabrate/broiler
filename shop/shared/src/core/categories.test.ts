@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { canonicalCategory, categoryLabel, categoryOrder, DEFAULT_CATEGORIES, normalizeCategories } from './categories.ts';
 
+test('categoryLabel gives the English tab name for the counter screen', () => {
+  assert.equal(categoryLabel('mutton', DEFAULT_CATEGORIES, 'en'), 'Mutton');
+  assert.equal(categoryLabel('other', DEFAULT_CATEGORIES, 'en'), 'Others');
+  assert.equal(categoryLabel('offal', DEFAULT_CATEGORIES, 'en'), 'Offal'); // a tab name from an earlier version
+  assert.equal(categoryLabel('mystery', DEFAULT_CATEGORIES, 'en'), 'mystery');
+  assert.equal(categoryLabel('fish', [{ key: 'fish', name: 'Fish', nameTa: 'மீன்' }], 'en'), 'Fish');
+});
+
 test('categoryLabel uses the list given, then older names, then the key', () => {
   assert.equal(categoryLabel('mutton'), 'மட்டன்');
   assert.equal(categoryLabel('offal'), 'ஈரல் • குடல் • இரத்தம்'); // a tab name from an earlier version

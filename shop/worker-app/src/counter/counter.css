@@ -82,9 +82,13 @@ button {
   border: 2px solid var(--color-accent);
   background: var(--color-surface);
   color: var(--color-accent);
-  font-size: var(--text-callout);
-  font-weight: 800;
   cursor: pointer;
+}
+.ct-rail__icon {
+  width: 34px;
+  height: 34px;
+  display: block;
+  margin: 0 auto;
 }
 .ct-rail__dot,
 .ct-menu__dot {

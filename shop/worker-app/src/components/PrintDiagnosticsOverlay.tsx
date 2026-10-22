@@ -1,4 +1,3 @@
-import { useLanguage } from "@kumbakonam/shared";
 import type { PrintProgress } from "../hooks/usePrinter";
 import "./PrintDiagnosticsOverlay.css";
 
@@ -8,11 +7,11 @@ export interface PrintDiagnosticsOverlayProps {
 }
 
 const STRINGS = {
-  title: { en: "Print speed", ta: "பிரிண்ட் வேகம்" },
-  chunk: { en: "Chunk", ta: "பகுதி" },
-  remaining: { en: "remaining", ta: "மீதம்" },
-  done: { en: "Done", ta: "முடிந்தது" },
-  fallback: { en: "size drops", ta: "அளவு குறைப்புகள்" },
+  title: "Print speed",
+  chunk: "Chunk",
+  remaining: "remaining",
+  done: "Done",
+  fallback: "size drops",
 };
 
 const fmtMs = (ms: number) => (ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`);
@@ -26,14 +25,13 @@ const fmtMs = (ms: number) => (ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000
  * a print completes rather than lingering as a stale readout on screen.
  */
 export function PrintDiagnosticsOverlay({ progress, logs }: PrintDiagnosticsOverlayProps) {
-  const { language } = useLanguage();
   const isComplete = progress.bytesSent >= progress.totalBytes;
   const percent = progress.totalBytes > 0 ? Math.min(100, (progress.bytesSent / progress.totalBytes) * 100) : 0;
 
   return (
     <div className="print-diag" role="status" aria-live="polite">
       <div className="print-diag__header">
-        <span>{STRINGS.title[language]}</span>
+        <span>{STRINGS.title}</span>
         <span className="print-diag__speed">{progress.kbPerSec.toFixed(1)} KB/s</span>
       </div>
 
@@ -43,14 +41,14 @@ export function PrintDiagnosticsOverlay({ progress, logs }: PrintDiagnosticsOver
 
       <div className="print-diag__stats">
         <span>
-          {STRINGS.chunk[language]} {progress.chunkIndex} · {(progress.bytesSent / 1024).toFixed(1)}/
+          {STRINGS.chunk} {progress.chunkIndex} · {(progress.bytesSent / 1024).toFixed(1)}/
           {(progress.totalBytes / 1024).toFixed(1)} KB
         </span>
         <span>
           {isComplete
-            ? `${STRINGS.done[language]} · ${fmtMs(progress.elapsedMs)}`
+            ? `${STRINGS.done} · ${fmtMs(progress.elapsedMs)}`
             : progress.etaMs !== null
-              ? `${fmtMs(progress.etaMs)} ${STRINGS.remaining[language]}`
+              ? `${fmtMs(progress.etaMs)} ${STRINGS.remaining}`
               : "…"}
         </span>
       </div>
@@ -63,7 +61,7 @@ export function PrintDiagnosticsOverlay({ progress, logs }: PrintDiagnosticsOver
           single most likely answer to "why is this slower than expected". */}
       {progress.fallbackCount > 0 && (
         <div className="print-diag__fallback">
-          ⚠ {progress.fallbackCount} {STRINGS.fallback[language]}
+          ⚠ {progress.fallbackCount} {STRINGS.fallback}
         </div>
       )}
 

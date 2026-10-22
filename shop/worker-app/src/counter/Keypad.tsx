@@ -9,7 +9,7 @@ interface Props {
   tall?: boolean;
 }
 
-const LABELS: Record<string, string> = { [BACKSPACE_KEY]: t.keyDelete, ".": "புள்ளி", C: t.keyClear };
+const LABELS: Record<string, string> = { [BACKSPACE_KEY]: t.keyDelete, ".": "dot", C: t.keyClear };
 
 /** A big number pad for typing an amount or a rate. */
 export function Keypad({ leftKey, onKey, tall = false }: Props) {

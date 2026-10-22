@@ -1,5 +1,5 @@
 import { doc, getDoc } from "firebase/firestore";
-import { counterDocId, createBillNumbers, dayKey, DEFAULT_DEVICE, isDeviceLetter } from "../core";
+import { counterDocId, createBillNumbers, dayKey, DEFAULT_DEVICE, isDeviceLetter, UserError } from "../core";
 import { getFirestoreDb } from "../firebase";
 import { browserStore } from "./storage";
 
@@ -18,7 +18,7 @@ export function getDeviceLetter(): string {
 }
 
 export function setDeviceLetter(letter: string): void {
-  if (!isDeviceLetter(letter)) throw new Error("கவுண்டர் எழுத்து A முதல் Z வரை இருக்க வேண்டும்");
+  if (!isDeviceLetter(letter)) throw new UserError("The counter letter must be A to Z");
   store.setItem(DEVICE_KEY, letter);
 }
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CURRENCY_SYMBOL, formatMoney, itemName, unitSuffix, type Category, type MenuItem } from "@kumbakonam/shared/core";
+import { CURRENCY_SYMBOL, formatMoney, itemName, type Category, type MenuItem } from "@kumbakonam/shared/core";
+import { unitSuffix } from "./fmt";
 import { categoryImageUrl, productImageUrl } from "./images";
 import { t } from "./strings";
 

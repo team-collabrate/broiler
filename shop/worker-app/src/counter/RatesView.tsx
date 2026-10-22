@@ -2,16 +2,15 @@ import { useState } from "react";
 import {
   applyRateKey,
   CURRENCY_SYMBOL,
-  categoryLabel,
   dayKey,
   describeError,
   formatRateInput,
   itemName,
   parseRateInput,
-  unitSuffix,
   type MenuItem,
 } from "@kumbakonam/shared/core";
 import { setMenuRates } from "@kumbakonam/shared/shop";
+import { categoryLabel, unitSuffix } from "./fmt";
 import { Keypad } from "./Keypad";
 import { t } from "./strings";
 
@@ -66,7 +65,7 @@ export function RatesView({ items, onClose }: Props) {
     }
   };
 
-  const today = new Date().toLocaleDateString("ta-IN", { weekday: "short", day: "numeric", month: "short" });
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
   return (
     <div className="ct-rates">
