@@ -35,3 +35,6 @@ yarn-error.log*
 
 # Firebase emulator logs
 *-debug.log
+
+# Local database backups (business data)
+backups/
