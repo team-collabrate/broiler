@@ -36,11 +36,11 @@ Kumbakonam file names are from `team-collabrate/kumbakonam`.
 | Outstanding credit | `OwedCustomersModal` | **Done** (credit tab) | Customer history link |
 | **Menu management** (add, edit, hide, reorder, delete) | `MenuScreen`, `MenuItemForm` | **Missing**, the main **placeholder**: the seed script is the only editor | Screens for name, Tamil name, category, unit, billing methods, rate, default weight or count, picture, hide, reorder |
 | Category management | Fixed list | **Missing** screen (setting exists) | Edit counter tabs |
-| Set today's rate from the owner app | Edit price in menu | Counter only, via owner PIN | Rate entry in the owner app, plus rate history |
+| Set today's rate from the owner app | Edit price in menu | **Done** (admin site, Rates tab) | Rate history |
 | Price-adjustment limit | None | **Missing** screen (`setMaxAdjust` exists) | A setting field |
-| Void any order | Yes | **Missing** | Owner void with reason |
+| Void any order | Yes | **Done** (admin Bills tab; counter: last 3 bills) | A reason field |
 | Spending list, record an expense | `TodaySpendingModal`, `RecordExpenseModal` | **Missing** | With till expenses above |
-| Old-data archive (daily summaries, pruning) | `archiveAndPruneOldData` | **Missing** | Decide the retention rule (it keeps Firestore reads low) |
+| Old-data archive (daily summaries, pruning) | `archiveAndPruneOldData` | **Done**: bills older than 4 days roll up into daily totals | Pruning old bills after 3+ days is allowed by the rules; not automated |
 | Settings (signed-in name, logout) | `SettingsScreen` | **Done** (lock) | Show who is signed in |
 
 ## 3. Reports site (Kumbakonam's `reports-app`): all **missing**
@@ -62,11 +62,11 @@ Kumbakonam file names are from `team-collabrate/kumbakonam`.
 | Turn anonymous sign-in off | **Open** | One click in the Firebase console (see `shop/GO_LIVE.md`) |
 | Real catalog | **Done** (12 products live; rates are examples until the owner sets today's rates) | Product photos; the owner's real rates |
 | Shop name on the bill | **Done**: Honey Broilers (no address or phone wanted) | Nothing |
-| Installable PWA (manifest, icons, service worker) | **Missing** | Kumbakonam has all of it (`vite-plugin-pwa`, `prepare-pwa-icons.mjs`) |
-| Android app (APK) | **Missing** | Kumbakonam uses Capacitor around its web build; signed release build |
-| Hosting | Prototype only, old build | Redeploy; a third site for reports |
+| Installable PWA (manifest, icons, service worker) | **Missing** (the counter is an APK that loads the hosted site) | Kumbakonam has all of it (`vite-plugin-pwa`, `prepare-pwa-icons.mjs`) |
+| Android app (APK) | **Done** (debug APK via `npm run android:apk` in `shop`; loads the hosted site, so web changes need no reinstall) | Signed release build |
+| Hosting | **Done**: counter <https://broiler-pos.web.app>, admin <https://broiler-pos-admin.web.app> | Reports are inside the admin site |
 | Database backups, crash reporting | **Missing** | Scheduled backup, error reporting |
-| Tests | Shared logic, 90 tests | Screen tests and a device test checklist |
+| Tests | Shared logic 139 tests, security rules 62 tests | Screen tests and a device test checklist |
 
 ## 5. Decision (2026-10-19): build on the `shop/` copy of Kumbakonam
 

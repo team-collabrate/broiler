@@ -25,8 +25,8 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 
 ## Before the first bill
 
-1. **Set today's rates.** The rates in the app are example values. Admin ▸ **Today's rate**, enter the **managing PIN**, set each rate, save.
-   A dot on the ⚙️ button (bottom left, opens the Admin menu) means today's rates are not all set.
+1. **Set today's rates.** The ⚙️ button (top right of the counter) opens the admin site, <https://broiler-pos-admin.web.app>. Sign in with the **managing PIN**,
+   open **விலை** (Rates), set each rate, **சேமி** (Save). The admin dashboard warns when today's rates are not all set.
 2. Install the app (`PRINTING.md`: *Build the Android app*, *Set up the tablet*), sign in with the **billing PIN**.
 3. Pair the BonKaso BKT05 (the **Bluetooth** version) and print the **test bill** and the **calibration sheet** (`PRINTING.md`).
 4. Ring up one cash bill, print it, and look at the paper: *Honey Broilers*, the bill number like `22-10/1`.
@@ -43,9 +43,10 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 - **Five items to a bill.** For more, make a second bill.
 - **Cash, UPI (GPay), split (GPay + cash) and credit (kadan)** all work. Credit and taking a credit payment need the internet; everything else works offline and uploads by itself.
 - **Printer trouble:** the sale is already saved. Read the message on the screen, fix it (switch the printer on, switch Bluetooth on) and press **Print again**.
-- **A copy of an earlier bill:** Admin ▸ **Recent bills**; it prints marked **நகல்** (copy).
-- **Owner's view of the day:** until the owner phone app is built, use the hosted admin dashboard (`apps/admin`, managing PIN) or
-  `node --env-file=apps/pos/.env scripts/check-books.mjs` (needs a computer, and asks for the managing PIN) for the day's cash, GPay and credit.
+- **A copy of an earlier bill:** the **Recent bills** button in the counter's top bar; it prints marked **நகல்** (copy).
+- **Owner's view of the day:** the admin site, <https://broiler-pos-admin.web.app> (managing PIN, everything in Tamil, phone and tablet layouts): the day's kilos and money (cash, GPay, credit), week and month, reports, bills (delete one), credit book (take a payment) and rates.
+  `node --env-file=apps/pos/.env scripts/check-books.mjs` still gives the same figures from a computer.
+- **Offline:** the Online/Offline light is a status light, not a button. Bills made offline are saved on the tablet and upload by themselves when the internet returns.
 
 ## End of the first day
 
@@ -54,5 +55,5 @@ statement. Both read only; they change nothing.
 
 ## Not built yet (planned)
 
-The owner phone app (menu and rate editing from a phone, dashboards), the reports site, scheduled backups and the nightly email.
+Menu editing from the admin site (add, rename, hide items), expenses, top-items charts, scheduled backups and the nightly email.
 The project stays on Firebase's **free plan**, so backups will be an Excel export rather than Firebase's scheduled backup. See `GAPS.md`.
