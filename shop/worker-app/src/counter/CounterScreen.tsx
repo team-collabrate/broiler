@@ -238,7 +238,13 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   };
 
   /** A one-tap weight, amount or count from the picker goes straight onto the bill. */
+  // The same preset tapped twice within a moment is one tap that bounced (wet or shaking fingers), not two packs.
+  const lastPreset = useRef({ sig: "", at: 0 });
   const addPreset = (line: OrderLineInput) => {
+    const sig = JSON.stringify(line);
+    const now = Date.now();
+    if (lastPreset.current.sig === sig && now - lastPreset.current.at < 350) return;
+    lastPreset.current = { sig, at: now };
     if (!canAddLine(cart.lines, line)) {
       setNotice({ text: t.tooManyLines, tone: "error" });
       return;

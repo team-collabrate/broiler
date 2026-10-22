@@ -55,6 +55,7 @@ export const t = {
   scrollDown: "More below: scroll down",
   cutLabel: "Cut",
   howLabel: "How the customer asks",
+  tapAgain: "Tap again for Admin",
   keepPacks: "தனித்தனியாக வை (2 × 250 கி)",
   methodWeight: "Weight",
   methodAmount: "Amount",

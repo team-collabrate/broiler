@@ -18,6 +18,16 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "rates", label: "விலை" },
 ];
 
+/** The billing counter. The admin was usually opened from its gear button, so a button leads back. */
+const COUNTER_URL = "https://broiler-pos.web.app";
+const fromCounter = (() => {
+  try {
+    return document.referrer.startsWith(COUNTER_URL);
+  } catch {
+    return false;
+  }
+})();
+
 /** The signed-in owner: a header, the four screens and the tab bar. */
 export function Shell({ onLogout }: { onLogout: () => void }) {
   const data = useOwnerData();
@@ -32,6 +42,11 @@ export function Shell({ onLogout }: { onLogout: () => void }) {
           <h1 className="ow-header__title">HONEY BROILERS</h1>
           <p className="ow-header__sub">{data.busy ? "புதுப்பிக்கிறது…" : data.status === "ready" ? `புதுப்பித்தது ${timeText(data.now)}` : "நிர்வாகம்"}</p>
         </div>
+        {fromCounter && (
+          <button type="button" className="ow-header__button" onClick={() => window.location.assign(COUNTER_URL)}>
+            ◀ கவுண்டர்
+          </button>
+        )}
         <button type="button" className="ow-header__button" disabled={data.busy} onClick={() => void data.refresh()}>
           புதுப்பி
         </button>
