@@ -2480,3 +2480,109 @@ button {
   align-content: center;
   overflow: hidden;
 }
+
+/* Others: bigger cards. */
+.ct-icards {
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+}
+.ct-icard {
+  gap: 14px;
+  padding-bottom: 20px;
+  border-radius: 22px;
+}
+.ct-icard__pic {
+  height: 170px;
+}
+.ct-icard__name {
+  padding: 4px 22px 0;
+  font-size: 1.5rem;
+}
+.ct-icard__row {
+  padding: 0 22px;
+}
+.ct-icard__rate {
+  font-size: 1.25rem;
+}
+.ct-icard__add {
+  width: 52px;
+  height: 52px;
+  font-size: 2rem;
+}
+
+/* The kinds column: a wrapper holds the list and the "more below" arrow. */
+.ct-pick__col {
+  position: relative;
+  width: 27%;
+  min-width: 210px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ct-pick__col .ct-pick__cards {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+}
+.ct-pick__col::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  border-radius: 0 0 20px 20px;
+  background: linear-gradient(to bottom, rgba(246, 239, 228, 0), #f6efe4);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ct-pick__col:has(.ct-pick__more)::after {
+  opacity: 1;
+}
+.ct-pick__more {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%);
+  border: 1px solid #eee3d3;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-accent);
+  box-shadow: 0 2px 10px rgba(31, 21, 18, 0.18);
+  cursor: pointer;
+  animation: ct-nudge 1.6s ease-in-out infinite;
+}
+.ct-pick__more svg {
+  width: 24px;
+  height: 24px;
+}
+@keyframes ct-nudge {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ct-pick__more {
+    animation: none;
+  }
+}
+
+/* The kinds list scrolls by touch (an earlier rule had locked its overflow). */
+.ct-pick__col .ct-pick__cards {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

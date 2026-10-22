@@ -62,6 +62,9 @@ import { t } from "./strings";
 const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_MENU === "1";
 
 type View = "sell" | "ownerPin" | "rates";
+/** Menu groups that appear in every tab. */
+const EVERY_TAB_GROUPS = ["excess"];
+
 type Sheet = { item: MenuItem; editing?: CartLine; startMethod?: Method };
 
 /** A stand-in for an item that has left the menu since it was added to the cart, so its line can still be edited. */
@@ -151,7 +154,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   }, [items, allCategories]);
   const [categoryKey, setCategoryKey] = useState<string | null>(null);
   const category = categoryKey !== null && tabs.some((c) => c.key === categoryKey) ? categoryKey : (tabs[0]?.key ?? null);
-  const visibleItems = useMemo(() => (items ?? []).filter((item) => item.category === category), [items, category]);
+  // Items that sit in every tab (கூடுதல் / Extra: an add-on that goes with any bill), shown last in each.
+  const visibleItems = useMemo(() => {
+    const all = items ?? [];
+    const inEveryTab = (item: MenuItem) => EVERY_TAB_GROUPS.includes(item.group);
+    return [...all.filter((item) => item.category === category && !inEveryTab(item)), ...all.filter(inEveryTab)];
+  }, [items, category]);
 
   // --- Screen state -------------------------------------------------------
   const [view, setView] = useState<View>("sell");
@@ -360,7 +368,9 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     split: isRealSplit(cart.totalMinor, splitUpiMinor) ? t.splitChip(formatMoney(split.upiMinor), formatMoney(split.cashMinor)) : null,
     credit: creditName,
   };
-  const labelFor = (c: Category) => categoryLabel(c.key, allCategories);
+  // The tabs read in Tamil letters: சிக்கன், மட்டன், மற்றவை. Any other tab uses its own Tamil name.
+  const TAB_NAMES: Record<string, string> = { chicken: "சிக்கன்", mutton: "மட்டன்", other: "மற்றவை" };
+  const labelFor = (c: Category) => TAB_NAMES[c.key] ?? (c.nameTa || categoryLabel(c.key, allCategories));
 
   const main =
     view === "ownerPin" ? (

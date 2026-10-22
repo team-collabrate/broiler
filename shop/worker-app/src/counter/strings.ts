@@ -52,6 +52,7 @@ export const t = {
   onePiece: "piece",
   manyPieces: "pieces",
   kindsLabel: "Kinds",
+  scrollDown: "More below: scroll down",
   cutLabel: "Cut",
   howLabel: "How the customer asks",
   keepPacks: "Keep packs separate",

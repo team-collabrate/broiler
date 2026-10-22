@@ -5,3 +5,5 @@
 - `broiler.jpg`, `naatukoli.jpg`: supplied by the shop owner.
 
 The Commons files are free to reuse; check each file page for its exact licence and credit line.
+- `kodal.jpg`, `blood.jpg`, and `../items/kadai.jpg`, `../items/masala.jpg`: supplied by the shop owner.
+- `excess.jpg` ("EXTRA", for கூடுதல்): supplied by the shop owner; the checkerboard background was removed.

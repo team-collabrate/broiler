@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CURRENCY_SYMBOL,
   formatMoney,
@@ -109,6 +109,19 @@ export function ItemPicker({ items, keepPacks, onAdd, onOther }: Props) {
   const [variantByFamily, setVariantByFamily] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<"weight" | "amount">("weight");
 
+  // A small down arrow shows while more cards are hidden below the ones on screen.
+  const listRef = useRef<HTMLDivElement>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+  const checkMore = useCallback(() => {
+    const el = listRef.current;
+    setMoreBelow(el !== null && el.scrollHeight - el.scrollTop - el.clientHeight > 12);
+  }, []);
+  useEffect(() => {
+    checkMore();
+    window.addEventListener("resize", checkMore);
+    return () => window.removeEventListener("resize", checkMore);
+  }, [checkMore, families.length]);
+
   const family = families.find((f) => f.key === familyKey) ?? families[0];
   if (!family) return null;
   const item = family.items.find((i) => i.id === variantByFamily[family.key]) ?? family.items[0];
@@ -137,11 +150,20 @@ export function ItemPicker({ items, keepPacks, onAdd, onOther }: Props) {
 
   return (
     <div className="ct-pick">
-      <div className="ct-pick__cards" role="group" aria-label={t.kindsLabel}>
+      <div className="ct-pick__col">
+      <div className="ct-pick__cards" role="group" aria-label={t.kindsLabel} ref={listRef} onScroll={checkMore}>
         {families.map((f) => {
           const shown = f.items.find((v) => v.id === variantByFamily[f.key]) ?? f.items[0];
           return <FamilyCard key={f.key} family={f} item={shown} selected={f.key === family.key} onSelect={() => setFamilyKey(f.key)} />;
         })}
+      </div>
+      {moreBelow && (
+        <button type="button" className="ct-pick__more" aria-label={t.scrollDown} onClick={() => listRef.current?.scrollBy({ top: listRef.current.clientHeight / 2, behavior: "smooth" })}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      )}
       </div>
 
       <section className="ct-pick__panel" aria-label={family.title}>

@@ -9,12 +9,15 @@ const shortRate = (minor: number) => (minor % 100 === 0 ? `${CURRENCY_SYMBOL}${m
 
 function ItemCard({ item, onSelect }: { item: MenuItem; onSelect: (item: MenuItem) => void }) {
   const [photo, setPhoto] = useState<"loading" | "ok" | "missing">("loading");
+  // The product's own photo first; failing that, the kind photo (public/families/<group>.jpg).
+  const ownPhoto = productImageUrl(item);
+  const [src, setSrc] = useState(ownPhoto);
   const rate = item.rateMinor > 0 ? `${shortRate(item.rateMinor)}${unitSuffix(item.unit)}` : t.setRate;
   return (
     <button type="button" className="ct-icard" aria-label={`${itemName(item)}, ${rate}`} onClick={() => onSelect(item)}>
       {photo !== "missing" && (
         <span className="ct-icard__pic" hidden={photo !== "ok"}>
-          <img src={productImageUrl(item)} alt="" draggable={false} onLoad={() => setPhoto("ok")} onError={() => setPhoto("missing")} />
+          <img src={src} alt="" draggable={false} onLoad={() => setPhoto("ok")} onError={() => (src === ownPhoto ? setSrc(`/families/${encodeURIComponent(item.group)}.jpg`) : setPhoto("missing"))} />
         </span>
       )}
       <span className="ct-icard__name">{itemName(item)}</span>
