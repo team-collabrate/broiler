@@ -122,9 +122,9 @@ export const t = {
   recordFailed: (message: string) => `Cannot save. ${message}`,
 
   // The printer
-  printerOk: "● Printer",
-  printerNone: "⚠ No printer",
-  printerProblem: "⚠ Printer problem",
+  printerOk: "Printer",
+  printerNone: "No printer",
+  printerProblem: "Printer problem",
   printerTitle: "Printer setup",
   printerStatus: {
     unsupported: "Bluetooth is not available here. Use the Android app to print.",
@@ -186,8 +186,8 @@ export const t = {
   unlock: "Unlock",
 
   // Connection and uploading
-  online: "● Online",
-  offline: "⚠ Offline",
+  online: "Online",
+  offline: "Offline",
   waitingShort: "Waiting",
   waitingBills: (count: number) => `${count} ${count === 1 ? "bill" : "bills"} will upload when internet is back`,
   offlineNote: "No internet. You can keep billing. Bills are saved here and sent when internet is back.",

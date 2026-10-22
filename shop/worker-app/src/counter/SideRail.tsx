@@ -25,7 +25,8 @@ export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, print
   return (
     <aside className="ct-rail">
       <img className="ct-rail__logo" src={logoUrl} alt={t.appTitle} draggable={false} />
-      <span className={`ct-rail__status${connected ? "" : " is-off"}`} role="status">
+      <span className={`ct-rail__status${connected ? " is-on" : " is-off"}`} role="status">
+        <span className="ct-rail__light" aria-hidden="true" />
         {connected ? t.online : t.offline}
       </span>
       {waiting > 0 && (
@@ -35,7 +36,12 @@ export function SideRail({ logoUrl, rateNeeded, connected, waiting, stale, print
         </span>
       )}
       <button type="button" className={`ct-rail__printer is-${printer}`} onClick={onPrinter}>
-        {printer === "ok" ? t.printerOk : printer === "none" ? t.printerNone : t.printerProblem}
+        <svg className="ct-rail__printer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="6 9 6 2 18 2 18 9" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <rect x="6" y="14" width="12" height="8" />
+        </svg>
+        <span>{printer === "ok" ? t.printerOk : printer === "none" ? t.printerNone : t.printerProblem}</span>
       </button>
       <span className="ct-rail__spacer" />
       <button type="button" className="ct-rail__admin" aria-label={t.admin} onClick={onAdmin}>
