@@ -47,7 +47,7 @@ export default defineConfig({
         //
         // Product photos shipped in the app (public/items, public/categories) are precached too, so the grid
         // is complete with no signal.
-        globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,webp,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,webp,woff2,mp3}"],
         // A photo the owner links from an image host (an https link in a product's image field) is kept after the
         // first time it is shown, so that product also keeps its picture offline.
         runtimeCaching: [
