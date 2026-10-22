@@ -7,7 +7,7 @@ Status of the live Firebase project `broiler-pos`, what is left to do by hand, a
 - **Security rules deployed** (`firestore.rules`): only the two PIN accounts can do anything; bills are append-only and checked line by line.
 - **Two accounts:** *Billing* (the counter tablet) and *Managing* (the owner). Each account's PIN is its password. The PINs are **not written
   in this repository**: keep them somewhere private. The managing PIN was changed from the old one on go-live day. Change either with
-  `node --env-file=apps/pos/.env scripts/change-pin.mjs owner|counter` (it asks for the current and the new PIN).
+  `node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner|counter` (it asks for the current and the new PIN).
 - **Live access check passed** (`npm run check:access`): what the counter and the owner may and may not do, including split, credit, the offline
   sale time and the 5-line limit.
 - **Catalog loaded:** 12 products (Chicken 5, Mutton 6, Others 1: Masala). Podi is masala, so there is one masala item. Old and sample items are switched off.
@@ -45,12 +45,23 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 - **Printer trouble:** the sale is already saved. Read the message on the screen, fix it (switch the printer on, switch Bluetooth on) and press **Print again**.
 - **A copy of an earlier bill:** the **Recent bills** button in the counter's top bar; it prints marked **நகல்** (copy).
 - **Owner's view of the day:** the admin site, <https://broiler-pos-admin.web.app> (managing PIN, everything in Tamil, phone and tablet layouts): the day's kilos and money (cash, GPay, credit), week and month, reports, bills (delete one), credit book (take a payment) and rates.
-  `node --env-file=apps/pos/.env scripts/check-books.mjs` still gives the same figures from a computer.
+  `node --env-file=shop/worker-app/.env scripts/check-books.mjs` still gives the same figures from a computer.
 - **Offline:** the Online/Offline light is a status light, not a button. Bills made offline are saved on the tablet and upload by themselves when the internet returns.
+
+## Clearing test data
+
+Everything made while testing (bills, credit customers, payments, bill counters) can be removed before the shop opens. The menu, rates, settings and PIN accounts are not touched.
+
+1. Take a backup first: `npm run backup` writes `backups/firestore-<time>.json` (read-only; the folder is not committed) and lists what is in the database.
+2. Check the list. Only delete what is certainly test data.
+3. Delete each collection with the Firebase CLI. It uses your Google login, so it can delete what the app's access rules forbid:
+   `npx firebase-tools firestore:delete orders --recursive --force --project broiler-pos`, then the same for `customerPayments`, `customers` and `counters`.
+4. Run `npm run backup` again and check the counts are 0.
+5. On the tablet, clear the app's storage once (Android Settings, Apps, Broiler POS, Storage, Clear data) so its old Recent bills list and bill counter are gone. This signs it out and forgets the printer.
 
 ## End of the first day
 
-Run `node --env-file=apps/pos/.env scripts/check-bills.mjs` and `scripts/check-books.mjs` and compare the totals with the cash drawer and the GPay
+Run `node --env-file=shop/worker-app/.env scripts/check-bills.mjs` and `scripts/check-books.mjs` and compare the totals with the cash drawer and the GPay
 statement. Both read only; they change nothing.
 
 ## Not built yet (planned)

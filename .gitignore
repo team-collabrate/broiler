@@ -1,40 +1,38 @@
+# dependencies and build output
 node_modules/
-.expo/
 dist/
-web-build/
-expo-env.d.ts
+dist-ssr/
 *.tsbuildinfo
+*.local
 
-# secrets / local config
+# secrets / local config (keep the examples)
 .env
 .env.*
 !.env.example
-
-# native build output
-/apps/*/ios
-/apps/*/android
-*.jks
-*.keystore
+!.env.emulator
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 
 # logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*-debug.log
+firebase-debug.*.log
+ui-debug.log
 
-# firebase cli cache
+# firebase cli cache and credentials
 .firebase/
+service-account*.json
+*-firebase-adminsdk-*.json
 
-# Local tools downloaded for development (portable Java for the Firestore emulator). Never committed.
+# local tools downloaded for development (portable Java for the Firestore emulator)
 .tools/
 
-# Firebase emulator logs
-*-debug.log
-
-# Local database backups (business data)
+# local database backups (business data)
 backups/

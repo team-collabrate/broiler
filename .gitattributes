@@ -1,0 +1,12 @@
+# One line ending for everyone: LF in the repository and on every machine.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.mp3 binary
+*.ico binary
+*.jar binary
+*.keystore binary
+*.jks binary

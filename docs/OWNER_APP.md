@@ -17,4 +17,4 @@ Deploy: `npm run deploy:owner` (from `shop`).
 - **Reads on demand:** there are no live listeners. It reads when it opens, on **புதுப்பி** (Refresh), and when the phone is picked up after a minute. An app left open costs no reads.
 - **Old days:** bills are kept in full for 4 days; older days are rolled up into daily totals automatically.
 - **Counter link:** the ⚙️ on the counter opens this site.
-- **PINs:** the PIN is the account password (`broiler-<PIN>`). Change it with `node --env-file=apps/pos/.env scripts/change-pin.mjs owner`.
+- **PINs:** the PIN is the account password (`broiler-<PIN>`). Change it with `node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner`.

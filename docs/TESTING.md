@@ -30,7 +30,7 @@ With the emulators running, the scripts can be pointed at them with `USE_EMULATO
 
 ```
 USE_EMULATOR=1 OWNER_PIN=2121 node scripts/check-books.mjs
-USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=apps/pos/.env scripts/check-access.mjs
+USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=shop/worker-app/.env scripts/check-access.mjs
 ```
 
 `USE_EMULATOR=1` forces a throwaway project id (`demo-broiler`), so it cannot reach the live project.
@@ -40,8 +40,8 @@ USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=apps/pos/.env scr
 | Command | What it checks |
 | --- | --- |
 | `npm run check:access` | The deployed rules, as the counter and the owner: what each may and may not do, including split, credit, the offline sale time and the 5-line limit. Asks for both PINs. |
-| `node --env-file=apps/pos/.env scripts/check-bills.mjs [day]` | Lists a day's bills with when each was sold and when it arrived; reports duplicate or missing bill numbers per counter. |
-| `node --env-file=apps/pos/.env scripts/check-books.mjs [day]` | **Reconciles the day's money from the raw records**: every bill adds up, every customer's balance equals their credit bills minus their payments, and cash, GPay and credit totals. Use after a trial day. |
+| `node --env-file=shop/worker-app/.env scripts/check-bills.mjs [day]` | Lists a day's bills with when each was sold and when it arrived; reports duplicate or missing bill numbers per counter. |
+| `node --env-file=shop/worker-app/.env scripts/check-books.mjs [day]` | **Reconciles the day's money from the raw records**: every bill adds up, every customer's balance equals their credit bills minus their payments, and cash, GPay and credit totals. Use after a trial day. |
 
 Neither of the last two changes anything.
 

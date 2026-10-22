@@ -1,108 +1,63 @@
-# Broiler
+# Honey Broilers POS
 
-Weight-based POS (`apps/pos`) and owner admin app (`apps/admin`), built with Expo, React Native,
-TypeScript and Firebase. See [ROADMAP.md](ROADMAP.md) for the phases.
+Billing for a chicken and mutton shop: a **counter app** on an Android tablet (weight, count and amount sales, Tamil bills on a
+58 mm Bluetooth printer, works offline) and an **admin site** for the owner (sales, bills, credit book, today's rates), on one
+Firebase project, `broiler-pos`.
+
+| | Where | Address |
+| --- | --- | --- |
+| Counter | `shop/worker-app` (also packed as an Android app in `shop/worker-app/android`) | https://broiler-pos.web.app |
+| Admin | `shop/owner-app` | https://broiler-pos-admin.web.app |
+| Shared code | `shop/shared` (sale maths, bill numbers, offline outbox, Firestore access) | |
+| Access rules | `firestore.rules` (deployed with `firebase.json`) | |
+| Operations scripts | `scripts/` (emulators, rules tests, accounts, backup) | |
+| Documentation | `docs/` | |
+
+## Layout
 
 ```
-apps/pos          counter app: pick an item, enter the weight, charge
-apps/admin        owner app: dashboard and orders, live from Firestore
-packages/shared   money/weight maths, types, Firebase init, orders and menu services
-firestore.rules   Firestore security rules (v1: placeholder, see Phase 2)
-scripts/          seed-menu.mjs: adds a starter menu
+firebase.json, firestore.rules, .firebaserc   deploy configuration (hosting for both sites, Firestore rules)
+shop/                                         the product
+  shared/        @kumbakonam/shared           money in paise, weight in grams, offline sales, Firestore services (has the unit tests)
+  worker-app/    counter app (Vite + React)   Capacitor Android shell in android/
+  owner-app/     admin site (Vite + React)
+  scripts/       asset and Android build tools (icons, photos, APK)
+scripts/                                      operations: emulators, rules tests, accounts, menu seed, backup
+docs/                                         guides (go live, printing, offline, owner app, testing); docs/archive = old planning notes
+.github/workflows/ci.yml                      typecheck, tests and build on every push
 ```
 
-Money is stored as integer paise and weight as integer grams, so totals never pick up
-floating-point drift. A line costs `round(pricePerKgMinor × grams / 1000)`.
+## Everyday commands
 
-## Setup (Phase 1)
+Run these from `shop/` unless a folder is named.
 
-1. **Install**
-
-   ```bash
-   npm install
-   ```
-
-2. **Firebase project.** This repo uses its own project, **`broiler-pos`** (Firestore in Mumbai, `asia-south1`, anonymous sign-in on), pinned in `.firebaserc`. It is separate from the live Kumbakonam POS project, which these apps must never be pointed at: they share collection names (`menu`, `orders`) and deploying these rules to that project would replace its rules.
-
-   To set up a fresh project instead (a second shop, or a staging copy), create it in the [Firebase console](https://console.firebase.google.com), register a **Web app**, and put its id in `.firebaserc`.
-
-3. **Add the config to both apps** (they must use the same project):
-
-   ```bash
-   cp apps/pos/.env.example apps/pos/.env
-   cp apps/admin/.env.example apps/admin/.env
-   ```
-
-   Fill in the `EXPO_PUBLIC_FIREBASE_*` values from Project settings → Your apps → Web app. On Windows PowerShell use `copy` instead of `cp`. The `.env` files are gitignored.
-
-4. **Deploy the rules and the sign-in setting** (only needed after changing `firestore.rules` or `firebase.json`):
-
-   ```bash
-   npx firebase-tools login
-   npx firebase-tools deploy --only firestore,auth
-   ```
-
-   The project comes from `.firebaserc`, so no `--project` flag is needed. Keep it that way; don't add `--project kumbakonam-pos`.
-
-5. **Seed a starter menu** (sample prices):
-
-   ```bash
-   npm run seed
-   ```
-
-   Set the real rates with the **Today's rate** button at the top right of the POS, which also reminds you each day until the rates are set.
-
-6. **Run the apps** (in separate terminals):
-
-   ```bash
-   npm run pos
-   npm run admin
-   ```
-
-   After editing a `.env`, restart with `npx expo start --clear` from that app's folder, since Expo reads it at bundle time.
-
-### Run in the browser
-
-To try the apps on your computer without a phone, run either of these (each needs its `.env` from step 3):
-
-```bash
-npm run pos:web     # POS   → http://localhost:3000
-npm run admin:web   # Admin → http://localhost:8082
-```
-
-Both can run at the same time. The browser view is for looking at layout and trying the flow; check touch behavior, the slider and anything hardware-related on a real Android device.
-
-## Hosted prototype
-
-Both apps are published on Firebase Hosting in the `broiler-pos` project (free plan):
-
-| App | Address |
+| Command | What it does |
 | --- | --- |
-| POS (counter) | https://broiler-pos.web.app |
-| Admin (owner) | https://broiler-pos-admin.web.app |
+| `npm install` | Installs the apps (once). |
+| `npm run typecheck` / `npm test` | Types, and the 139 unit tests of the shared code. |
+| `npm run dev:worker` / `npm run dev:owner` | The counter or the admin on a local port, against the live project (needs `.env`, see below). |
+| `npm run deploy:counter` / `npm run deploy:owner` | Builds and publishes one site. The Android app loads the hosted counter, so a counter deploy reaches the tablet with no reinstall. |
+| `npm run android:apk` | Builds the debug APK (only needed when the native Android part changes). |
 
-```bash
-npm run deploy       # rebuild both apps for the web and publish them
-npm run reset-demo   # delete all sales (orders and the bill counter) so the next demo starts clean
-```
+From the repository root:
 
-The sites are marked no-index, so search engines skip them. **They are a prototype with no login:** anyone who has the address can make sales, change the daily rates and read the sales. Use sample data only until Phase 2 adds owner login.
+| Command | What it does |
+| --- | --- |
+| `npm install` | Installs the operations scripts' tools (once). |
+| `npm run emulators`, `npm run emulators:seed`, `npm run dev:emulator` | Local Firestore and Auth with the real rules, test accounts (owner 2121, counter 1111) and the counter on port 3002. Nothing touches the live project. |
+| `npm run test:rules` | The 62 access-rule tests against the emulator. |
+| `npm run backup` | Read-only copy of the live database into `backups/` (not committed). |
+| `npm run seed:users`, `npm run seed`, `npm run check:access` | Account creation, menu setup and the live access check. See `docs/GO_LIVE.md`. |
+| `node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner` | Changes a PIN (asks for the current and the new one). |
 
-## Language and screens
+## Configuration
 
-The whole app and the bill are in Tamil (`apps/pos/src/strings.ts`, `apps/admin/src/strings.ts`; the shop name on the bill is `SHOP_NAME` in `apps/pos/src/config.ts`). Each menu item has an English `name` and a Tamil `nameTa`; the Tamil one is shown and printed. It is built for a tablet in landscape and also fits laptop windows (about 1366×650 and up) and large monitors.
+Copy `shop/worker-app/.env.example` to `shop/worker-app/.env` (and the same for `shop/owner-app`) and fill in the Firebase web
+app values (Firebase console, Project settings). `.env` files are never committed. The operations scripts read the same
+`shop/worker-app/.env`. PINs are never stored in files: the scripts ask for them without echo.
 
-## Checks
+## Documentation
 
-```bash
-npm run typecheck   # all workspaces
-npm test            # shared package unit tests
-```
-
-## Known limits in v1
-
-- **Security is a placeholder.** Both apps sign in anonymously, so the rules can't tell the POS from the owner. Don't put real sales data behind it until Phase 2.
-- **Saving a sale needs an internet connection** (the order number comes from a Firestore transaction). Offline sales are Phase 6.
-- **No printing yet**, and no weighing-scale input: weight is entered on screen (meter, presets or keypad).
-- **Any POS user can change today's rate.** Restricting it to the owner is part of Phase 2.
-- Not yet run on a physical device or against a live Firebase project. It typechecks, the shared logic is unit-tested, and both apps bundle with Metro.
+Start with `docs/GO_LIVE.md` (accounts, first day, clearing test data). Then `docs/OWNER_APP.md`, `docs/PRINTING.md`,
+`docs/OFFLINE.md`, `docs/TESTING.md`, `docs/DATA_MODEL.md` and, for the cashier, `docs/STAFF_GUIDE_TA.md`. `docs/GAPS.md` lists what is
+not built yet.
