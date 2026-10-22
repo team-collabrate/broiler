@@ -29,7 +29,7 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
    A dot on the ⚙️ button (bottom left, opens the Admin menu) means today's rates are not all set.
 2. Install the app (`PRINTING.md`: *Build the Android app*, *Set up the tablet*), sign in with the **billing PIN**.
 3. Pair the BonKaso BKT05 (the **Bluetooth** version) and print the **test bill** and the **calibration sheet** (`PRINTING.md`).
-4. Ring up one cash bill, print it, and look at the paper: *Honey Broilers*, the bill number like `22-10/1`, the worker name.
+4. Ring up one cash bill, print it, and look at the paper: *Honey Broilers*, the bill number like `22-10/1`.
 
 ## What language the screen uses
 
@@ -39,7 +39,6 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 
 ## How the shop runs
 
-- **Two workers:** tap **Worker A** or **Worker B** at the top of the bill before billing. The name is kept, goes on every bill and prints beside the bill number.
 - **Bill number:** `dd-mm/number`, starting at 1 each day (`22-10/1`, `22-10/2`, …).
 - **Five items to a bill.** For more, make a second bill.
 - **Cash, UPI (GPay), split (GPay + cash) and credit (kadan)** all work. Credit and taking a credit payment need the internet; everything else works offline and uploads by itself.

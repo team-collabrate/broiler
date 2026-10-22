@@ -45,13 +45,14 @@ const L = {
   payment: "பணம் செலுத்தும் முறை",
   phone: "தொலைபேசி",
   copy: "நகல்",
+  customer: "வாடிக்கையாளர்",
 } as const;
 
 /** Widest line total the amount column has to hold, used as a floor on its width so a big bill can't push an amount into the name beside it. */
 const WIDEST_AMOUNT = "₹99,999.00";
 
-/** Space between the item name column and the amount column. */
-const COL_GUTTER = size(14);
+/** The shop name is set in its own face (a bold serif, in capitals), apart from the Tamil text. */
+const NAME_FONT_STACK = 'Georgia, "Noto Serif", "DejaVu Serif", serif';
 
 async function loadLogo(): Promise<HTMLImageElement | null> {
   const url = RECEIPT_LOGO_URL;
@@ -80,18 +81,6 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): st
   }
   if (line) lines.push(line);
   return lines;
-}
-
-function dashedRule(ctx: CanvasRenderingContext2D, y: number) {
-  ctx.save();
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 5]);
-  ctx.beginPath();
-  ctx.moveTo(CONTENT_LEFT, y);
-  ctx.lineTo(CONTENT_RIGHT, y);
-  ctx.stroke();
-  ctx.restore();
 }
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -164,12 +153,24 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
   const draw = (fn: () => void) => {
     if (!measureOnly) fn();
   };
+  // Lines are filled rectangles, not strokes, so they stay solid black on a 1-bit print.
+  // This printer does not heat a whole 1 to 2 dot row across the full width (such lines came out blank), so a
+  // horizontal line is a short-dashed line, at least 3 dots thick, which prints dark and even.
+  const rule = (yy: number, thick = 2) =>
+    draw(() => {
+      const t = Math.max(3, thick + 1);
+      const top = Math.round(yy - t / 2);
+      for (let x = CONTENT_LEFT; x < CONTENT_RIGHT; x += 11) ctx.fillRect(x, top, Math.min(8, CONTENT_RIGHT - x), t);
+    });
+  const text = (s: string, x: number, baseline: number, f: string, align: CanvasTextAlign) =>
+    draw(() => {
+      ctx.font = f;
+      ctx.textAlign = align;
+      ctx.fillText(s, x, baseline);
+    });
+  const GAP = size(11); // space above and below the text of a row
 
-  // The amount column is as wide as the widest figure it must hold; the item name gets the rest.
-  ctx.font = font(28, "bold");
-  const amountW = Math.max(ctx.measureText(WIDEST_AMOUNT).width, ctx.measureText(L.amount).width);
-  const itemMax = CONTENT_RIGHT - CONTENT_LEFT - amountW - COL_GUTTER;
-
+  ctx.textBaseline = "alphabetic";
   let y = PAD;
 
   // --- Logo -----------------------------------------------------------------
@@ -178,243 +179,145 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
     const w = logo.width * scale;
     const h = logo.height * scale;
     draw(() => ctx.drawImage(logo, CENTER - w / 2, y, w, h));
-    y += h + size(12);
+    y += h + size(10);
   }
 
-  // --- Shop identity --------------------------------------------------------
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-
-  // The name is as big as will fit between the paper margins (a long name shrinks instead of being cut off).
-  let nameSize = 44;
-  ctx.font = font(nameSize, "bold");
-  while (nameSize > 24 && ctx.measureText(SHOP_DETAILS.name).width > CONTENT_RIGHT - CONTENT_LEFT) {
+  // --- Shop name: capitals in a bold serif, as big as fits ------------------
+  const shopName = SHOP_DETAILS.name.toUpperCase();
+  const spacing = size(3);
+  const nameFontAt = (n: number) => `bold ${Math.round(n * SCALE)}px ${NAME_FONT_STACK}`;
+  const setSpacing = (px: number) => {
+    (ctx as unknown as { letterSpacing?: string }).letterSpacing = `${px}px`;
+  };
+  let nameSize = 38;
+  ctx.font = nameFontAt(nameSize);
+  setSpacing(spacing);
+  while (nameSize > 20 && ctx.measureText(shopName).width > CONTENT_RIGHT - CONTENT_LEFT - spacing) {
     nameSize -= 2;
-    ctx.font = font(nameSize, "bold");
+    ctx.font = nameFontAt(nameSize);
   }
+  setSpacing(0);
   y += size(nameSize);
-  const nameFont = font(nameSize, "bold");
   draw(() => {
-    ctx.font = nameFont;
-    ctx.fillText(SHOP_DETAILS.name, CENTER, y);
+    ctx.font = nameFontAt(nameSize);
+    setSpacing(spacing);
+    ctx.textAlign = "center";
+    // Letter spacing adds a gap after the last letter too, so nudge back to stay centred.
+    ctx.fillText(shopName, CENTER + spacing / 2, y);
+    setSpacing(0);
   });
 
   if (SHOP_DETAILS.subtitle) {
-    ctx.font = font(26);
-    y += size(36);
-    draw(() => ctx.fillText(SHOP_DETAILS.subtitle, CENTER, y));
+    y += size(34);
+    text(SHOP_DETAILS.subtitle, CENTER, y, font(24), "center");
   }
-
   if (SHOP_DETAILS.phone) {
-    ctx.font = font(24);
-    y += size(32);
-    draw(() => ctx.fillText(`${L.phone}: ${SHOP_DETAILS.phone}`, CENTER, y));
+    y += size(30);
+    text(`${L.phone}: ${SHOP_DETAILS.phone}`, CENTER, y, font(22), "center");
   }
 
   // --- Copy mark ------------------------------------------------------------
   // A reprint says so, in large type between rules, so it cannot be handed over as a second original.
   if (bill.isCopy) {
-    y += size(54);
+    y += size(46);
     const copyY = y;
     draw(() => {
       ctx.font = font(36, "bold");
       ctx.textAlign = "center";
-      const label = L.copy;
-      const half = ctx.measureText(label).width / 2;
-      ctx.fillText(label, CENTER, copyY);
+      const half = ctx.measureText(L.copy).width / 2;
+      ctx.fillText(L.copy, CENTER, copyY);
       ctx.fillRect(CONTENT_LEFT, copyY - size(14), CENTER - half - size(16) - CONTENT_LEFT, 3);
-      ctx.fillRect(CENTER + half + size(16), copyY - 14, CONTENT_RIGHT - (CENTER + half + size(16)), 3);
+      ctx.fillRect(CENTER + half + size(16), copyY - size(14), CONTENT_RIGHT - (CENTER + half + size(16)), 3);
     });
   }
+  y += size(18);
 
-  // --- Order meta -----------------------------------------------------------
-  y += size(20);
-  ctx.font = font(24);
-  y += size(32);
-  const metaY = y;
-  // Date on the left, clock on the right of the same line.
-  draw(() => {
-    ctx.textAlign = "left";
-    ctx.fillText(`${L.date}: ${formatDate(bill.createdAt)}`, CONTENT_LEFT, metaY);
-    ctx.textAlign = "right";
-    ctx.fillText(formatTime(bill.createdAt), CONTENT_RIGHT, metaY);
-  });
-  y += size(30);
-  const billNoY = y;
-  draw(() => {
-    ctx.textAlign = "left";
-    ctx.fillText(`${L.billNo}: ${bill.billNo}`, CONTENT_LEFT, billNoY);
-    if (bill.staffName) {
-      ctx.textAlign = "right";
-      ctx.fillText(bill.staffName, CONTENT_RIGHT, billNoY);
-    }
-  });
-
-  y += size(20);
-  draw(() => dashedRule(ctx, y));
-
-  // --- Column headers -------------------------------------------------------
-  ctx.font = font(22, "bold");
-  y += size(36);
-  const headY = y;
-  draw(() => {
-    ctx.textAlign = "left";
-    ctx.fillText(L.item, CONTENT_LEFT, headY);
-    ctx.textAlign = "right";
-    ctx.fillText(L.amount, CONTENT_RIGHT, headY);
-  });
-
+  // --- Bill details ------------------------------------------------------------
+  const detailFont = font(24);
   y += size(12);
-  draw(() => dashedRule(ctx, y));
-  y += size(8);
+  rule(y);
+  y += GAP + size(24);
+  text(`${L.date}: ${formatDate(bill.createdAt)}`, CONTENT_LEFT, y, detailFont, "left");
+  text(formatTime(bill.createdAt), CONTENT_RIGHT, y, detailFont, "right");
+  y += size(10) + GAP;
+  text(`${L.billNo}: ${bill.billNo}`, CONTENT_LEFT, y + size(14), detailFont, "left");
+  y += size(14) + size(10) + GAP;
+  rule(y);
 
-  // --- Line items -----------------------------------------------------------
-  // Two rows per item: the name with the line total on the right, then a smaller line that says how much
-  // was sold and at what rate. The unit wording (கிலோ, எண்) is wider than a bare number, so this reads
-  // better than separate quantity and price columns would on 80 mm.
+  // --- Items: a header, then each item with its quantity and rate beneath ---------
+  y += GAP + size(22);
+  text(L.item, CONTENT_LEFT, y, font(22, "bold"), "left");
+  text(L.amount, CONTENT_RIGHT, y, font(22, "bold"), "right");
+  y += size(8) + GAP;
+  rule(y);
+
+  ctx.font = font(28, "bold");
+  const amountW = Math.max(ctx.measureText(WIDEST_AMOUNT).width, ctx.measureText(L.amount).width);
+  const itemMax = CONTENT_RIGHT - CONTENT_LEFT - amountW - size(12);
+
   for (const item of bill.lines) {
     ctx.font = font(28, "bold");
-    ctx.textAlign = "left";
     const nameLines = wrap(ctx, item.name, itemMax);
-    y += size(40);
-    const firstLineY = y;
-    draw(() => {
-      ctx.font = font(28, "bold");
-      ctx.textAlign = "left";
-      ctx.fillText(nameLines[0], CONTENT_LEFT, firstLineY);
-      ctx.textAlign = "right";
-      ctx.fillText(item.amount, CONTENT_RIGHT, firstLineY);
-    });
-
+    y += size(14) + size(28);
+    text(nameLines[0], CONTENT_LEFT, y, font(28, "bold"), "left");
+    text(item.amount, CONTENT_RIGHT, y, font(28, "bold"), "right");
     for (const extra of nameLines.slice(1)) {
-      y += size(34);
-      const lineY = y;
-      draw(() => {
-        ctx.font = font(28, "bold");
-        ctx.textAlign = "left";
-        ctx.fillText(extra, CONTENT_LEFT, lineY);
-      });
+      y += size(36);
+      text(extra, CONTENT_LEFT, y, font(28, "bold"), "left");
     }
-
+    // How much and at what rate (and the usual rate, if the price was changed).
     ctx.font = font(24);
-    const detail = `${item.quantity} × ${item.rate}`;
-    for (const detailLine of wrap(ctx, detail, CONTENT_RIGHT - CONTENT_LEFT - 16)) {
-      y += size(30);
-      const lineY = y;
-      draw(() => {
-        ctx.font = font(24);
-        ctx.textAlign = "left";
-        ctx.fillText(`  ${detailLine}`, CONTENT_LEFT, lineY);
-      });
+    for (const line of wrap(ctx, `${item.quantity} × ${item.rate}`, CONTENT_RIGHT - CONTENT_LEFT - size(16))) {
+      y += size(34);
+      text(line, CONTENT_LEFT + size(10), y, font(24), "left");
     }
-
     if (item.note) {
-      y += size(28);
-      const noteY = y;
-      draw(() => {
-        ctx.font = font(22);
-        ctx.textAlign = "left";
-        ctx.fillText(`  * ${item.note}`, CONTENT_LEFT, noteY);
-      });
+      y += size(30);
+      text(`* ${item.note}`, CONTENT_LEFT + size(10), y, font(22), "left");
     }
-    y += size(4);
+    y += size(14);
   }
-
-  y += size(10);
-  draw(() => dashedRule(ctx, y));
+  y += size(4);
+  rule(y);
 
   // --- Totals ---------------------------------------------------------------
-  ctx.font = font(24);
-  if (bill.totalWeight) {
-    y += size(34);
-    const rowY = y;
-    draw(() => {
-      ctx.font = font(24);
-      ctx.textAlign = "left";
-      ctx.fillText(L.totalWeight, CONTENT_LEFT, rowY);
-      ctx.textAlign = "right";
-      ctx.fillText(bill.totalWeight!, CONTENT_RIGHT, rowY);
-    });
-  }
-  if (bill.totalPieces) {
-    y += size(34);
-    const rowY = y;
-    draw(() => {
-      ctx.font = font(24);
-      ctx.textAlign = "left";
-      ctx.fillText(L.totalPieces, CONTENT_LEFT, rowY);
-      ctx.textAlign = "right";
-      ctx.fillText(bill.totalPieces!, CONTENT_RIGHT, rowY);
-    });
-  }
-
-  y += size(56);
-  const totalY = y;
-  draw(() => {
-    ctx.font = font(40, "bold");
-    ctx.textAlign = "left";
-    ctx.fillText(L.total, CONTENT_LEFT, totalY);
-    ctx.textAlign = "right";
-    // The rupee sign renders from the browser font here: on a raster print there's no codepage to fall foul of.
-    ctx.fillText(bill.total, CONTENT_RIGHT, totalY);
-  });
-
-  y += size(44);
-  const payY = y;
-  draw(() => {
-    ctx.font = font(24);
-    ctx.textAlign = "left";
-    ctx.fillText(`${L.payment}: ${bill.paymentLabel}`, CONTENT_LEFT, payY);
-  });
-
+  const pair = (label: string, value: string, f = font(24), fs = 24, gap = GAP) => {
+    y += gap + size(fs);
+    text(label, CONTENT_LEFT, y, f, "left");
+    text(value, CONTENT_RIGHT, y, f, "right");
+    y += size(Math.round(fs * 0.3)) + gap / 2;
+  };
+  if (bill.totalWeight) pair(L.totalWeight, bill.totalWeight);
+  if (bill.totalPieces) pair(L.totalPieces, bill.totalPieces);
+  y += GAP / 2;
+  rule(y, 3);
+  pair(L.total, bill.total, font(40, "bold"), 40, size(12));
+  rule(y, 3);
+  pair(L.payment, bill.paymentLabel);
   // A credit slip has to name who it is on account for.
-  if (bill.customerName) {
-    y += size(30);
-    const nameY = y;
-    draw(() => {
-      ctx.font = font(24);
-      ctx.textAlign = "left";
-      ctx.fillText(`  ${bill.customerName}`, CONTENT_LEFT, nameY);
-    });
-  }
-
-  // A split bill's two figures get their own line.
+  if (bill.customerName) pair(L.customer, bill.customerName);
+  // A split bill's two figures get a line to themselves, so a long figure never runs into anything.
   if (bill.paymentDetail) {
     ctx.font = font(24);
-    for (const detailLine of wrap(ctx, bill.paymentDetail, CONTENT_RIGHT - CONTENT_LEFT - 16)) {
-      y += size(30);
-      const lineY = y;
-      draw(() => {
-        ctx.font = font(24);
-        ctx.textAlign = "left";
-        ctx.fillText(`  ${detailLine}`, CONTENT_LEFT, lineY);
-      });
+    for (const line of wrap(ctx, bill.paymentDetail, CONTENT_RIGHT - CONTENT_LEFT)) {
+      y += size(34);
+      text(line, CONTENT_LEFT, y, font(24), "left");
     }
   }
+  y += GAP;
+  rule(y);
 
-  // --- Footer ---------------------------------------------------------------
+  // --- Footer (empty by default) ---------------------------------------------
   if (SHOP_DETAILS.thanks) {
-    y += size(56);
-    const thanksY = y;
-    draw(() => {
-      ctx.font = font(32, "bold");
-      ctx.textAlign = "center";
-      ctx.fillText(SHOP_DETAILS.thanks, CENTER, thanksY);
-    });
+    y += size(46);
+    text(SHOP_DETAILS.thanks, CENTER, y, font(30, "bold"), "center");
   }
-
   if (SHOP_DETAILS.footer) {
-    y += size(34);
-    const footY = y;
-    draw(() => {
-      ctx.font = font(22);
-      ctx.textAlign = "center";
-      ctx.fillText(SHOP_DETAILS.footer, CENTER, footY);
-    });
+    y += size(32);
+    text(SHOP_DETAILS.footer, CENTER, y, font(22), "center");
   }
 
-  // Blank tail so the tear-off edge clears the last line. The cut sequence already feeds three lines past
-  // this point on top of it, so this is on top of that margin, not instead of it.
-  y += size(40);
+  // Blank tail so the tear-off edge clears the last line (the print also feeds about 2 cm after it).
+  y += size(24);
   return Math.ceil(y);
 }

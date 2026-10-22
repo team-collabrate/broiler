@@ -53,7 +53,6 @@ import { PrinterSheet } from "./PrinterSheet";
 import { CounterTabs, ProductGrid } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
 import { markDeleted, rememberBill, useDeletedBills, useRecentBills } from "./recentBills";
-import { readStaff, rememberStaff, STAFF_NAMES } from "./staff";
 import { isRateStale, RatesView } from "./RatesView";
 import { SideRail } from "./SideRail";
 import { SplitModal } from "./SplitModal";
@@ -180,7 +179,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
   const [khataOpen, setKhataOpen] = useState(false);
   const [splitUpiMinor, setSplitUpiMinor] = useState(0);
   const [creditName, setCreditName] = useState<string | null>(null);
-  const [staffName, setStaffName] = useState(readStaff);
   const [submitting, setSubmitting] = useState(false);
   /** A bill on the screen: after a sale that could not be printed (with why), or an earlier bill opened to print as a copy. */
   const [billView, setBillView] = useState<{ bill: BillInput; problem: PrinterProblem | null } | null>(null);
@@ -279,7 +277,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         orderId: attemptId.current,
         lines,
         paymentMethod,
-        staffName,
         ...(paymentMethod === "split" && { split: { upiMinor } }),
         ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
       });
@@ -292,7 +289,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
         paymentMethod,
-        staffName,
         ...(paymentMethod === "split" && { upiAmountMinor: upiMinor, cashAmountMinor: created.totalMinor - upiMinor }),
         ...(paymentMethod === "credit" && { customerName: created.customerName ?? creditName ?? "" }),
       });
@@ -425,12 +421,6 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         totalGrams={cart.totalGrams}
         totalPieces={cart.totalPieces}
         paymentMethod={paymentMethod}
-        staff={STAFF_NAMES}
-        staffName={staffName}
-        onStaffChange={(name) => {
-          setStaffName(name);
-          rememberStaff(name);
-        }}
         paymentDetail={paymentDetail}
         onPaymentChange={(method) => {
           newSale();

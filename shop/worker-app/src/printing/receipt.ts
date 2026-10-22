@@ -39,8 +39,6 @@ export interface BillInput {
   paymentDetail?: string;
   /** Credit bills only: who the bill is on account for. A credit slip with no name records nothing. */
   customerName?: string;
-  /** Who was at the counter. Optional. */
-  staffName?: string;
   /** A reprint of an earlier bill: the paper is marked as a copy so it cannot pass for a second original. */
   isCopy?: boolean;
 }

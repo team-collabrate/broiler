@@ -1357,11 +1357,6 @@ button {
   accent-color: var(--color-accent);
 }
 
-/* The worker switch at the top of the cart. */
-.ct-staff {
-  flex: none;
-}
-
 .ct-notice__detail {
   display: block;
   margin-top: var(--space-2);

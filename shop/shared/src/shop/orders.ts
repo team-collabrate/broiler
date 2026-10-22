@@ -33,7 +33,6 @@ export interface CreateOrderInput {
   /** Required for a `credit` bill: who it is on account for. A name seen before finds the same customer. */
   customer?: { name: string };
   /** The worker who was billing (up to 40 letters). Optional. */
-  staffName?: string;
 }
 
 export interface CreatedOrder {
@@ -85,7 +84,6 @@ function checkLine(l: OrderLineInput): void {
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
   const { orderId, lines, paymentMethod, split, customer } = input;
-  const staffName = input.staffName?.trim().slice(0, 40) ?? "";
   if (lines.length === 0) throw new UserError("The bill needs at least one item");
   if (lines.length > MAX_ORDER_LINES) throw new UserError(`A bill can hold at most ${MAX_ORDER_LINES} items`);
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new UserError(`Unknown payment method: ${paymentMethod}`);
@@ -143,7 +141,6 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     device,
     soldAt: Timestamp.fromDate(now),
     createdAt: serverTimestamp(),
-    ...(staffName !== "" && { staffName }),
     lines: orderLines,
     totalMinor,
     totalGrams,

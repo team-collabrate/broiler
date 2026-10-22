@@ -29,7 +29,6 @@ export interface SavedSale {
   upiAmountMinor?: number;
   /** Credit bills: who it is on account for. */
   customerName?: string;
-  staffName?: string;
 }
 
 /**
@@ -58,6 +57,5 @@ export function toBillInput(sale: SavedSale): BillInput {
         paymentDetail: billText.splitDetail(formatMoney(sale.cashAmountMinor), formatMoney(sale.upiAmountMinor)),
       }),
     ...(sale.paymentMethod === "credit" && sale.customerName && { customerName: sale.customerName }),
-    ...(sale.staffName && { staffName: sale.staffName }),
   };
 }

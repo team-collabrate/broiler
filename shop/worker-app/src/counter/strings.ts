@@ -67,7 +67,6 @@ export const t = {
   listRate: (rate: string) => `Usual rate ${rate}`,
 
   // Cart
-  billedBy: "Worker",
   currentSale: "Bill",
   cartEmpty: "No items yet",
   cartEmptyHint: "Tap an item to add it",

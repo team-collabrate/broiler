@@ -48,7 +48,7 @@ export function Bills({ data }: { data: OwnerData }) {
                 <span className="ow-bill__main">
                   <strong className="ow-bill__no">{billNo(order)}</strong>
                   <span className="ow-bill__meta">
-                    {timeText(soldTime(order))} · {order.staffName ?? "Worker"} · {paymentText(order)}
+                    {timeText(soldTime(order))} · {paymentText(order)}
                     {order.paymentMethod === "credit" && order.customerName ? ` (${order.customerName})` : ""}
                   </span>
                 </span>
@@ -90,7 +90,7 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
   return (
     <Sheet
       title={confirming ? `Delete bill ${billNo(order)}?` : `Bill ${billNo(order)}`}
-      subtitle={`${dayText(order.dayKey)} · ${timeText(soldTime(order))} · ${order.staffName ?? "Worker"}`}
+      subtitle={`${dayText(order.dayKey)} · ${timeText(soldTime(order))}`}
       onClose={onClose}
       busy={busy}
       footer={

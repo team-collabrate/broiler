@@ -19,7 +19,6 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
       totalPieces: "2 எண்",
       total: "₹610.00",
       paymentLabel: "பணம்",
-      staffName: "கவுண்டர்",
     },
   },
   {

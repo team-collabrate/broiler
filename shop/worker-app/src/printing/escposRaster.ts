@@ -184,7 +184,8 @@ export function buildRasterReceipt(
 
   chunks.push(new Uint8Array([ESC, 0x61, 0x00])); // back to left align
   if (cut) {
-    chunks.push(new Uint8Array([0x0a, 0x0a, 0x0a])); // feed clear of the cutter
+    // Feed the bill clear of the tear bar (this printer has no cutter: the bill is torn off by hand), about 2 cm.
+    chunks.push(new Uint8Array([ESC, 0x4a, 160]));
     chunks.push(new Uint8Array([GS, 0x56, 0x00]));
   }
 

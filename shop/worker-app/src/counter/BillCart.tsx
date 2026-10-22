@@ -13,9 +13,6 @@ interface Props {
   paymentMethod: PaymentMethod;
   onPaymentChange: (method: PaymentMethod) => void;
   /** The workers who bill here, and which one is billing now. */
-  staff: readonly string[];
-  staffName: string;
-  onStaffChange: (name: string) => void;
   /** What a split or credit choice came to, shown on its button (null until chosen). */
   paymentDetail: { split: string | null; credit: string | null };
   submitting: boolean;
@@ -40,9 +37,6 @@ export function BillCart({
   totalPieces,
   paymentMethod,
   onPaymentChange,
-  staff,
-  staffName,
-  onStaffChange,
   paymentDetail,
   submitting,
   notice,
@@ -57,14 +51,6 @@ export function BillCart({
   return (
     <section className="ct-cart" aria-label={t.currentSale}>
       <h2 className="ct-cart__heading">{t.currentSale}</h2>
-
-      <div className="ct-methods ct-staff" role="radiogroup" aria-label={t.billedBy}>
-        {staff.map((name) => (
-          <button key={name} type="button" role="radio" aria-checked={name === staffName} className={`ct-method${name === staffName ? " is-on" : ""}`} disabled={submitting} onClick={() => onStaffChange(name)}>
-            {name}
-          </button>
-        ))}
-      </div>
 
       {notice && (
         <div className={`ct-notice ct-notice--${notice.tone}`} role={notice.tone === "error" ? "alert" : "status"}>

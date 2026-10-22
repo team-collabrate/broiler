@@ -13,7 +13,7 @@ export const SHOP_DETAILS = {
   /** Printed as "தொலைபேசி: <phone>". Leave empty to omit the line. */
   phone: "",
   /** Closing line above the footer. */
-  thanks: "நன்றி! மீண்டும் வருக!",
+  thanks: "",
   /** Smallest line at the very bottom. Leave empty to omit. */
   footer: "",
 } as const;
