@@ -176,6 +176,13 @@ export const t = {
   billCopyNote: "It will print with a copy mark (நகல்).",
   billRendering: "Getting the bill ready…",
   printAgain: "Print again",
+  printingBill: (label: string) => `Printing bill ${label}…`,
+  notPrinted: (label: string) => `Bill ${label} is saved but did not print`,
+  fixBill: "Fix",
+  fixTitle: (label: string) => `Fix bill ${label}?`,
+  fixWarning: "This bill is deleted and its items come back on the screen. Change them and print a new bill. Needs internet.",
+  fixConfirm: "Delete and fix",
+  fixNeedsEmpty: "To fix an older bill, first finish or clear the bill on the screen.",
   printing: "Printing…",
   closeNext: "Close · next bill",
 

@@ -2679,3 +2679,10 @@ button {
   font-weight: 800;
   white-space: nowrap;
 }
+
+.ct-list__fix {
+  margin-right: 8px;
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}

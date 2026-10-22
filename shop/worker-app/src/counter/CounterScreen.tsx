@@ -221,6 +221,25 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     [printer],
   );
 
+  // Bills are printed one after another in the background, so the cashier can start the next customer straight away
+  // (a slow or switched-off printer must never freeze the counter). A bill that did not print stays on a red strip.
+  const tryPrintRef = useRef(tryPrint);
+  tryPrintRef.current = tryPrint;
+  const printChain = useRef<Promise<void>>(Promise.resolve());
+  const [unprinted, setUnprinted] = useState<{ bill: BillInput; problem: PrinterProblem }[]>([]);
+  const queuePrint = (bill: BillInput, online: boolean) => {
+    setNotice({ text: t.printingBill(bill.billNo), tone: "info" });
+    printChain.current = printChain.current.then(async () => {
+      const result = await tryPrintRef.current(bill);
+      if (result.ok) {
+        setUnprinted((list) => list.filter((u) => u.bill.orderId !== bill.orderId));
+        setNotice({ text: online ? t.printed(bill.billNo) : t.printedOffline(bill.billNo), tone: "info" });
+      } else {
+        setUnprinted((list) => [...list.filter((u) => u.bill.orderId !== bill.orderId), { bill, problem: result.problem }]);
+      }
+    });
+  };
+
   // --- Actions ------------------------------------------------------------
   const confirmSheet = (line: OrderLineInput) => {
     if (!sheet) return;
@@ -313,14 +332,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       setCreditName(null);
       // The sale is saved and the bill is kept in the recent list; now the paper. If the printer is missing or refuses,
       // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
-      rememberBill(bill);
+      rememberBill({ ...bill, restore: lines.map(({ key: _key, ...rest }) => rest) });
       if (!print) {
         setNotice({ text: connected ? t.saved(created.label) : t.savedOffline(created.label), tone: "info" });
         return;
       }
-      const result = await tryPrint(bill);
-      if (result.ok) setNotice({ text: connected ? t.printed(created.label) : t.printedOffline(created.label), tone: "info" });
-      else setBillView({ bill, problem: result.problem });
+      queuePrint(bill, connected);
     } catch (e) {
       // The cart is kept, so pressing Print bill again retries the same sale (same id, never saved twice).
       setNotice({ text: t.saleError(describeError(e)), tone: "error" });
@@ -336,6 +353,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
     const result = await tryPrint(billView.bill);
     setReprinting(false);
     if (result.ok) {
+      setUnprinted((list) => list.filter((u) => u.bill.orderId !== billView.bill.orderId));
       setNotice({ text: t.printed(billView.bill.billNo), tone: "info" });
       setBillView(null);
     } else {
@@ -423,6 +441,16 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
       <div className="ct-body">
         <main className="ct-main">
           <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
+          {unprinted.map((u) => (
+            <div key={u.bill.orderId} className="ct-sync__refused" role="alert">
+              <div>
+                <strong>{t.notPrinted(u.bill.billNo)}</strong>
+              </div>
+              <button type="button" className="ct-btn ct-btn--plain" onClick={() => setBillView({ bill: u.bill, problem: u.problem })}>
+                {t.printAgain}
+              </button>
+            </div>
+          ))}
           {main}
         </main>
         <BillCart
@@ -557,6 +585,12 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
           onDelete={async (orderId) => {
             await voidOrder(orderId);
             markDeleted(orderId);
+          }}
+          canFix={cart.lines.length === 0}
+          onFix={(restore) => {
+            restore.forEach((line) => cart.add(line));
+            setRecentOpen(false);
+            setNotice(null);
           }}
           onOpen={(bill) => {
             setRecentOpen(false);

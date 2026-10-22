@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { describeError, type RecentEntry } from "@kumbakonam/shared/core";
+import { describeError, type OrderLineInput, type RecentEntry } from "@kumbakonam/shared/core";
 import type { BillInput } from "../printing/receipt";
 import { t } from "./strings";
 
@@ -14,6 +14,10 @@ interface Props {
   onOpen: (bill: BillInput) => void;
   /** Deletes a bill. Rejects with the reason to show. */
   onDelete: (orderId: string) => Promise<void>;
+  /** The screen is empty, so a bill can be put back on it to be fixed. */
+  canFix: boolean;
+  /** Puts the items of a deleted bill back on the screen. */
+  onFix: (lines: OrderLineInput[]) => void;
   onClose: () => void;
 }
 
@@ -29,10 +33,11 @@ const DELETABLE_MS = 24 * 60 * 60 * 1000;
  * bills made in the last 24 hours also have a Delete button: a mis-billed sale is deleted here (it stays on the
  * owner's list marked deleted and leaves every total). Anything older is for the owner.
  */
-export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, onDelete, onClose }: Props) {
+export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, onDelete, canFix, onFix, onClose }: Props) {
   const [confirming, setConfirming] = useState<RecentEntry<BillInput> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fixing, setFixing] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && (confirming ? setConfirming(null) : onClose());
@@ -54,7 +59,9 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
     setError(null);
     try {
       await onDelete(confirming.id);
+      const restore = confirming.payload.restore;
       setConfirming(null);
+      if (fixing && restore) onFix(restore);
     } catch (e) {
       setError(t.deleteFailed(describeError(e)));
     } finally {
@@ -67,7 +74,7 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
       <div className="ct-sheet ct-sheet--narrow" role="dialog" aria-modal="true" aria-label={t.recentTitle}>
         <header className="ct-sheet__header">
           <div className="ct-sheet__heading">
-            <h2 className="ct-sheet__title">{confirming ? t.deleteTitle(confirming.payload.billNo) : t.recentTitle}</h2>
+            <h2 className="ct-sheet__title">{confirming ? (fixing ? t.fixTitle(confirming.payload.billNo) : t.deleteTitle(confirming.payload.billNo)) : t.recentTitle}</h2>
             <span className="ct-sheet__sub ct-sheet__sub--note">{confirming ? `${confirming.payload.total} · ${confirming.payload.paymentLabel}` : t.recentSubtitle}</span>
           </div>
           <button type="button" className="ct-sheet__close" aria-label={t.dismiss} disabled={busy} onClick={onClose}>
@@ -78,7 +85,7 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
         <div className="ct-sheet__body">
           {confirming ? (
             <div className="ct-confirm">
-              <p className="ct-confirm__text">{t.deleteWarning}</p>
+              <p className="ct-confirm__text">{fixing ? t.fixWarning : t.deleteWarning}</p>
               {!connected && <p className="ct-confirm__text ct-confirm__text--warn">{t.deleteNeedsInternet}</p>}
               {error && (
                 <p className="ct-confirm__text ct-confirm__text--error" role="alert">
@@ -107,16 +114,32 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
                         waiting.has(id) ? (
                           <span className="ct-list__tag">{t.billWaiting}</span>
                         ) : (
-                          <button
-                            type="button"
-                            className="ct-list__delete"
-                            onClick={() => {
-                              setError(null);
-                              setConfirming({ id, payload, soldAtMs });
-                            }}
-                          >
-                            {t.deleteBill}
-                          </button>
+                          <>
+                            {payload.restore && canFix && (
+                              <button
+                                type="button"
+                                className="ct-list__delete ct-list__fix"
+                                onClick={() => {
+                                  setError(null);
+                                  setFixing(true);
+                                  setConfirming({ id, payload, soldAtMs });
+                                }}
+                              >
+                                {t.fixBill}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="ct-list__delete"
+                              onClick={() => {
+                                setError(null);
+                                setFixing(false);
+                                setConfirming({ id, payload, soldAtMs });
+                              }}
+                            >
+                              {t.deleteBill}
+                            </button>
+                          </>
                         )
                       ) : null}
                     </div>
@@ -134,13 +157,16 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
                 {t.keepBill}
               </button>
               <button type="button" className="ct-btn ct-btn--danger" disabled={busy || !connected} onClick={() => void confirmDelete()}>
-                {busy ? t.deleting : t.deleteConfirm}
+                {busy ? t.deleting : fixing ? t.fixConfirm : t.deleteConfirm}
               </button>
             </>
           ) : (
-            <button type="button" className="ct-btn ct-btn--plain" onClick={onClose}>
-              {t.dismiss}
-            </button>
+            <>
+              {!canFix && <span className="ct-list__status">{t.fixNeedsEmpty}</span>}
+              <button type="button" className="ct-btn ct-btn--plain" onClick={onClose}>
+                {t.dismiss}
+              </button>
+            </>
           )}
         </footer>
       </div>

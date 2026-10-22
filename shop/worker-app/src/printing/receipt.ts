@@ -19,6 +19,8 @@ export interface BillLine {
   note?: string;
 }
 
+import type { OrderLineInput } from "@kumbakonam/shared/core";
+
 export interface BillInput {
   orderId: string;
   /** Short human-facing reference shown as "Bill No" on the paper. */
@@ -41,4 +43,6 @@ export interface BillInput {
   customerName?: string;
   /** A reprint of an earlier bill: the paper is marked as a copy so it cannot pass for a second original. */
   isCopy?: boolean;
+  /** The items as they were rung up, kept in the recent list so a wrong bill can be put back on the screen and fixed. Not printed. */
+  restore?: OrderLineInput[];
 }
