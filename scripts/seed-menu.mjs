@@ -13,14 +13,14 @@
 // menu. Before the access rules go live you can add --anonymous to sign in the old way.
 //
 // New items start inactive so the counter apps already in use don't show half-set-up items; set
-// EXPO_PUBLIC_SHOW_DRAFT_MENU=1 in apps/pos/.env to see them while checking.
+// VITE_SHOW_DRAFT_MENU=1 in shop/worker-app/.env to see them while checking.
 //
 // Rates below are SAMPLE values except Kadai (₹60) and Podi (₹10): the owner sets the real ones
 // with the Today's rate button.
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth';
 import { deleteField, doc, getDoc, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, usingEmulator, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin } from './lib/pins.mjs';
 
@@ -30,16 +30,16 @@ const anonymous = process.argv.includes('--anonymous');
 
 const env = process.env;
 const config = {
-  apiKey: env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID,
 };
 
 if (!usingEmulator && (!config.apiKey || !config.projectId || !config.appId)) {
-  console.error('Missing EXPO_PUBLIC_FIREBASE_* values. Copy apps/pos/.env.example to apps/pos/.env and fill it in.');
+  console.error('Missing VITE_FIREBASE_* values. Copy shop/worker-app/.env.example to shop/worker-app/.env and fill it in.');
   process.exit(1);
 }
 
@@ -49,7 +49,7 @@ if (!usingEmulator && (!config.apiKey || !config.projectId || !config.appId)) {
 //   qty     pick a count, the rate prices each
 // defaultGrams is where a kg item's weight wheel starts; defaultQty where a piece item's count starts.
 // category keys are the counter tabs (settings/categories); the picture is the item id in
-// apps/pos/assets/items (see scripts/build-image-map.mjs).
+// shop/worker-app/public/items.
 const kg = (id, name, nameTa, category, group, variant, rateMinor, defaultGrams, methods = ['weight', 'amount']) => ({
   id, name, nameTa, category, group, variant, unit: 'kg', methods, rateMinor, defaultGrams,
 });

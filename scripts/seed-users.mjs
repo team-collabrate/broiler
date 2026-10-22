@@ -11,7 +11,7 @@
 // run this again. The script skips an account that already exists and never overwrites it.
 import { initializeApp } from 'firebase/app';
 import { createUserWithEmailAndPassword, getAuth, signOut } from 'firebase/auth';
-import { isValidPin, pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { isValidPin, pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 

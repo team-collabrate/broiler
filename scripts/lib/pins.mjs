@@ -9,15 +9,15 @@ export function firebaseConfig() {
     return { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'demo-broiler', storageBucket: 'demo-broiler.appspot.com', messagingSenderId: '0', appId: '1:0:web:0' };
   }
   const config = {
-    apiKey: env.EXPO_PUBLIC_FIREBASE_API_KEY,
-    authDomain: env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    apiKey: env.VITE_FIREBASE_API_KEY,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: env.VITE_FIREBASE_APP_ID,
   };
   if (!config.apiKey || !config.projectId || !config.appId) {
-    console.error('Missing EXPO_PUBLIC_FIREBASE_* values. Run with: node --env-file=apps/pos/.env <script>');
+    console.error('Missing VITE_FIREBASE_* values. Run with: node --env-file=shop/worker-app/.env <script>');
     process.exit(1);
   }
   return config;

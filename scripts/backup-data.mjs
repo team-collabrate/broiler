@@ -1,14 +1,14 @@
 // Read-only: copies every collection of the live database into one JSON file under backups/ and prints what is in it.
 // Nothing is changed or deleted. Run it before any clean-up.
 //
-//   node --env-file=apps/pos/.env scripts/backup-data.mjs
+//   node --env-file=shop/worker-app/.env scripts/backup-data.mjs
 //
 // The managing PIN is asked for without echo (or read from OWNER_PIN when there is no terminal).
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, getFirestore, Timestamp } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 

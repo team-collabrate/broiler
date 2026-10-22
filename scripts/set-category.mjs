@@ -1,19 +1,19 @@
 // Moves a menu item to another tab (category): for example quail from Chicken to Others.
 //
-//   node --env-file=apps/pos/.env scripts/set-category.mjs kadai other
+//   node --env-file=shop/worker-app/.env scripts/set-category.mjs kadai other
 //
 // Categories: chicken, other, mutton. The managing PIN is asked for without echo (or read from OWNER_PIN when there is
 // no terminal). Only that one field of that one item changes; rates and everything else stay as they are.
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
 const [itemId, category] = process.argv.slice(2);
 if (!itemId || !['chicken', 'other', 'mutton'].includes(category)) {
-  console.error('Usage: node --env-file=apps/pos/.env scripts/set-category.mjs <item id> <chicken|other|mutton>');
+  console.error('Usage: node --env-file=shop/worker-app/.env scripts/set-category.mjs <item id> <chicken|other|mutton>');
   process.exit(1);
 }
 

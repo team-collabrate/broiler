@@ -1,31 +1,22 @@
 {
-  "name": "broiler",
+  "name": "broiler-ops",
   "private": true,
   "version": "0.1.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "description": "Operations tooling for the Honey Broilers POS: emulators, rules tests, account and data scripts. The apps live in shop/.",
   "scripts": {
-    "pos": "npm run start -w @broiler/pos",
-    "admin": "npm run start -w @broiler/admin",
-    "pos:web": "npm run web -w @broiler/pos -- --port 3000",
-    "admin:web": "npm run web -w @broiler/admin -- --port 8082",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm test -w @broiler/shared",
-    "seed": "node --env-file=apps/pos/.env scripts/seed-menu.mjs",
-    "build:web": "npm run build:web -w @broiler/pos && npm run build:web -w @broiler/admin",
-    "deploy": "npm run build:web && npx firebase-tools deploy --only hosting --project broiler-pos",
-    "reset-demo": "npx firebase-tools firestore:delete orders --recursive --force --project broiler-pos && npx firebase-tools firestore:delete counters --recursive --force --project broiler-pos && npx firebase-tools firestore:delete customers --recursive --force --project broiler-pos && npx firebase-tools firestore:delete customerPayments --recursive --force --project broiler-pos",
-    "seed:users": "node --env-file=apps/pos/.env scripts/seed-users.mjs",
-    "check:access": "node --env-file=apps/pos/.env scripts/check-access.mjs",
-    "images": "node scripts/build-image-map.mjs",
-    "dev": "npm run pos:web",
+    "typecheck": "npm --prefix shop run typecheck",
+    "test": "npm --prefix shop test",
+    "test:rules": "node scripts/test-rules.mjs",
     "emulators": "node scripts/run-emulators.mjs",
     "emulators:seed": "node scripts/seed-emulator.mjs",
-    "test:rules": "node scripts/test-rules.mjs"
+    "seed": "node --env-file=shop/worker-app/.env scripts/seed-menu.mjs",
+    "seed:users": "node --env-file=shop/worker-app/.env scripts/seed-users.mjs",
+    "check:access": "node --env-file=shop/worker-app/.env scripts/check-access.mjs",
+    "backup": "node --env-file=shop/worker-app/.env scripts/backup-data.mjs",
+    "dev:emulator": "npm --prefix shop run dev:emulator"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^6.0.0"
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.0.0"
   }
 }

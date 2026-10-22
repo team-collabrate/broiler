@@ -1,13 +1,13 @@
 // Lists a day's orders as the owner and reports duplicate or missing bill numbers for each counter, with the time each
 // sale was made and the time the server received it. Used to reconcile a test or trial day.
 //
-//   node --env-file=apps/pos/.env scripts/check-bills.mjs [YYYY-MM-DD]
+//   node --env-file=shop/worker-app/.env scripts/check-bills.mjs [YYYY-MM-DD]
 //
 // The owner PIN is asked for without echo (or read from OWNER_PIN when there is no terminal). The day defaults to today.
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 

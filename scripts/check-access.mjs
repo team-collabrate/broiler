@@ -5,7 +5,7 @@
 //
 // It signs in as the counter and as the owner (PINs typed at a hidden prompt) and tries things each
 // should and should not be allowed to do, then prints PASS or FAIL for each. It saves exactly one
-// small test order (to prove the till can save), so afterwards run `npm run reset-demo`.
+// small test order (to prove the till can save), so afterwards remove those test records (see docs/GO_LIVE.md, "Clearing test data").
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
@@ -24,8 +24,8 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
-import { customerIdFromName } from '../packages/shared/src/sale.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
+import { customerIdFromName } from '../shop/shared/src/core/sale.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
@@ -229,5 +229,5 @@ await denied('cannot edit a payment receipt', async () => {
 await signOut(auth);
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) FAILED.`);
-console.log('Remember: npm run reset-demo removes the test orders this saved. Also delete the customer "Check Access Debtor" and its payments in the Firebase console (Firestore > customers, customerPayments).');
+console.log('Remember: this saved a test order and a customer. Remove the test records afterwards (docs/GO_LIVE.md, Clearing test data), including the customer "Check Access Debtor" and its payments in the Firebase console (Firestore > customers, customerPayments).');
 process.exit(failures === 0 ? 0 : 1);

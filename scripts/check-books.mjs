@@ -1,7 +1,7 @@
 // Reconciles a day's money from the raw records, independently of the app, and exits with an error if anything does not
 // add up. Run it after a test or trial day:
 //
-//   node --env-file=apps/pos/.env scripts/check-books.mjs [YYYY-MM-DD]
+//   node --env-file=shop/worker-app/.env scripts/check-books.mjs [YYYY-MM-DD]
 //
 // It checks, as the owner:
 //   - every order: its lines add up to its total, a split's two halves add up to the total, a credit bill names a customer
@@ -11,7 +11,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
-import { pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 

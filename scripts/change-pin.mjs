@@ -1,14 +1,14 @@
 // Changes the PIN of the owner (managing) or counter (billing) account. The current PIN is needed: it signs in, then the new
 // PIN replaces it.
 //
-//   node --env-file=apps/pos/.env scripts/change-pin.mjs owner
-//   node --env-file=apps/pos/.env scripts/change-pin.mjs counter
+//   node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner
+//   node --env-file=shop/worker-app/.env scripts/change-pin.mjs counter
 //
 // Both PINs are asked for without echo (or read from OLD_PIN and NEW_PIN when there is no terminal). The PIN is the
-// account's password ("broiler-<PIN>", see packages/shared/src/roles.ts), so this changes it in Firebase Authentication.
+// account's password ("broiler-<PIN>", see shop/shared/src/core/roles.ts), so this changes it in Firebase Authentication.
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, signOut, updatePassword } from 'firebase/auth';
-import { isValidPin, pinPassword, ROLE_EMAILS } from '../packages/shared/src/roles.ts';
+import { isValidPin, pinPassword, ROLE_EMAILS } from '../shop/shared/src/core/roles.ts';
 import { connectEmulators, withEmulatorConfig } from './lib/emulator.mjs';
 import { askPin, firebaseConfig } from './lib/pins.mjs';
 
