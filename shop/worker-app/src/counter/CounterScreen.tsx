@@ -53,6 +53,7 @@ import { CounterTabs } from "./ProductGrid";
 import { RecentBillsSheet } from "./RecentBillsSheet";
 import { markDeleted, rememberBill, useDeletedBills, useRecentBills } from "./recentBills";
 import { isRateStale, RatesView } from "./RatesView";
+import { playSavedSound, primeSound } from "./sound";
 import { SideRail } from "./SideRail";
 import { SplitModal } from "./SplitModal";
 import { SyncBanner } from "./SyncBanner";
@@ -278,6 +279,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         return;
       }
     }
+    primeSound();
     setSubmitting(true);
     setNotice(null);
     try {
@@ -291,6 +293,7 @@ export function CounterScreen({ role, signInOwner, restoreCounter, onLock }: Pro
         ...(paymentMethod === "split" && { split: { upiMinor } }),
         ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
       });
+      playSavedSound();
       const bill = toBillInput({
         orderId: created.id,
         billNo: created.label,
