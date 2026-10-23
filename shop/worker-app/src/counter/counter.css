@@ -2816,3 +2816,7 @@ button {
   text-align: center;
   color: var(--color-text-muted);
 }
+.ct-version__update {
+  display: block;
+  margin: var(--space-2) auto 0;
+}

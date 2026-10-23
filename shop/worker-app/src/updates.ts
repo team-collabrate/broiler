@@ -40,3 +40,19 @@ export function keepCounterUpToDate(): void {
     },
   });
 }
+
+/**
+ * "Update app now": forgets the stored copy of the app (the service worker and its file cache) and loads the newest
+ * version from the server. Bills, the upload queue, the sign-in and the printer are not touched: they live in other
+ * storage, which this leaves alone. Needs the internet.
+ */
+export async function refreshApp(): Promise<void> {
+  try {
+    const registrations = await navigator.serviceWorker?.getRegistrations();
+    await Promise.all((registrations ?? []).map((r) => r.unregister()));
+    const names = await caches.keys();
+    await Promise.all(names.map((n) => caches.delete(n)));
+  } finally {
+    window.location.reload();
+  }
+}

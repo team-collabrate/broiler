@@ -39,6 +39,7 @@ export const t = {
   howLabel: "How the customer asks",
   adminNeedsInternet: "Admin needs internet. Try again when it is back.",
   othersHint: "Tap to add. Press and hold to change the count.",
+  updateAppNow: "Update app now",
   backToBilling: "Back to billing",
   loadingAdmin: "Opening Admin…",
   tapAgain: "Tap again for Admin",

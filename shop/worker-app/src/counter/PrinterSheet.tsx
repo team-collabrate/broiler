@@ -1,3 +1,4 @@
+import { refreshApp } from "../updates";
 import { useEffect } from "react";
 import type { PrinterProblem, PrinterStatus } from "../hooks/usePrinter";
 import type { ClassicPrinterConnection } from "../printing/classicBluetoothPrinter";
@@ -146,6 +147,9 @@ export function PrinterSheet({ status, problem, deviceName, platform, printerDev
           )}
           {platform === "web" && <p className="ct-hint">{t.printerWebNote}</p>}
           <p className="ct-hint ct-version">App version {__APP_BUILD__}</p>
+          <button type="button" className="ct-btn ct-btn--plain ct-version__update" onClick={() => void refreshApp()}>
+            {t.updateAppNow}
+          </button>
         </div>
 
         <footer className="ct-sheet__actions">
