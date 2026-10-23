@@ -221,12 +221,12 @@ export function CounterScreen() {
     if (!sheet) return;
     if (sheet.editing) {
       cart.replace(sheet.editing.key, line);
-    } else if (!canAddLine(cart.lines, line)) {
+    } else if (!canAddLine(cart.lines, line, keepPacks)) {
       setNotice({ text: t.tooManyLines, tone: "error" });
       setSheet(null);
       return;
     } else {
-      cart.add(line);
+      cart.add(line, keepPacks);
     }
     newSale();
     setNotice(null);
@@ -241,11 +241,11 @@ export function CounterScreen() {
     const now = Date.now();
     if (lastPreset.current.sig === sig && now - lastPreset.current.at < 350) return;
     lastPreset.current = { sig, at: now };
-    if (!canAddLine(cart.lines, line)) {
+    if (!canAddLine(cart.lines, line, keepPacks)) {
       setNotice({ text: t.tooManyLines, tone: "error" });
       return;
     }
-    cart.add(line);
+    cart.add(line, keepPacks);
     newSale();
     setNotice(null);
   };
@@ -376,7 +376,7 @@ export function CounterScreen() {
         {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : category === "other" ? (
           <ItemCards items={visibleItems} onSelect={(item) => setSheet({ item })} />
         ) : (
-          <ItemPicker items={visibleItems} keepPacks={keepPacks} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
+          <ItemPicker items={visibleItems} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
         )}
       </div>
     );
@@ -407,7 +407,10 @@ export function CounterScreen() {
           totalPieces={cart.totalPieces}
           paymentMethod={paymentMethod}
           keepPacks={keepPacks}
-          onKeepPacksChange={setKeepPacks}
+          onKeepPacksChange={(on) => {
+            setKeepPacks(on);
+            cart.regroup(on);
+          }}
           paymentDetail={paymentDetail}
           onPaymentChange={(method) => {
             newSale();
@@ -509,7 +512,7 @@ export function CounterScreen() {
           }}
           canFix={cart.lines.length === 0}
           onFix={(restore) => {
-            restore.forEach((line) => cart.add(line));
+            restore.forEach((line) => cart.add(line, keepPacks));
             setRecentOpen(false);
             setNotice(null);
           }}

@@ -5,6 +5,7 @@ import {
   addLine,
   adjustLine,
   canAddLine,
+  regroupLines,
   MAX_ORDER_LINES,
   adjustmentMinor,
   applyQtyKey,
@@ -590,4 +591,49 @@ test('weights tapped without packs add up, and never mix with packs', () => {
   assert.equal(lines.length, 2);
   // One pack on its own reads as a plain weight.
   assert.equal(formatLineQuantity(lines[1], 'en'), '250 g');
+});
+
+test('unticking "keep packs" adds the packs up in the cart, and ticking again splits them back', () => {
+  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
+  let lines = cart(pack(250), pack(250), pack(500));
+  assert.deepEqual(lines.map((l) => [l.grams, l.packs]), [[500, 2], [500, 1]]); // 2 × 250 g and 500 g, as billed with the box ticked
+  const added = regroupLines(lines, false);
+  assert.equal(added.length, 1);
+  assert.equal(added[0].grams, 1000);
+  assert.equal(added[0].packGrams, undefined);
+  assert.equal(added[0].packs, undefined);
+  assert.equal(cartTotals(added).totalMinor, cartTotals(lines).totalMinor);
+  lines = regroupLines(added, true);
+  assert.deepEqual(lines.map((l) => [l.grams, l.packGrams, l.packs]), [[500, 250, 2], [500, 500, 1]]);
+  assert.equal(new Set(lines.map((l) => l.key)).size, lines.length); // every line has its own key
+});
+
+test('a weight added while the box is unticked joins the added-up line, and can still be split afterwards', () => {
+  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
+  let lines = regroupLines(cart(pack(250)), false);
+  lines = regroupLines(addLine(lines, pack(250)), false);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].grams, 500);
+  assert.deepEqual(lines[0].groups, [{ packGrams: 250, packs: 2 }]);
+  const split = regroupLines(lines, true);
+  assert.deepEqual(split.map((l) => [l.grams, l.packGrams, l.packs]), [[500, 250, 2]]);
+});
+
+test('regrouping leaves amounts, counts, other items and edited weights alone', () => {
+  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
+  const lines = cart(pack(250), byAmount(10000), { ...pack(500), itemId: 'liver', name: 'Liver' }, eggs(2));
+  const added = regroupLines(lines, false);
+  assert.equal(added.length, lines.length); // nothing to add up: different items, an amount, a count
+  assert.equal(cartTotals(added).totalMinor, cartTotals(lines).totalMinor);
+  // A line whose weight was edited after it was added up no longer matches its pack list: it stays as typed.
+  const edited = { ...regroupLines(cart(pack(250), pack(500)), false)[0], grams: 800 };
+  assert.deepEqual(regroupLines([edited], true).map((l) => l.grams), [800]);
+});
+
+test('canAddLine counts the lines the cart will really have when the packs are added up', () => {
+  const pack = (id: string, grams: number): OrderLineInput => ({ ...chicken, itemId: id, name: id, grams, packGrams: grams, packs: 1 });
+  const full = regroupLines(cart(pack('a', 250), pack('b', 250), pack('c', 250), pack('d', 250), pack('e', 250)), false);
+  assert.equal(full.length, MAX_ORDER_LINES);
+  assert.equal(canAddLine(full, pack('a', 500), false), true); // joins item a's line
+  assert.equal(canAddLine(full, pack('f', 250), false), false); // a sixth item
 });

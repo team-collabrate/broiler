@@ -65,8 +65,6 @@ function lineBase(item: MenuItem) {
 interface Props {
   /** The items of the selected tab. */
   items: MenuItem[];
-  /** Repeated equal weights stay packs (2 × 250 g) instead of adding up (500 g). */
-  keepPacks: boolean;
   /** Adds a ready line to the bill. */
   onAdd: (line: OrderLineInput) => void;
   /** Opens the full sheet for any other weight, amount or count. */
@@ -104,7 +102,7 @@ function FamilyCard({ family, item, selected, onSelect }: { family: Family; item
  * asks (by weight or by amount), and four big squares add the common weights or amounts with one tap. Anything else
  * goes through "Other", which opens the full sheet.
  */
-export function ItemPicker({ items, keepPacks, onAdd, onOther }: Props) {
+export function ItemPicker({ items, onAdd, onOther }: Props) {
   const families = useMemo(() => familiesOf(items), [items]);
   const [familyKey, setFamilyKey] = useState<string | null>(null);
   const [variantByFamily, setVariantByFamily] = useState<Record<string, string>>({});
@@ -132,7 +130,7 @@ export function ItemPicker({ items, keepPacks, onAdd, onOther }: Props) {
   const piece = item.unit === "piece";
   const ready = item.rateMinor > 0;
 
-  const addWeight = (grams: number) => onAdd({ ...lineBase(item), grams, qty: 0, ...(keepPacks && { packGrams: grams, packs: 1 }) });
+  const addWeight = (grams: number) => onAdd({ ...lineBase(item), grams, qty: 0, packGrams: grams, packs: 1 });
   const addAmount = (rupees: number) => {
     const amountMinor = rupees * 100;
     onAdd({ ...lineBase(item), grams: gramsForAmount(amountMinor, item.rateMinor), qty: 0, amountMinor });
