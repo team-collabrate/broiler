@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt", // updates are applied by src/updates.ts when the till is quiet
       includeAssets: ["icon-192.png", "icon-512.png", "icon-512-maskable.png"],
       manifest: {
         // Requested explicitly, replacing "Kumbakonam POS" — this is the
