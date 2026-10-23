@@ -2902,3 +2902,59 @@ button {
   opacity: 0.4;
   cursor: default;
 }
+
+/* Two different controls, two different looks:
+   the cut (which product) is a row of round chips with the chosen one filled red;
+   how it is sold (by weight or by amount) is a plain underlined tab pair. */
+.ct-pick .ct-switch {
+  display: flex;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.ct-pick .ct-switch__opt {
+  flex: 1;
+  min-height: 52px;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  box-shadow: none;
+}
+.ct-pick .ct-switch__opt.is-on {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(215, 25, 32, 0.3);
+}
+.ct-pick .ct-modebar {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 2px solid var(--color-border);
+}
+.ct-pick .ct-modebar__opt {
+  flex: 1;
+  min-height: 44px;
+  margin-bottom: -2px;
+  border: 0;
+  border-bottom: 4px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  box-shadow: none;
+}
+.ct-pick .ct-modebar__opt.is-on {
+  background: transparent;
+  border-bottom-color: var(--color-secondary);
+  color: var(--color-text);
+  font-weight: 800;
+  box-shadow: none;
+}
