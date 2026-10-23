@@ -21,13 +21,13 @@ interface Props {
 }
 
 /**
- * Divides one bill between GPay and cash. Only the GPay half is kept; cash is the remainder. Tap a box, type a rupee
+ * Divides one bill between cash and GPay (cash first, and its box is the one selected when the sheet opens). Only the GPay half is kept; cash is the remainder. Tap a box, type a rupee
  * amount, and the other box fills in so the two always add up to the bill. Done is allowed only when both halves are
  * real: a "split" with nothing on one side is just cash or GPay.
  */
 export function SplitModal({ totalMinor, upiMinor, onDone, onCancel }: Props) {
   const [upi, setUpi] = useState(splitPayment(totalMinor, upiMinor).upiMinor);
-  const [side, setSide] = useState<SplitSide>("upi");
+  const [side, setSide] = useState<SplitSide>("cash");
   const [text, setText] = useState("");
 
   useEffect(() => {
@@ -77,11 +77,11 @@ export function SplitModal({ totalMinor, upiMinor, onDone, onCancel }: Props) {
           </div>
 
           <div className="ct-split">
-            {box("upi", t.gpay, upi)}
+            {box("cash", t.cashHalf, cashMinor)}
             <span className="ct-split__plus" aria-hidden="true">
               +
             </span>
-            {box("cash", t.cashHalf, cashMinor)}
+            {box("upi", t.gpay, upi)}
           </div>
           <p className="ct-hint">{t.splitHint}</p>
 

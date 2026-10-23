@@ -77,7 +77,7 @@ export const t = {
   payWith: "Pay by",
 
   // Split payment (GPay + cash)
-  splitChip: (gpay: string, cash: string) => `UPI ${gpay} + பணம் ${cash}`,
+  splitChip: (gpay: string, cash: string) => `பணம் ${cash} + UPI ${gpay}`,
   splitTitle: "Split payment",
   gpay: "UPI",
   cashHalf: "பணம்",
