@@ -23,14 +23,14 @@ on that page, and unzip it into `.tools/jdk21`. Any Java 11 or newer on the mach
 | --- | --- |
 | `npm run test:rules` | Starts an emulator, runs the 41 rules tests in `scripts/rules`, stops it. Stop `npm run emulators` first if it is running. |
 | `npm run emulators` | Starts the emulators and leaves them running (data is in memory, gone when they stop). |
-| `npm run emulators:seed` | Puts test accounts (owner PIN **2121**, counter PIN **1111**; valid only inside the emulator) and the catalog into the running emulators. |
-| `npm run dev:emulator -w shop` | The counter on port 3002 talking to the emulators with the real rules. Sign in with 1111. |
+| `npm run emulators:seed` | Puts test accounts (owner and counter PIN **121323**; valid only inside the emulator) and the catalog into the running emulators. |
+| `npm run dev:emulator -w shop` | The counter on port 3002 talking to the emulators with the real rules. Sign in with 121323. |
 
 With the emulators running, the scripts can be pointed at them with `USE_EMULATOR=1`, for example:
 
 ```
-USE_EMULATOR=1 OWNER_PIN=2121 node scripts/check-books.mjs
-USE_EMULATOR=1 OWNER_PIN=2121 COUNTER_PIN=1111 node --env-file=shop/worker-app/.env scripts/check-access.mjs
+USE_EMULATOR=1 OWNER_PIN=121323 node scripts/check-books.mjs
+USE_EMULATOR=1 OWNER_PIN=121323 COUNTER_PIN=121323 node --env-file=shop/worker-app/.env scripts/check-access.mjs
 ```
 
 `USE_EMULATOR=1` forces a throwaway project id (`demo-broiler`), so it cannot reach the live project.

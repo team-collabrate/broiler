@@ -6,7 +6,7 @@ import {
   blockedForMs,
   isValidPin,
   MAX_PIN_LENGTH,
-  MIN_PIN_LENGTH,
+  PIN_LENGTH,
   NO_ATTEMPTS,
   parseAttempts,
   type AttemptState,
@@ -77,10 +77,10 @@ export function SignIn() {
 
   // No sign-in button: the PIN goes in as soon as the last digit is typed.
   useEffect(() => {
-    if (pin.length === MIN_PIN_LENGTH) void submit(pin);
+    if (pin.length === PIN_LENGTH) void submit(pin);
   }, [pin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const dots = Math.max(MIN_PIN_LENGTH, pin.length);
+  const dots = Math.max(PIN_LENGTH, pin.length);
   const message = busy ? "உள்நுழைகிறது…" : waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? "\u00a0");
 
   return (

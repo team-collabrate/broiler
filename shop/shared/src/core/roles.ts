@@ -16,6 +16,9 @@ export const ROLE_EMAILS: Record<Role, string> = {
 export const MIN_PIN_LENGTH = 4;
 export const MAX_PIN_LENGTH = 6;
 
+/** The PIN the apps ask for: six digits. The PIN screens sign in by themselves as the last digit is typed. */
+export const PIN_LENGTH = 6;
+
 /** True for 4 to 6 digits. */
 export function isValidPin(pin: string): boolean {
   return /^\d{4,6}$/.test(pin);

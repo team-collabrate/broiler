@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { applyPinKey, describeError, isValidPin, MAX_PIN_LENGTH, MIN_PIN_LENGTH } from "@kumbakonam/shared/core";
+import { applyPinKey, describeError, isValidPin, MAX_PIN_LENGTH, PIN_LENGTH } from "@kumbakonam/shared/core";
 import { Keypad } from "./Keypad";
 import { t } from "./strings";
 
@@ -43,10 +43,10 @@ export function PinScreen({ title, subtitle, onSubmit, onCancel, logoUrl }: Prop
 
   // No sign-in button: the PIN goes in as soon as the last digit is typed.
   useEffect(() => {
-    if (pin.length === MIN_PIN_LENGTH) void submit();
+    if (pin.length === PIN_LENGTH) void submit();
   }, [pin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const dots = Math.max(MIN_PIN_LENGTH, pin.length);
+  const dots = Math.max(PIN_LENGTH, pin.length);
 
   return (
     <div className="ct-pin">

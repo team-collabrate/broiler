@@ -44,7 +44,7 @@ From the repository root:
 | Command | What it does |
 | --- | --- |
 | `npm install` | Installs the operations scripts' tools (once). |
-| `npm run emulators`, `npm run emulators:seed`, `npm run dev:emulator` | Local Firestore and Auth with the real rules, test accounts (owner 2121, counter 1111) and the counter on port 3002. Nothing touches the live project. |
+| `npm run emulators`, `npm run emulators:seed`, `npm run dev:emulator` | Local Firestore and Auth with the real rules, test accounts (PIN 121323) and the counter on port 3002. Nothing touches the live project. |
 | `npm run test:rules` | The 62 access-rule tests against the emulator. |
 | `npm run backup` | Read-only copy of the live database into `backups/` (not committed). |
 | `npm run seed:users`, `npm run seed`, `npm run check:access` | Account creation, menu setup and the live access check. See `docs/GO_LIVE.md`. |
