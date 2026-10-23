@@ -41,6 +41,7 @@ const L = {
   billNo: "பில் எண்",
   total: "மொத்தம்",
   subtotal: "கூட்டுத்தொகை",
+  discount: "தள்ளுபடி",
   roundOff: "ரவுண்ட் ஆஃப்",
   totalWeight: "மொத்த எடை",
   totalPieces: "மொத்த எண்ணிக்கை",
@@ -292,9 +293,10 @@ function paint(ctx: CanvasRenderingContext2D, bill: BillInput, logo: HTMLImageEl
   };
   if (bill.totalWeight) pair(L.totalWeight, bill.totalWeight);
   if (bill.totalPieces) pair(L.totalPieces, bill.totalPieces);
-  if (bill.subtotal && bill.roundOff) {
+  if (bill.subtotal && (bill.discount || bill.roundOff)) {
     pair(L.subtotal, bill.subtotal);
-    pair(L.roundOff, bill.roundOff);
+    if (bill.discount) pair(L.discount, bill.discount);
+    if (bill.roundOff) pair(L.roundOff, bill.roundOff);
   }
   y += GAP / 2;
   rule(y, 3);

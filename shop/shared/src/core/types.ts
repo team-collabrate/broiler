@@ -160,6 +160,8 @@ export interface Order {
   staffName?: string;
   lines: OrderLine[];
   totalMinor: number;
+  /** A flat discount in paise taken off the lines' sum (before any round-off). Absent when there is none; always less than the sum. */
+  discountMinor?: number;
   /** Set when the bill was rounded to the nearest ten rupees: `totalMinor` is the lines' sum plus this (it can be negative). */
   roundOffMinor?: number;
   /** Weight of the `kg` lines. */

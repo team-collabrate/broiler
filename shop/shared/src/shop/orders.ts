@@ -33,6 +33,8 @@ export interface CreateOrderInput {
   split?: { upiMinor: number };
   /** Required for a `credit` bill: who it is on account for. A name seen before finds the same customer. */
   customer?: { name: string };
+  /** A flat discount in paise off the bill (the lines keep their prices). It must be above zero and less than the lines' sum. */
+  discountMinor?: number;
   /** Round the bill to the nearest ten rupees. The lines keep their own prices; the difference is saved as `roundOffMinor`. */
   roundOff?: boolean;
   /** The worker who was billing (up to 40 letters). Optional. */
@@ -50,6 +52,8 @@ export interface CreatedOrder {
   soldAt: Date;
   /** Credit bills only: the customer's name as the book has it, which is what the bill should show. */
   customerName?: string;
+  /** The flat discount taken off, in paise; absent when there was none. */
+  discountMinor?: number;
   /** How much the total was rounded (negative when rounded down); absent when it was not. */
   roundOffMinor?: number;
 }
@@ -88,7 +92,7 @@ function checkLine(l: OrderLineInput): void {
  * after the customer had already walked away. See OFFLINE.md.
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
-  const { orderId, lines, paymentMethod, split, customer, roundOff: roundIt } = input;
+  const { orderId, lines, paymentMethod, split, customer, roundOff: roundIt, discountMinor: discountIn } = input;
   if (lines.length === 0) throw new UserError("The bill needs at least one item");
   if (lines.length > MAX_ORDER_LINES) throw new UserError(`A bill can hold at most ${MAX_ORDER_LINES} items`);
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new UserError(`Unknown payment method: ${paymentMethod}`);
@@ -116,8 +120,14 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     lineTotalMinor: orderLineTotalMinor(l),
   }));
   const subtotalMinor = orderLines.reduce((sum, l) => sum + l.lineTotalMinor, 0);
-  const roundOffMinor = roundIt ? roundBillMinor(subtotalMinor) - subtotalMinor : 0;
-  const totalMinor = subtotalMinor + roundOffMinor;
+  const discountMinor = discountIn ?? 0;
+  if (!Number.isInteger(discountMinor) || discountMinor < 0 || (discountMinor > 0 && discountMinor >= subtotalMinor)) {
+    throw new UserError("The discount must be less than the bill");
+  }
+  // The discount comes off first; the round-off then works on what is left.
+  const netMinor = subtotalMinor - discountMinor;
+  const roundOffMinor = roundIt ? roundBillMinor(netMinor) - netMinor : 0;
+  const totalMinor = netMinor + roundOffMinor;
   const totalGrams = orderLines.reduce((sum, l) => sum + l.grams, 0);
   const totalPieces = orderLines.reduce((sum, l) => sum + l.qty, 0);
 
@@ -152,6 +162,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     createdAt: serverTimestamp(),
     lines: orderLines,
     totalMinor,
+    ...(discountMinor > 0 && { discountMinor }),
     ...(roundOffMinor !== 0 && { roundOffMinor }),
     totalGrams,
     totalPieces,
@@ -185,7 +196,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
       throw error;
     }
     settleBillNo(orderId);
-    return { id: orderId, orderNo, device, label, totalMinor, soldAt: now, ...(roundOffMinor !== 0 && { roundOffMinor }) };
+    return { id: orderId, orderNo, device, label, totalMinor, soldAt: now, ...(discountMinor > 0 && { discountMinor }), ...(roundOffMinor !== 0 && { roundOffMinor }) };
   }
 
   // Credit: one transaction that saves the order and moves the customer's balance together. If it fails after it
@@ -202,6 +213,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
         totalMinor: data.totalMinor as number,
         soldAt: (data.soldAt as Timestamp | undefined)?.toDate() ?? now,
         customerName: (data.customerName as string | undefined) ?? customerName,
+        ...(typeof data.discountMinor === "number" && { discountMinor: data.discountMinor }),
         ...(typeof data.roundOffMinor === "number" && { roundOffMinor: data.roundOffMinor }),
       };
     }
@@ -226,7 +238,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     }
     const bookName = customerSnap.exists() ? (customerSnap.data().name as string) : customerName;
     tx.set(orderRef, orderData(bookName));
-    return { orderNo, day, device, totalMinor, soldAt: now, customerName: bookName, ...(roundOffMinor !== 0 && { roundOffMinor }) };
+    return { orderNo, day, device, totalMinor, soldAt: now, customerName: bookName, ...(discountMinor > 0 && { discountMinor }), ...(roundOffMinor !== 0 && { roundOffMinor }) };
   });
   settleBillNo(orderId);
   const { day: savedDay, ...rest } = saved;

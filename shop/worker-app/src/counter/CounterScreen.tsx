@@ -42,6 +42,7 @@ import { BillCart } from "./BillCart";
 import { BillSheet } from "./BillSheet";
 import { useCounterCart } from "./cart";
 import { CreditModal } from "./CreditModal";
+import { DiscountSheet } from "./DiscountSheet";
 import { categoryLabel } from "./fmt";
 import { ItemSheet } from "./ItemSheet";
 import { PrinterSheet } from "./PrinterSheet";
@@ -93,11 +94,21 @@ export function CounterScreen() {
   // Round-off: the bill to the nearest ten rupees. On unless the cashier switches it off; the choice is kept on the tablet.
   const [roundOn, setRoundOnState] = useState(() => browserStore().getItem(ROUND_KEY) !== "off");
   const setRoundOn = (on: boolean) => {
+    newSale();
     setRoundOnState(on);
     browserStore().setItem(ROUND_KEY, on ? "on" : "off");
   };
-  const payableMinor = roundOn ? roundBillMinor(cart.totalMinor) : cart.totalMinor;
-  const roundOffMinor = payableMinor - cart.totalMinor;
+  // A flat discount (whole rupees, set on its own sheet) comes off first; the round-off then works on what is left.
+  const [discountSet, setDiscountSet] = useState(0);
+  const discountMinor = discountSet > 0 && discountSet < cart.totalMinor ? discountSet : 0;
+  const netMinor = cart.totalMinor - discountMinor;
+  const payableMinor = roundOn ? roundBillMinor(netMinor) : netMinor;
+  const roundOffMinor = payableMinor - netMinor;
+  const [discountOpen, setDiscountOpen] = useState(false);
+  // An empty bill has no discount: the next customer starts clean.
+  useEffect(() => {
+    if (cart.lines.length === 0) setDiscountSet(0);
+  }, [cart.lines.length]);
   const printer = usePrinter();
   const connected = useServerConnection();
   const outbox = useOutbox();
@@ -299,6 +310,7 @@ export function CounterScreen() {
         paymentMethod,
         ...(paymentMethod === "split" && { split: { upiMinor } }),
         ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
+        ...(discountMinor > 0 && { discountMinor }),
         roundOff: roundOn,
       });
       playSavedSound();
@@ -308,6 +320,7 @@ export function CounterScreen() {
         createdAt: created.soldAt,
         lines,
         totalMinor: created.totalMinor,
+        ...(created.discountMinor && { discountMinor: created.discountMinor }),
         ...(created.roundOffMinor && { roundOffMinor: created.roundOffMinor }),
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
@@ -319,6 +332,7 @@ export function CounterScreen() {
       cart.clear();
       setPaymentMethod("cash");
       setSplitUpiMinor(0);
+      setDiscountSet(0);
       setCreditName(null);
       // The sale is saved and the bill is kept in the recent list; now the paper. If the printer is missing or refuses,
       // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
@@ -417,6 +431,8 @@ export function CounterScreen() {
           logoUrl="/logo.png"
           lines={cart.lines}
           totalMinor={payableMinor}
+          discountMinor={discountMinor}
+          onDiscount={() => setDiscountOpen(true)}
           roundOn={roundOn}
           roundOffMinor={roundOffMinor}
           onRoundChange={setRoundOn}
@@ -463,6 +479,19 @@ export function CounterScreen() {
           maxAdjustMinor={maxAdjustMinor}
           onCancel={() => setSheet(null)}
           onConfirm={confirmSheet}
+        />
+      )}
+
+      {discountOpen && (
+        <DiscountSheet
+          subtotalMinor={cart.totalMinor}
+          discountMinor={discountMinor}
+          onCancel={() => setDiscountOpen(false)}
+          onDone={(amount) => {
+            newSale();
+            setDiscountSet(amount);
+            setDiscountOpen(false);
+          }}
         />
       )}
 

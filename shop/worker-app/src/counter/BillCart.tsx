@@ -12,6 +12,9 @@ interface Props {
   lines: CartLine[];
   /** What the customer pays: the lines' sum, rounded to ten rupees when round-off is on. */
   totalMinor: number;
+  /** The flat discount on the bill, in paise (0 for none), and a way to open the sheet that sets it. */
+  discountMinor: number;
+  onDiscount: () => void;
   /** Round-off is switched on, and by how much it changed the total (negative when rounded down). */
   roundOn: boolean;
   roundOffMinor: number;
@@ -46,6 +49,8 @@ interface Props {
 export function BillCart({
   lines,
   totalMinor,
+  discountMinor,
+  onDiscount,
   roundOn,
   roundOffMinor,
   onRoundChange,
@@ -124,6 +129,12 @@ export function BillCart({
         </span>
       </label>
 
+      <div className="ct-round">
+        <span className="ct-round__label">{t.discount}</span>
+        <button type="button" className={`ct-discountbtn${discountMinor > 0 ? " is-set" : ""}`} disabled={submitting || lines.length === 0} onClick={onDiscount}>
+          {discountMinor > 0 ? `-${formatMoney(discountMinor)}` : t.addDiscount}
+        </button>
+      </div>
       <div className="ct-round">
         <span className="ct-round__label">{t.roundTo}</span>
         <button type="button" role="switch" aria-checked={roundOn} aria-label={t.roundTo} className={`ct-toggle${roundOn ? " is-on" : ""}`} disabled={submitting} onClick={() => onRoundChange(!roundOn)}>

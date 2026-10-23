@@ -155,6 +155,18 @@ describe('orders', () => {
     await assertFails(setDoc(doc(counter(), 'orders', 'r6'), order({ totalMinor: 24000, roundOffMinor: -350.5 }, lines(24350.5)))); // not whole paise
     await assertFails(setDoc(doc(counter(), 'orders', 'r7'), order({ totalMinor: 24350, roundOffMinor: 0 }, lines(24350)))); // a round-off still has to land on ten rupees
   });
+  test('a flat discount comes off the lines\' sum, stays under the bill, and can go with a round-off', async () => {
+    const lines = (total) => [line({ rateMinor: total, listRateMinor: total, lineTotalMinor: total })];
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'd1'), order({ totalMinor: 22000, discountMinor: 2000 }, lines(24000)))); // ₹240 less ₹20
+    await assertSucceeds(setDoc(doc(owner(), 'orders', 'd2'), order({ totalMinor: 22000, discountMinor: 2000 }, lines(24000)))); // the owner too
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'd3'), order({ totalMinor: 22000, discountMinor: 2000, roundOffMinor: -350 }, lines(24350)))); // ₹243.50 less ₹20 is ₹223.50, rounded down to ₹220
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'd4'), order({ totalMinor: 22000, discountMinor: 2000, roundOffMinor: -150 }, lines(24150)))); // ₹241.50 − ₹20 = ₹221.50, down to ₹220
+    await assertFails(setDoc(doc(counter(), 'orders', 'd5'), order({ totalMinor: 24000, discountMinor: 2000 }, lines(24000)))); // total ignores the discount
+    await assertFails(setDoc(doc(counter(), 'orders', 'd6'), order({ totalMinor: 0, discountMinor: 24000 }, lines(24000)))); // a free bill
+    await assertFails(setDoc(doc(counter(), 'orders', 'd7'), order({ totalMinor: 24000, discountMinor: 0 }, lines(24000)))); // a zero discount is just no discount
+    await assertFails(setDoc(doc(counter(), 'orders', 'd8'), order({ totalMinor: 26000, discountMinor: -2000 }, lines(24000)))); // a negative discount raises the bill
+    await assertFails(setDoc(doc(counter(), 'orders', 'd9'), order({ totalMinor: 23999.5, discountMinor: 0.5 }, lines(24000)))); // not whole paise
+  });
   test('a rate may move from the list rate only within the owner\'s limit', async () => {
     await assertSucceeds(setDoc(doc(counter(), 'orders', 'a'), order({}, [line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
     await assertFails(setDoc(doc(counter(), 'orders', 'b'), order({}, [line({ rateMinor: 99000, lineTotalMinor: 99000 })])));

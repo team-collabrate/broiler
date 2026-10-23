@@ -22,6 +22,20 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     },
   },
   {
+    label: "Discount",
+    bill: {
+      orderId: "sample-00",
+      billNo: "19-10/10",
+      createdAt: at,
+      lines: [{ name: "மட்டன் - எலும்புடன்", quantity: "750 கிராம்", rate: "₹800.00/கிலோ", amount: "₹600.00" }],
+      totalWeight: "750 கிராம்",
+      subtotal: "₹600.00",
+      discount: "-₹30.00",
+      total: "₹570.00",
+      paymentLabel: "பணம்",
+    },
+  },
+  {
     label: "Rounded to ten rupees",
     bill: {
       orderId: "sample-0",

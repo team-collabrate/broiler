@@ -42,8 +42,9 @@ Planned in later phases (rules to be written with them): `expenses`, `staff`, `d
 | `soldAt` | when the sale was made, by the tablet's clock. The rules accept it only if it is not in the future (5 minutes of drift allowed) and not more than 3 days old. **Reports use this.** |
 | `createdAt` | when the server received the sale (server time). For a sale made with no internet this is later than `soldAt` |
 | `lines[]` | 1 to **5** lines (a limit of the security rules, see below; a customer with more is billed as two bills); each line: `itemId`, `name`, `category`, `unit`, `rateMinor` (charged), `listRateMinor`, `grams`, `qty`, optional `amountMinor` (billed by amount), `lineTotalMinor` |
+| `discountMinor` | optional; a flat discount (whole rupees, in paise) taken off the lines' sum: at least 1 and always less than the sum |
 | `roundOffMinor` | optional; set only when the till rounded the bill to the nearest ten rupees: `totalMinor` is the lines' sum plus this, and is a whole multiple of ₹10 |
-| `totalMinor` | the bill total; the rules check it equals the sum of the lines' `lineTotalMinor` (plus `roundOffMinor` when present) |
+| `totalMinor` | the bill total; the rules check it equals the sum of the lines' `lineTotalMinor` (minus `discountMinor` and plus `roundOffMinor` when present) |
 | `totalGrams`, `totalPieces` | weight and count totals, written by the till; the rules only check they are whole numbers (they are not re-added) |
 | `paymentMethod` | `cash`, `upi`, `split`, `credit` (`card` only on old data) |
 | `cashAmountMinor`, `upiAmountMinor` | split bills only; both above zero and adding to the total |

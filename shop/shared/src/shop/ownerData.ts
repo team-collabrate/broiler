@@ -33,6 +33,7 @@ export function toOrder(id: string, d: DocumentData): Order {
     ...(typeof d.staffName === "string" && d.staffName !== "" && { staffName: d.staffName }),
     lines: Array.isArray(d.lines) ? (d.lines as OrderLine[]) : [],
     totalMinor: Number(d.totalMinor ?? 0),
+    ...(typeof d.discountMinor === "number" && d.discountMinor > 0 && { discountMinor: d.discountMinor }),
     ...(typeof d.roundOffMinor === "number" && d.roundOffMinor !== 0 && { roundOffMinor: d.roundOffMinor }),
     totalGrams: Number(d.totalGrams ?? 0),
     totalPieces: Number(d.totalPieces ?? 0),

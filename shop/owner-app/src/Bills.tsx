@@ -143,6 +143,12 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
             ))}
           </ul>
           <dl className="ow-rows">
+            {order.discountMinor !== undefined && (
+              <div className="ow-row">
+                <dt>தள்ளுபடி</dt>
+                <dd>-{formatMoney(order.discountMinor)}</dd>
+              </div>
+            )}
             {order.roundOffMinor !== undefined && (
               <div className="ow-row">
                 <dt>ரவுண்ட் ஆஃப்</dt>
