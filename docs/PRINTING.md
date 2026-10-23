@@ -26,7 +26,7 @@ checked on the real printer.
 | No printer chosen on this tablet | The bill is saved and shown on the screen: "No printer connected. Go to Admin > Printer setup." with a **Printer setup** button. The rail shows a gold **⚠ No printer** (tap it to set up). |
 | Printer switched off, out of range or out of paper | The bill is shown with "The printer is not responding. Check it is on, close by, and has paper." The rail turns red (**⚠ Printer problem**). Fix it and press **Print again**. No re-pairing needed. |
 | Bluetooth switched off on the tablet | "Bluetooth is off. Turn it on and try again.": turn it on in the tablet's settings, then print again. |
-| The app has no Bluetooth permission | "Allow Bluetooth for this app in Settings > Apps > Broiler POS > Permissions." |
+| The app has no Bluetooth permission | "Allow Bluetooth for this app in Settings > Apps > Honey Broiler > Permissions." |
 | Someone wants a copy of an earlier bill | Admin ▸ **Recent bills** lists the last bills printed on this tablet; open one and print. It prints with a large **நகல்** (copy) mark so it cannot pass for a second original. |
 
 The printer is **remembered**: it stays chosen after a restart, and it does not matter if the printer is still switched off when
@@ -75,7 +75,7 @@ It builds the web app, copies it into the Android project and runs Gradle, then 
 connects to the Firebase project named in `worker-app/.env` **at the moment it is built**.
 
 Install it on the tablet (USB debugging on, tablet plugged in): `adb install -r path/to/app-debug.apk`, or copy the file to the tablet
-and open it (allow "install unknown apps" for the file manager when asked). The app is called **Broiler POS**, its id is
+and open it (allow "install unknown apps" for the file manager when asked). The app is called **Honey Broiler**, its id is
 `com.broiler.pos`, and the launcher icon and splash screen are the rooster.
 
 This APK is signed with Android's standard debug key, which is fine for a tablet the shop owns and installs itself. A
@@ -86,10 +86,10 @@ whoever makes it must keep the key file safe: without it the app cannot be updat
 
 1. **Plug it in at the counter.** The app keeps the screen on while it is open (a sleeping tablet drops the printer's Bluetooth
    link), which uses battery.
-2. **Stop Android closing the app in the background:** Settings > Apps > Broiler POS > Battery > *No restrictions* (wording varies
+2. **Stop Android closing the app in the background:** Settings > Apps > Honey Broiler > Battery > *No restrictions* (wording varies
    on Xiaomi's system: also *Autostart* on). Sales waiting to upload are safe on the tablet even if the app is closed, but the
    upload only happens while it runs.
-3. **Pin the app** so a customer cannot leave it: Settings > Security > *Screen pinning* on, then pin Broiler POS from the Recents screen.
+3. **Pin the app** so a customer cannot leave it: Settings > Security > *Screen pinning* on, then pin Honey Broiler from the Recents screen.
 4. **Permissions:** when the app first asks for Bluetooth (and Location, which Android needs to find Bluetooth devices), allow.
 
 ## Pair the printer on the tablet

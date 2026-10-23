@@ -27,8 +27,8 @@ export default defineConfig({
         // Requested explicitly, replacing "Kumbakonam POS" — this is the
         // name shown under the home-screen icon and in the Android app
         // packaging (PWABuilder/TWA) flow.
-        name: "Broiler POS",
-        short_name: "Broiler",
+        name: "Honey Broiler",
+        short_name: "Honey Broiler",
         // Stable identity separate from start_url, so the installed app
         // survives a future start_url change without counting as a new
         // install (PWABuilder flags a manifest with no id).

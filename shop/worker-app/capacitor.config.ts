@@ -8,7 +8,7 @@ const hosted = process.env.CAP_LOCAL !== '1';
 
 const config: CapacitorConfig = {
   appId: 'com.broiler.pos',
-  appName: 'Broiler POS',
+  appName: 'Honey Broiler',
   webDir: 'dist',
   ...(hosted && { server: { url: 'https://broiler-pos.web.app', androidScheme: 'https' } }),
 };

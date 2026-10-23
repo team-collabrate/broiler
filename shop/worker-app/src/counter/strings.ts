@@ -132,7 +132,7 @@ export const t = {
   printProblem: {
     "no-printer": "No printer connected. Go to Admin > Printer setup.",
     "bluetooth-off": "Bluetooth is off. Turn it on and try again.",
-    permission: "Allow Bluetooth for this app in Settings > Apps > Broiler POS > Permissions.",
+    permission: "Allow Bluetooth for this app in Settings > Apps > Honey Broiler > Permissions.",
     unreachable: "The printer is not responding. Check it is on, close by, and has paper.",
   },
 

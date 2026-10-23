@@ -57,7 +57,7 @@ Everything made while testing (bills, credit customers, payments, bill counters)
 3. Delete each collection with the Firebase CLI. It uses your Google login, so it can delete what the app's access rules forbid:
    `npx firebase-tools firestore:delete orders --recursive --force --project broiler-pos`, then the same for `customerPayments`, `customers` and `counters`.
 4. Run `npm run backup` again and check the counts are 0.
-5. On the tablet, clear the app's storage once (Android Settings, Apps, Broiler POS, Storage, Clear data) so its old Recent bills list and bill counter are gone. This signs it out and forgets the printer.
+5. On the tablet, clear the app's storage once (Android Settings, Apps, Honey Broiler, Storage, Clear data) so its old Recent bills list and bill counter are gone. This signs it out and forgets the printer.
 
 ## End of the first day
 
