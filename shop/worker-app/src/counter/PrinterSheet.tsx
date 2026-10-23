@@ -145,6 +145,7 @@ export function PrinterSheet({ status, problem, deviceName, platform, printerDev
             </button>
           )}
           {platform === "web" && <p className="ct-hint">{t.printerWebNote}</p>}
+          <p className="ct-hint ct-version">App version {__APP_BUILD__}</p>
         </div>
 
         <footer className="ct-sheet__actions">

@@ -1,9 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { execSync } from "node:child_process";
+
+// Shown on the printer screen so it is clear which version a tablet is running: the commit and the build time.
+const commit = (() => {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    return "dev";
+  }
+})();
+const buildId = `${commit} · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`;
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: { __APP_BUILD__: JSON.stringify(buildId) },
   server: { port: 3000 },
   preview: { port: 3000 },
   plugins: [
