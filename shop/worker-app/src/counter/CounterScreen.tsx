@@ -205,13 +205,13 @@ export function CounterScreen() {
   tryPrintRef.current = tryPrint;
   const printChain = useRef<Promise<void>>(Promise.resolve());
   const [unprinted, setUnprinted] = useState<{ bill: BillInput; problem: PrinterProblem }[]>([]);
-  const queuePrint = (bill: BillInput, online: boolean) => {
+  const queuePrint = (bill: BillInput) => {
     setNotice({ text: t.printingBill(bill.billNo), tone: "info" });
     printChain.current = printChain.current.then(async () => {
       const result = await tryPrintRef.current(bill);
       if (result.ok) {
         setUnprinted((list) => list.filter((u) => u.bill.orderId !== bill.orderId));
-        setNotice({ text: online ? t.printed(bill.billNo) : t.printedOffline(bill.billNo), tone: "info" });
+        setNotice({ text: t.printed(bill.billNo), tone: "info" });
       } else {
         setUnprinted((list) => [...list.filter((u) => u.bill.orderId !== bill.orderId), { bill, problem: result.problem }]);
       }
@@ -312,10 +312,10 @@ export function CounterScreen() {
       // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
       rememberBill({ ...bill, restore: lines.map(({ key: _key, ...rest }) => rest) });
       if (!print) {
-        setNotice({ text: connected ? t.saved(created.label) : t.savedOffline(created.label), tone: "info" });
+        setNotice({ text: t.saved(created.label), tone: "info" });
         return;
       }
-      queuePrint(bill, connected);
+      queuePrint(bill);
     } catch (e) {
       // The cart is kept, so pressing Print bill again retries the same sale (same id, never saved twice).
       setNotice({ text: t.saleError(describeError(e)), tone: "error" });
@@ -388,7 +388,7 @@ export function CounterScreen() {
       <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => (connected ? goToAdmin() : setNotice({ text: t.adminNeedsInternet, tone: "error" }))} />
       <div className="ct-body">
         <main className="ct-main">
-          <SyncBanner connected={connected} outbox={outbox} stale={stale} onDismiss={dismissRefused} />
+          <SyncBanner outbox={outbox} stale={stale} onDismiss={dismissRefused} />
           {unprinted.map((u) => (
             <div key={u.bill.orderId} className="ct-sync__refused" role="alert">
               <div>

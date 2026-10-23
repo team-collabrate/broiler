@@ -167,9 +167,7 @@ export const t = {
   // After a sale
   save: "Save",
   saved: (label: string) => `Bill ${label} saved ✓ (not printed)`,
-  savedOffline: (label: string) => `Bill ${label} saved ✓ (not printed) Will upload when internet is back`,
   printed: (label: string) => `Bill ${label} printed ✓`,
-  printedOffline: (label: string) => `Bill ${label} printed ✓ Will upload when internet is back`,
 
   // Screen lock
   lockedTitle: "Screen locked",
@@ -180,7 +178,6 @@ export const t = {
   offline: "Offline",
   waitingShort: "Waiting",
   waitingBills: (count: number) => `${count} ${count === 1 ? "bill" : "bills"} will upload when internet is back`,
-  offlineNote: "No internet. You can keep billing. Bills are saved here and sent when internet is back.",
   staleWarning: "Bills have not been sent for hours. Connect to the internet.",
   refusedTitle: (label: string) => `Bill ${label} was rejected`,
   refusedDetail: (amount: string, summary: string, reason: string) =>
