@@ -130,7 +130,7 @@ export function ItemPicker({ items, onAdd, onOther }: Props) {
   const piece = item.unit === "piece";
   const ready = item.rateMinor > 0;
 
-  const addWeight = (grams: number) => onAdd({ ...lineBase(item), grams, qty: 0, packGrams: grams, packs: 1 });
+  const addWeight = (grams: number) => onAdd({ ...lineBase(item), grams, qty: 0 });
   const addAmount = (rupees: number) => {
     const amountMinor = rupees * 100;
     onAdd({ ...lineBase(item), grams: gramsForAmount(amountMinor, item.rateMinor), qty: 0, amountMinor });

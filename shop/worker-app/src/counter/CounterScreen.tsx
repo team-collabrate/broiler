@@ -172,8 +172,6 @@ export function CounterScreen() {
 
   // --- Screen state -------------------------------------------------------
   const [sheet, setSheet] = useState<Sheet | null>(null);
-  /** Repeated equal weights stay packs (2 × 250 g), as the bill is read. Always on unless the cashier unticks it. */
-  const [keepPacks, setKeepPacks] = useState(true);
   const [printerOpen, setPrinterOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "info" | "error" } | null>(null);
@@ -244,12 +242,12 @@ export function CounterScreen() {
     if (!sheet) return;
     if (sheet.editing) {
       cart.replace(sheet.editing.key, line);
-    } else if (!canAddLine(cart.lines, line, keepPacks)) {
+    } else if (!canAddLine(cart.lines)) {
       setNotice({ text: t.tooManyLines, tone: "error" });
       setSheet(null);
       return;
     } else {
-      cart.add(line, keepPacks);
+      cart.add(line);
     }
     newSale();
     setNotice(null);
@@ -264,11 +262,11 @@ export function CounterScreen() {
     const now = Date.now();
     if (lastPreset.current.sig === sig && now - lastPreset.current.at < 350) return;
     lastPreset.current = { sig, at: now };
-    if (!canAddLine(cart.lines, line, keepPacks)) {
+    if (!canAddLine(cart.lines)) {
       setNotice({ text: t.tooManyLines, tone: "error" });
       return;
     }
-    cart.add(line, keepPacks);
+    cart.add(line);
     newSale();
     setNotice(null);
   };
@@ -439,11 +437,6 @@ export function CounterScreen() {
           totalGrams={cart.totalGrams}
           totalPieces={cart.totalPieces}
           paymentMethod={paymentMethod}
-          keepPacks={keepPacks}
-          onKeepPacksChange={(on) => {
-            setKeepPacks(on);
-            cart.regroup(on);
-          }}
           paymentDetail={paymentDetail}
           onPaymentChange={(method) => {
             newSale();
@@ -558,7 +551,7 @@ export function CounterScreen() {
           }}
           canFix={cart.lines.length === 0}
           onFix={(restore) => {
-            restore.forEach((line) => cart.add(line, keepPacks));
+            restore.forEach((line) => cart.add(line));
             setRecentOpen(false);
             setNotice(null);
           }}

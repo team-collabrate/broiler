@@ -5,7 +5,6 @@ import {
   addLine,
   adjustLine,
   canAddLine,
-  regroupLines,
   roundBillMinor,
   MAX_ORDER_LINES,
   adjustmentMinor,
@@ -299,50 +298,39 @@ test('normalizeDefaultQty keeps a sensible stored count and falls back to 1', ()
   }
 });
 
-test('addLine starts a new line and merges repeat weighings of the same item', () => {
-  const two = cart(byWeight(500), { ...byWeight(250), itemId: 'liver', name: 'Liver' });
-  assert.equal(two.length, 2);
-  const merged = addLine(two, byWeight(1000));
-  assert.equal(merged.length, 2);
-  assert.equal(merged.find((l) => l.itemId === 'chicken')?.grams, 1500);
-  assert.equal(cartTotals(merged).totalGrams, 1750);
+test('addLine puts every portion on its own line, in the order added', () => {
+  const lines = cart(byWeight(500), { ...byWeight(250), itemId: 'liver', name: 'Liver' }, byWeight(1000));
+  assert.deepEqual(lines.map((l) => [l.itemId, l.grams]), [['chicken', 500], ['liver', 250], ['chicken', 1000]]);
+  assert.equal(cartTotals(lines).totalGrams, 1750);
 });
 
-test('merging two weighed portions stays priced by weight', () => {
-  const merged = cart(byWeight(500), byWeight(750));
-  assert.equal(merged[0].amountMinor, undefined);
-  assert.equal(merged[0].grams, 1250);
-  assert.equal(cartTotals(merged).totalMinor, 30000);
+test('separate weighed portions are priced by weight, line by line', () => {
+  const lines = cart(byWeight(500), byWeight(750));
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0].amountMinor, undefined);
+  assert.equal(cartTotals(lines).totalMinor, 12000 + 18000);
 });
 
-test('merging piece lines adds the counts and caps at the maximum', () => {
-  const merged = cart(eggs(2), eggs(3));
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0].qty, 5);
-  assert.equal(cartTotals(merged).totalMinor, 5000);
-  assert.equal(addLine(cart(eggs(MAX_QTY - 1)), eggs(10))[0].qty, MAX_QTY);
+test('piece lines stay separate and each is capped at the maximum count', () => {
+  const lines = cart(eggs(2), eggs(3));
+  assert.deepEqual(lines.map((l) => l.qty), [2, 3]);
+  assert.equal(cartTotals(lines).totalMinor, 5000);
+  assert.equal(addLine([], eggs(MAX_QTY + 10))[0].qty, MAX_QTY);
 });
 
-test('merging a fixed-amount portion keeps the exact sum of what each portion cost', () => {
-  const merged = cart(byAmount(10000), byAmount(20000));
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0].amountMinor, 30000);
-  assert.equal(merged[0].grams, 417 + 833);
-  assert.equal(cartTotals(merged).totalMinor, 30000);
-
-  // A weighed portion added to a fixed-amount one: ₹100 + 500 g (₹120.00) = ₹220.00.
-  const mixed = cart(byAmount(10000), byWeight(500));
-  assert.equal(mixed[0].amountMinor, 22000);
-  assert.equal(cartTotals(mixed).totalMinor, 22000);
-
-  // The other way round gives the same total.
-  const reversed = cart(byWeight(500), byAmount(10000));
-  assert.equal(cartTotals(reversed).totalMinor, 22000);
+test('a fixed-amount portion keeps its own exact amount and is not folded into another line', () => {
+  const lines = cart(byAmount(10000), byAmount(20000));
+  assert.equal(lines.length, 2);
+  assert.deepEqual(lines.map((l) => l.amountMinor), [10000, 20000]);
+  assert.equal(cartTotals(lines).totalMinor, 30000);
+  // A weighed portion next to a fixed-amount one: ₹100 + 500 g (₹120.00) = ₹220.00, in either order.
+  assert.equal(cartTotals(cart(byAmount(10000), byWeight(500))).totalMinor, 22000);
+  assert.equal(cartTotals(cart(byWeight(500), byAmount(10000))).totalMinor, 22000);
 });
 
-test('addLine caps a merged weight at the maximum', () => {
-  const merged = addLine(cart(byWeight(MAX_LINE_GRAMS - 100)), byWeight(5000));
-  assert.equal(merged[0].grams, MAX_LINE_GRAMS);
+test('addLine caps a weight at the maximum', () => {
+  const added = addLine([], byWeight(MAX_LINE_GRAMS + 5000));
+  assert.equal(added[0].grams, MAX_LINE_GRAMS);
 });
 
 test('the same item at a different rate becomes its own line instead of merging', () => {
@@ -417,13 +405,13 @@ test('normalizeMaxAdjust keeps whole steps and falls back to the default for unu
   }
 });
 
-test('canAddLine stops a 21st line but still lets an existing line grow', () => {
+test('canAddLine stops when the bill is full, whatever is added', () => {
   let lines: CartLine[] = [];
   for (let i = 0; i < MAX_ORDER_LINES; i++) lines = addLine(lines, { ...byWeight(500), itemId: 'item' + i });
   assert.equal(lines.length, MAX_ORDER_LINES);
-  assert.equal(canAddLine(lines, { ...byWeight(500), itemId: 'another' }), false);
-  assert.equal(canAddLine(lines, { ...byWeight(500), itemId: 'item3' }), true);
-  assert.equal(canAddLine([], byWeight(500)), true);
+  assert.equal(canAddLine(lines), false);
+  assert.equal(canAddLine(lines.slice(1)), true);
+  assert.equal(canAddLine([]), true);
 });
 
 test('normalizeMethods keeps only methods that suit the unit and falls back to the usual ones', () => {
@@ -558,85 +546,21 @@ test('the credit customer list narrows to names containing what was typed', () =
   assert.equal(filterCustomersByName(people, 'zzz').length, 0);
 });
 
-test('equal packs tapped one after another stay packs: 250 g twice is 2 × 250 g, not 500 g', () => {
-  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
+test('every line added is its own line: 250 g twice is two lines, and nothing is grouped on its own', () => {
   let lines: CartLine[] = [];
-  lines = addLine(lines, pack(250));
-  lines = addLine(lines, pack(250));
-  assert.equal(lines.length, 1);
-  assert.equal(lines[0].grams, 500);
-  assert.equal(lines[0].packs, 2);
-  assert.equal(describeLine(lines[0], 'en'), '2 × 250 g = 500 g × ₹240.00/kg');
-  assert.equal(formatLineQuantity(lines[0], 'en'), '2 × 250 g');
-  assert.equal(formatLineQuantity(lines[0]), '2 × 250 கிராம்');
-  assert.equal(orderLineTotalMinor(lines[0]), 12000); // the same price as one 500 g line
-  // A different pack size is its own line.
-  lines = addLine(lines, pack(500));
+  lines = addLine(lines, byWeight(250));
+  lines = addLine(lines, byWeight(250));
   assert.equal(lines.length, 2);
-  // A third 250 g joins the first line.
-  lines = addLine(lines, pack(250));
-  assert.equal(lines.length, 2);
-  assert.equal(lines[0].packs, 3);
-  assert.equal(formatLineQuantity(lines[0], 'en'), '3 × 250 g');
-});
-
-test('weights tapped without packs add up, and never mix with packs', () => {
-  let lines: CartLine[] = [];
-  lines = addLine(lines, { ...chicken, grams: 250 });
-  lines = addLine(lines, { ...chicken, grams: 250 });
-  assert.equal(lines.length, 1);
-  assert.equal(lines[0].grams, 500);
-  assert.equal(lines[0].packs, undefined);
-  assert.equal(formatLineQuantity(lines[0], 'en'), '500 g');
-  lines = addLine(lines, { ...chicken, grams: 250, packGrams: 250, packs: 1 });
-  assert.equal(lines.length, 2);
-  // One pack on its own reads as a plain weight.
-  assert.equal(formatLineQuantity(lines[1], 'en'), '250 g');
-});
-
-test('unticking "keep packs" adds the packs up in the cart, and ticking again splits them back', () => {
-  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
-  let lines = cart(pack(250), pack(250), pack(500));
-  assert.deepEqual(lines.map((l) => [l.grams, l.packs]), [[500, 2], [500, 1]]); // 2 × 250 g and 500 g, as billed with the box ticked
-  const added = regroupLines(lines, false);
-  assert.equal(added.length, 1);
-  assert.equal(added[0].grams, 1000);
-  assert.equal(added[0].packGrams, undefined);
-  assert.equal(added[0].packs, undefined);
-  assert.equal(cartTotals(added).totalMinor, cartTotals(lines).totalMinor);
-  lines = regroupLines(added, true);
-  assert.deepEqual(lines.map((l) => [l.grams, l.packGrams, l.packs]), [[500, 250, 2], [500, 500, 1]]);
-  assert.equal(new Set(lines.map((l) => l.key)).size, lines.length); // every line has its own key
-});
-
-test('a weight added while the box is unticked joins the added-up line, and can still be split afterwards', () => {
-  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
-  let lines = regroupLines(cart(pack(250)), false);
-  lines = regroupLines(addLine(lines, pack(250)), false);
-  assert.equal(lines.length, 1);
-  assert.equal(lines[0].grams, 500);
-  assert.deepEqual(lines[0].groups, [{ packGrams: 250, packs: 2 }]);
-  const split = regroupLines(lines, true);
-  assert.deepEqual(split.map((l) => [l.grams, l.packGrams, l.packs]), [[500, 250, 2]]);
-});
-
-test('regrouping leaves amounts, counts, other items and edited weights alone', () => {
-  const pack = (grams: number): OrderLineInput => ({ ...chicken, grams, packGrams: grams, packs: 1 });
-  const lines = cart(pack(250), byAmount(10000), { ...pack(500), itemId: 'liver', name: 'Liver' }, eggs(2));
-  const added = regroupLines(lines, false);
-  assert.equal(added.length, lines.length); // nothing to add up: different items, an amount, a count
-  assert.equal(cartTotals(added).totalMinor, cartTotals(lines).totalMinor);
-  // A line whose weight was edited after it was added up no longer matches its pack list: it stays as typed.
-  const edited = { ...regroupLines(cart(pack(250), pack(500)), false)[0], grams: 800 };
-  assert.deepEqual(regroupLines([edited], true).map((l) => l.grams), [800]);
-});
-
-test('canAddLine counts the lines the cart will really have when the packs are added up', () => {
-  const pack = (id: string, grams: number): OrderLineInput => ({ ...chicken, itemId: id, name: id, grams, packGrams: grams, packs: 1 });
-  const full = regroupLines(cart(pack('a', 250), pack('b', 250), pack('c', 250), pack('d', 250), pack('e', 250)), false);
-  assert.equal(full.length, MAX_ORDER_LINES);
-  assert.equal(canAddLine(full, pack('a', 500), false), true); // joins item a's line
-  assert.equal(canAddLine(full, pack('f', 250), false), false); // a sixth item
+  assert.deepEqual(lines.map((l) => l.grams), [250, 250]);
+  assert.notEqual(lines[0].key, lines[1].key);
+  assert.equal(cartTotals(lines).totalMinor, 6000 + 6000);
+  // The same item at another weight, and a count of the same item, are their own lines too.
+  lines = addLine(lines, byWeight(500));
+  assert.equal(lines.length, 3);
+  const eggLines = addLine(addLine([], eggs(2)), eggs(2));
+  assert.deepEqual(eggLines.map((l) => l.qty), [2, 2]);
+  // An amount line is not folded into a weight line either.
+  assert.equal(addLine(lines, byAmount(10000)).length, 4);
 });
 
 test('round-off: the last rupee digit 0 to 4 goes down, 5 to 9 goes up, to the nearest ten rupees', () => {

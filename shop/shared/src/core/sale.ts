@@ -2,7 +2,7 @@
 // integer grams everywhere, so totals never pick up floating-point drift. Format only at
 // the edge, when showing a value. Keep this file free of runtime imports from sibling
 // files so the unit tests can load it directly under Node.
-import type { Method, OrderLineInput, PackGroup, Unit } from './types';
+import type { Method, OrderLineInput, Unit } from './types';
 
 export const CURRENCY_SYMBOL = '₹';
 
@@ -421,122 +421,23 @@ export const MAX_ORDER_LINES = 5;
 /** A line in the cart. `key` tells apart two lines of the same item sold at different rates. */
 export type CartLine = OrderLineInput & { key: string };
 
-/** Lines merge only when they are the same item at the same rate; a different rate is its own line. */
-function canMerge(existing: CartLine, added: OrderLineInput): boolean {
-  // Packs of one size merge with the same size only (250 g + 250 g becomes 2 × 250 g); weights tapped without packs add up.
-  return (
-    existing.itemId === added.itemId &&
-    existing.rateMinor === added.rateMinor &&
-    existing.listRateMinor === added.listRateMinor &&
-    existing.packGrams === added.packGrams
-  );
-}
-
-function mergeLines(existing: CartLine, added: OrderLineInput): CartLine {
-  const grams = Math.min(existing.grams + added.grams, MAX_LINE_GRAMS);
-  const qty = Math.min(existing.qty + added.qty, MAX_QTY);
-  const packs = existing.packGrams !== undefined ? (existing.packs ?? 1) + (added.packs ?? 1) : undefined;
-  if (existing.amountMinor === undefined && added.amountMinor === undefined) {
-    // A line already added up (its pack list kept) keeps the list in step.
-    const groups = existing.groups !== undefined ? mergeGroups(existing.groups, groupsOf(added)) : undefined;
-    return { ...existing, grams, qty, ...(packs !== undefined && { packs }), ...(groups !== undefined && { groups }) };
-  }
-  // At least one portion was sold for a fixed amount, so the merged line keeps the exact
-  // sum of what each portion cost rather than re-pricing the combined weight.
-  return { ...existing, grams, qty, amountMinor: orderLineTotalMinor(existing) + orderLineTotalMinor(added) };
-}
-
 function nextKey(lines: CartLine[], itemId: string): string {
   const used = lines.filter((l) => l.itemId === itemId).map((l) => Number(l.key.slice(l.key.lastIndexOf('#') + 1)) || 0);
   return `${itemId}#${Math.max(0, ...used) + 1}`;
 }
 
-/** False when adding `line` would take the bill past its line limit. Adding to an existing line is always allowed. */
-export function canAddLine(lines: CartLine[], line: OrderLineInput, keepPacks = true): boolean {
-  if (lines.length < MAX_ORDER_LINES || lines.some((l) => canMerge(l, line))) return true;
-  // With the packs added up, a new weight can still join the line of the same item.
-  return !keepPacks && regroupLines(addLine(lines, line), false).length <= MAX_ORDER_LINES;
+/** False when the bill is full: it holds at most MAX_ORDER_LINES lines. */
+export function canAddLine(lines: CartLine[]): boolean {
+  return lines.length < MAX_ORDER_LINES;
 }
 
-/** Adds a line. Selling the same item again at the same rate adds to its existing line. */
+/**
+ * Adds a line. Every line added is its own line and nothing is grouped on its own: 250 g tapped twice is two lines of
+ * 250 g, the same item at another weight or rate is another line. (Change a line's weight with the pencil.)
+ */
 export function addLine(lines: CartLine[], line: OrderLineInput): CartLine[] {
-  if (lines.some((l) => canMerge(l, line))) {
-    return lines.map((l) => (canMerge(l, line) ? mergeLines(l, line) : l));
-  }
-  const capped = { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY), ...(line.packGrams !== undefined && { packs: line.packs ?? 1 }) };
+  const capped = { ...line, grams: Math.min(line.grams, MAX_LINE_GRAMS), qty: Math.min(line.qty, MAX_QTY) };
   return [...lines, { ...capped, key: nextKey(lines, line.itemId) }];
-}
-
-// --- Keeping packs apart or adding them up ----------------------------------------------------------------------------
-// "Keep packs separate" decides how the weights of one item read on the bill: ticked, 250 g and 250 g stay 2 × 250 g (and
-// 250 g with 500 g stay two lines); unticked, they are one line (500 g, 750 g). The cart follows the box at any moment, in
-// both directions, so what is on the screen is what will be billed. A line that was added up remembers what it is made of.
-
-const isWeightLine = (l: OrderLineInput): boolean => l.unit === 'kg' && l.amountMinor === undefined && l.grams > 0;
-
-/** The packs a weight line is made of. */
-function groupsOf(l: OrderLineInput): PackGroup[] {
-  if (l.groups !== undefined) return l.groups;
-  const packs = l.packs !== undefined && l.packs >= 2 ? l.packs : 1;
-  return [{ packGrams: l.packGrams ?? Math.round(l.grams / packs), packs }];
-}
-
-const groupsGrams = (groups: PackGroup[]): number => groups.reduce((sum, g) => sum + g.packGrams * g.packs, 0);
-
-function mergeGroups(a: PackGroup[], b: PackGroup[]): PackGroup[] {
-  const out = a.map((g) => ({ ...g }));
-  for (const g of b) {
-    const same = out.find((o) => o.packGrams === g.packGrams);
-    if (same) same.packs += g.packs;
-    else out.push({ ...g });
-  }
-  return out;
-}
-
-const sameItemAndRate = (a: OrderLineInput, b: OrderLineInput): boolean =>
-  a.itemId === b.itemId && a.rateMinor === b.rateMinor && a.listRateMinor === b.listRateMinor;
-
-/** Adds the weights of each item up into one line, remembering the packs. Amount and count lines are left alone. */
-function addUpPacks(lines: CartLine[]): CartLine[] {
-  const out: CartLine[] = [];
-  for (const line of lines) {
-    if (!isWeightLine(line)) {
-      out.push(line);
-      continue;
-    }
-    const groups = groupsOf(line);
-    const { packGrams: _packGrams, packs: _packs, ...rest } = line;
-    const flat: CartLine = { ...rest, groups };
-    const at = out.findIndex((o) => isWeightLine(o) && sameItemAndRate(o, flat));
-    if (at < 0) {
-      out.push(flat);
-      continue;
-    }
-    const target = out[at];
-    out[at] = { ...target, grams: Math.min(target.grams + flat.grams, MAX_LINE_GRAMS), groups: mergeGroups(target.groups ?? groupsOf(target), groups) };
-  }
-  return out;
-}
-
-/** Splits each added-up weight line back into its packs. A line whose pack list no longer matches its weight (it was edited) is left as it is. */
-function splitIntoPacks(lines: CartLine[]): CartLine[] {
-  const out: CartLine[] = [];
-  for (const line of lines) {
-    if (!isWeightLine(line) || line.groups === undefined || groupsGrams(line.groups) !== line.grams) {
-      out.push(line);
-      continue;
-    }
-    line.groups.forEach((g, i) => {
-      const key = i === 0 ? line.key : nextKey([...lines, ...out], line.itemId);
-      out.push({ ...line, key, grams: g.packGrams * g.packs, packGrams: g.packGrams, packs: g.packs, groups: [g] });
-    });
-  }
-  return out;
-}
-
-/** The cart as the "Keep packs separate" box wants it: packs apart when ticked, added up when not. */
-export function regroupLines(lines: CartLine[], keepPacks: boolean): CartLine[] {
-  return keepPacks ? splitIntoPacks(lines) : addUpPacks(lines);
 }
 
 /** Replaces the line with `key` by an edited one, keeping its place and key. No merging: an edit is exactly what was entered. */

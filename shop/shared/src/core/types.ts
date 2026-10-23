@@ -127,17 +127,6 @@ export interface OrderLineInput {
    * `grams` is the total of all of them, so the price is the same as one line of that weight.
    */
   packs?: number;
-  /**
-   * Cart only: what a weight line is made of, kept when "Keep packs separate" is unticked and the packs are added up,
-   * so that ticking it again can split the line back (250 g and 500 g stay two packs inside a 750 g line).
-   */
-  groups?: PackGroup[];
-}
-
-/** A number of equal packs inside a weight line. */
-export interface PackGroup {
-  packGrams: number;
-  packs: number;
 }
 
 export interface OrderLine extends OrderLineInput {

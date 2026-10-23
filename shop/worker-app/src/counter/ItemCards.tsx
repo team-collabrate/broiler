@@ -15,7 +15,7 @@ function usualLine(item: MenuItem): OrderLineInput {
   const base = { itemId: item.id, name: itemName(item), category: item.category, unit: item.unit, rateMinor: item.rateMinor, listRateMinor: item.rateMinor };
   return item.unit === "piece"
     ? { ...base, grams: 0, qty: Math.max(1, item.defaultQty) }
-    : { ...base, grams: item.defaultGrams, qty: 0, packGrams: item.defaultGrams, packs: 1 };
+    : { ...base, grams: item.defaultGrams, qty: 0 };
 }
 
 function ItemCard({ item, onAdd, onCustomize }: { item: MenuItem; onAdd: (line: OrderLineInput) => void; onCustomize: (item: MenuItem) => void }) {
