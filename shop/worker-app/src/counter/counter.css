@@ -2886,28 +2886,6 @@ button {
 }
 
 /* Discount: a row like the round-off one, and the amounts on its sheet. */
-.ct-discountbtn {
-  min-width: 64px;
-  height: 36px;
-  padding: 0 16px;
-  border: 1px solid var(--color-accent);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-accent);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-.ct-discountbtn.is-set {
-  background: var(--color-accent);
-  color: #fff;
-  font-variant-numeric: tabular-nums;
-}
-.ct-discountbtn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
 .ct-discount-entry {
   display: flex;
   align-items: baseline;
@@ -2928,4 +2906,35 @@ button {
 .ct-hint--bad {
   color: var(--color-danger);
   font-weight: 700;
+}
+
+/* The pen beside the total opens the discount sheet. */
+.ct-cart__amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ct-penbtn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+.ct-penbtn svg {
+  width: 20px;
+  height: 20px;
+}
+.ct-penbtn.is-set {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.ct-penbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

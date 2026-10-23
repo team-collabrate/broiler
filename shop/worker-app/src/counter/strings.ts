@@ -41,7 +41,6 @@ export const t = {
   othersHint: "Tap to add. Press and hold to change the count.",
   updateAppNow: "Update app now",
   discount: "Discount",
-  addDiscount: "Add",
   discountTitle: "Discount",
   discountAmount: "Discount",
   newTotal: "New total",

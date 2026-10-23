@@ -130,18 +130,18 @@ export function BillCart({
       </label>
 
       <div className="ct-round">
-        <span className="ct-round__label">{t.discount}</span>
-        <button type="button" className={`ct-discountbtn${discountMinor > 0 ? " is-set" : ""}`} disabled={submitting || lines.length === 0} onClick={onDiscount}>
-          {discountMinor > 0 ? `-${formatMoney(discountMinor)}` : t.addDiscount}
-        </button>
-      </div>
-      <div className="ct-round">
         <span className="ct-round__label">{t.roundTo}</span>
         <button type="button" role="switch" aria-checked={roundOn} aria-label={t.roundTo} className={`ct-toggle${roundOn ? " is-on" : ""}`} disabled={submitting} onClick={() => onRoundChange(!roundOn)}>
           <span className="ct-toggle__knob" aria-hidden="true" />
           <span className="ct-toggle__text">{roundOn ? t.on : t.off}</span>
         </button>
       </div>
+      {discountMinor > 0 && (
+        <div className="ct-cart__roundoff">
+          <span>{t.discount}</span>
+          <span>-{formatMoney(discountMinor)}</span>
+        </div>
+      )}
       {roundOn && roundOffMinor !== 0 && (
         <div className="ct-cart__roundoff">
           <span>{t.roundOff}</span>
@@ -154,7 +154,14 @@ export function BillCart({
 
       <div className="ct-cart__total">
         <span>{t.total(formatTotals(totalGrams, totalPieces))}</span>
-        <strong>{formatMoney(totalMinor)}</strong>
+        <span className="ct-cart__amount">
+          <button type="button" className={`ct-penbtn${discountMinor > 0 ? " is-set" : ""}`} aria-label={t.discountTitle} disabled={submitting || lines.length === 0} onClick={onDiscount}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z" />
+            </svg>
+          </button>
+          <strong>{formatMoney(totalMinor)}</strong>
+        </span>
       </div>
 
       <div className="ct-printrow">
