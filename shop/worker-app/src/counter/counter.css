@@ -2696,3 +2696,37 @@ button {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(0.96); }
 }
+
+/* Others tab: three small cards to a row, whole photo showing. */
+.ct-icards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.ct-icard {
+  gap: 8px;
+  padding-bottom: 12px;
+  border-radius: 16px;
+}
+.ct-icard__pic {
+  height: auto;
+  aspect-ratio: 3 / 2;
+}
+.ct-icard__pic img {
+  object-position: center 40%;
+}
+.ct-icard__name {
+  padding: 0 14px;
+  font-size: 1.0625rem;
+  line-height: 1.25;
+}
+.ct-icard__row {
+  padding: 0 14px;
+}
+.ct-icard__rate {
+  font-size: 1rem;
+}
+.ct-icard__add {
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+}
