@@ -2820,3 +2820,67 @@ button {
   display: block;
   margin: var(--space-2) auto 0;
 }
+
+/* Round-off: a small ON/OFF switch above the total, and the rounding shown as its own line. */
+.ct-round {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 2px 2px;
+}
+.ct-round__label {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.ct-toggle {
+  position: relative;
+  width: 64px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #cfc4b6;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ct-toggle.is-on {
+  background: #17803d;
+}
+.ct-toggle__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+.ct-toggle.is-on .ct-toggle__knob {
+  transform: translateX(32px);
+}
+.ct-toggle__text {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 9px;
+}
+.ct-toggle.is-on .ct-toggle__text {
+  right: auto;
+  left: 10px;
+}
+.ct-cart__roundoff {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+}

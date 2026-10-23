@@ -562,6 +562,20 @@ export function adjustLine(lines: CartLine[], key: string, deltaMinor: number, m
   });
 }
 
+// --- Round-off -------------------------------------------------------------------------------------------------------
+
+/** The bill is rounded to the nearest ten rupees. */
+export const ROUND_STEP_MINOR = 1000;
+
+/**
+ * The bill total rounded to the nearest ₹10: a last rupee digit of 0 to 4 goes down, 5 to 9 goes up (₹243.50 becomes
+ * ₹240, ₹245 becomes ₹250, ₹247 becomes ₹250). A bill that would round away to nothing is left as it is.
+ */
+export function roundBillMinor(totalMinor: number): number {
+  const rounded = Math.round(totalMinor / ROUND_STEP_MINOR) * ROUND_STEP_MINOR;
+  return rounded > 0 ? rounded : totalMinor;
+}
+
 export function cartTotals(lines: CartLine[]): { totalMinor: number; totalGrams: number; totalPieces: number } {
   return {
     totalMinor: lines.reduce((sum, l) => sum + orderLineTotalMinor(l), 0),

@@ -145,6 +145,16 @@ describe('orders', () => {
     await assertFails(setDoc(doc(counter(), 'orders', 'b'), order({ totalMinor: 24001 })));
     await assertFails(setDoc(doc(counter(), 'orders', 'c'), order({ lines: [], totalMinor: 0, totalGrams: 0 })));
   });
+  test('a bill may be rounded to the nearest ten rupees, and only that way', async () => {
+    const lines = (total) => [line({ rateMinor: total, listRateMinor: total, lineTotalMinor: total })];
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'r1'), order({ totalMinor: 24000, roundOffMinor: -350 }, lines(24350)))); // ₹243.50 down to ₹240
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'r2'), order({ totalMinor: 25000, roundOffMinor: 400 }, lines(24600)))); // ₹246 up to ₹250
+    await assertFails(setDoc(doc(counter(), 'orders', 'r3'), order({ totalMinor: 24000, roundOffMinor: -300 }, lines(24350)))); // does not add up
+    await assertFails(setDoc(doc(counter(), 'orders', 'r4'), order({ totalMinor: 24300, roundOffMinor: -50 }, lines(24350)))); // not a whole ten rupees
+    await assertFails(setDoc(doc(counter(), 'orders', 'r5'), order({ totalMinor: 25000, roundOffMinor: 1000 }, lines(24000)))); // moved by more than half a step
+    await assertFails(setDoc(doc(counter(), 'orders', 'r6'), order({ totalMinor: 24000, roundOffMinor: -350.5 }, lines(24350.5)))); // not whole paise
+    await assertFails(setDoc(doc(counter(), 'orders', 'r7'), order({ totalMinor: 24350, roundOffMinor: 0 }, lines(24350)))); // a round-off still has to land on ten rupees
+  });
   test('a rate may move from the list rate only within the owner\'s limit', async () => {
     await assertSucceeds(setDoc(doc(counter(), 'orders', 'a'), order({}, [line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
     await assertFails(setDoc(doc(counter(), 'orders', 'b'), order({}, [line({ rateMinor: 99000, lineTotalMinor: 99000 })])));

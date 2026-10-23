@@ -22,6 +22,20 @@ export const SAMPLE_BILLS: { label: string; bill: BillInput }[] = [
     },
   },
   {
+    label: "Rounded to ten rupees",
+    bill: {
+      orderId: "sample-0",
+      billNo: "19-10/11",
+      createdAt: at,
+      lines: [{ name: "நாட்டுக்கோழி கறி", quantity: "541 கிராம்", rate: "₹450.00/கிலோ", amount: "₹243.50" }],
+      totalWeight: "541 கிராம்",
+      subtotal: "₹243.50",
+      roundOff: "-₹3.50",
+      total: "₹240.00",
+      paymentLabel: "பணம்",
+    },
+  },
+  {
     label: "Split (GPay + cash)",
     bill: {
       orderId: "sample-2",

@@ -143,6 +143,15 @@ function BillSheet({ order, onClose, onDeleted }: { order: Order; onClose: () =>
             ))}
           </ul>
           <dl className="ow-rows">
+            {order.roundOffMinor !== undefined && (
+              <div className="ow-row">
+                <dt>ரவுண்ட் ஆஃப்</dt>
+                <dd>
+                  {order.roundOffMinor > 0 ? "+" : "-"}
+                  {formatMoney(Math.abs(order.roundOffMinor))}
+                </dd>
+              </div>
+            )}
             <div className="ow-row ow-row--total">
               <dt>மொத்தம்</dt>
               <dd>{formatMoney(order.totalMinor)}</dd>

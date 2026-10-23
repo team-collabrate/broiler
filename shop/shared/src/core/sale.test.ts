@@ -6,6 +6,7 @@ import {
   adjustLine,
   canAddLine,
   regroupLines,
+  roundBillMinor,
   MAX_ORDER_LINES,
   adjustmentMinor,
   applyQtyKey,
@@ -636,4 +637,22 @@ test('canAddLine counts the lines the cart will really have when the packs are a
   assert.equal(full.length, MAX_ORDER_LINES);
   assert.equal(canAddLine(full, pack('a', 500), false), true); // joins item a's line
   assert.equal(canAddLine(full, pack('f', 250), false), false); // a sixth item
+});
+
+test('round-off: the last rupee digit 0 to 4 goes down, 5 to 9 goes up, to the nearest ten rupees', () => {
+  assert.equal(roundBillMinor(24300), 24000); // ₹243 to ₹240
+  assert.equal(roundBillMinor(24350), 24000); // ₹243.50 to ₹240
+  assert.equal(roundBillMinor(24499), 24000); // ₹244.99 to ₹240
+  assert.equal(roundBillMinor(24500), 25000); // ₹245 to ₹250 (5 goes up)
+  assert.equal(roundBillMinor(24600), 25000); // ₹246 to ₹250
+  assert.equal(roundBillMinor(24700), 25000);
+  assert.equal(roundBillMinor(24000), 24000); // already round
+  assert.equal(roundBillMinor(1000), 1000);
+});
+
+test('round-off never turns a small bill into a free one', () => {
+  assert.equal(roundBillMinor(300), 300); // ₹3 would round to nothing: left as it is
+  assert.equal(roundBillMinor(499), 499);
+  assert.equal(roundBillMinor(500), 1000); // ₹5 rounds up to ₹10
+  assert.equal(roundBillMinor(0), 0);
 });

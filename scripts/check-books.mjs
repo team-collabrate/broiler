@@ -42,7 +42,7 @@ const customers = await docs(collection(db, 'customers'));
 for (const o of dayOrders) {
   const label = `bill ${o.device ?? '?'}${o.orderNo} (${o.id})`;
   const linesTotal = (o.lines ?? []).reduce((sum, l) => sum + l.lineTotalMinor, 0);
-  check(linesTotal === o.totalMinor, `${label}: lines add up to ${money(linesTotal)} but the total says ${money(o.totalMinor)}`);
+  check(linesTotal + (o.roundOffMinor ?? 0) === o.totalMinor, `${label}: lines add up to ${money(linesTotal)} (round-off ${money(o.roundOffMinor ?? 0)}) but the total says ${money(o.totalMinor)}`);
   if (o.paymentMethod === 'split') {
     check(Number.isInteger(o.upiAmountMinor) && Number.isInteger(o.cashAmountMinor), `${label}: a split bill is missing a half`);
     check(o.upiAmountMinor + o.cashAmountMinor === o.totalMinor, `${label}: the split halves ${money(o.cashAmountMinor)} + ${money(o.upiAmountMinor)} do not add up to ${money(o.totalMinor)}`);

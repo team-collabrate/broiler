@@ -30,7 +30,8 @@ import {
   useServerConnection,
   voidOrder,
 } from "@kumbakonam/shared/shop";
-import { DEFAULT_MAX_ADJUST_MINOR, isRateStale } from "@kumbakonam/shared/core";
+import { DEFAULT_MAX_ADJUST_MINOR, isRateStale, roundBillMinor } from "@kumbakonam/shared/core";
+import { browserStore } from "@kumbakonam/shared/shop";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
 import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
@@ -61,6 +62,9 @@ const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_M
 /** Menu groups that appear in every tab. */
 const EVERY_TAB_GROUPS = ["excess"];
 
+/** Where the tablet remembers whether round-off is on. */
+const ROUND_KEY = "broiler.roundOff";
+
 type Sheet = { item: MenuItem; editing?: CartLine; startMethod?: Method };
 
 /** A stand-in for an item that has left the menu since it was added to the cart, so its line can still be edited. */
@@ -86,6 +90,14 @@ function itemFromLine(line: CartLine): MenuItem {
 
 export function CounterScreen() {
   const cart = useCounterCart();
+  // Round-off: the bill to the nearest ten rupees. On unless the cashier switches it off; the choice is kept on the tablet.
+  const [roundOn, setRoundOnState] = useState(() => browserStore().getItem(ROUND_KEY) !== "off");
+  const setRoundOn = (on: boolean) => {
+    setRoundOnState(on);
+    browserStore().setItem(ROUND_KEY, on ? "on" : "off");
+  };
+  const payableMinor = roundOn ? roundBillMinor(cart.totalMinor) : cart.totalMinor;
+  const roundOffMinor = payableMinor - cart.totalMinor;
   const printer = usePrinter();
   const connected = useServerConnection();
   const outbox = useOutbox();
@@ -260,7 +272,7 @@ export function CounterScreen() {
   const charge = async (print = true) => {
     if (submitting || cart.lines.length === 0) return;
     // A split with nothing on one side, or a credit bill with nobody on it, is not ready: ask first.
-    if (paymentMethod === "split" && !isRealSplit(cart.totalMinor, splitUpiMinor)) {
+    if (paymentMethod === "split" && !isRealSplit(payableMinor, splitUpiMinor)) {
       setNotice({ text: t.splitNeeded, tone: "error" });
       setSplitOpen(true);
       return;
@@ -280,13 +292,14 @@ export function CounterScreen() {
     try {
       const lines = cart.lines;
       attemptId.current ??= newOrderId();
-      const upiMinor = paymentMethod === "split" ? splitPayment(cart.totalMinor, splitUpiMinor).upiMinor : 0;
+      const upiMinor = paymentMethod === "split" ? splitPayment(payableMinor, splitUpiMinor).upiMinor : 0;
       const created = await createOrder({
         orderId: attemptId.current,
         lines,
         paymentMethod,
         ...(paymentMethod === "split" && { split: { upiMinor } }),
         ...(paymentMethod === "credit" && creditName && { customer: { name: creditName } }),
+        roundOff: roundOn,
       });
       playSavedSound();
       const bill = toBillInput({
@@ -295,6 +308,7 @@ export function CounterScreen() {
         createdAt: created.soldAt,
         lines,
         totalMinor: created.totalMinor,
+        ...(created.roundOffMinor && { roundOffMinor: created.roundOffMinor }),
         totalGrams: cart.totalGrams,
         totalPieces: cart.totalPieces,
         paymentMethod,
@@ -354,9 +368,9 @@ export function CounterScreen() {
   };
 
   // --- Render -------------------------------------------------------------
-  const split = splitPayment(cart.totalMinor, splitUpiMinor);
+  const split = splitPayment(payableMinor, splitUpiMinor);
   const paymentDetail = {
-    split: isRealSplit(cart.totalMinor, splitUpiMinor) ? t.splitChip(formatMoney(split.upiMinor), formatMoney(split.cashMinor)) : null,
+    split: isRealSplit(payableMinor, splitUpiMinor) ? t.splitChip(formatMoney(split.upiMinor), formatMoney(split.cashMinor)) : null,
     credit: creditName,
   };
   // The tabs read in Tamil letters: சிக்கன், மட்டன், மற்றவை. Any other tab uses its own Tamil name.
@@ -402,7 +416,10 @@ export function CounterScreen() {
         <BillCart
           logoUrl="/logo.png"
           lines={cart.lines}
-          totalMinor={cart.totalMinor}
+          totalMinor={payableMinor}
+          roundOn={roundOn}
+          roundOffMinor={roundOffMinor}
+          onRoundChange={setRoundOn}
           totalGrams={cart.totalGrams}
           totalPieces={cart.totalPieces}
           paymentMethod={paymentMethod}
@@ -451,12 +468,12 @@ export function CounterScreen() {
 
       {splitOpen && (
         <SplitModal
-          totalMinor={cart.totalMinor}
+          totalMinor={payableMinor}
           upiMinor={splitUpiMinor}
           onCancel={() => {
             setSplitOpen(false);
             // Backing out of the amounts means no split was really chosen.
-            if (!isRealSplit(cart.totalMinor, splitUpiMinor)) setPaymentMethod("cash");
+            if (!isRealSplit(payableMinor, splitUpiMinor)) setPaymentMethod("cash");
           }}
           onDone={(upiMinor) => {
             newSale();
@@ -468,7 +485,7 @@ export function CounterScreen() {
 
       {creditOpen && (
         <CreditModal
-          totalMinor={cart.totalMinor}
+          totalMinor={payableMinor}
           current={creditName}
           onCancel={() => {
             setCreditOpen(false);

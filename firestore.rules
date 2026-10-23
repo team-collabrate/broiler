@@ -85,7 +85,7 @@ service cloud.firestore {
     function validOrder() {
       let d = request.resource.data;
       let L = d.lines;
-      return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'staffName', 'lines', 'totalMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
+      return d.keys().hasOnly(['orderNo', 'dayKey', 'device', 'soldAt', 'createdAt', 'staffName', 'lines', 'totalMinor', 'roundOffMinor', 'totalGrams', 'totalPieces', 'paymentMethod', 'cashAmountMinor', 'upiAmountMinor', 'customerId', 'customerName'])
         && d.orderNo is int && d.orderNo >= 1
         && d.dayKey is string && d.dayKey.size() == 10
         // The counter (tablet) letter that numbered the bill.
@@ -113,7 +113,10 @@ service cloud.firestore {
           : (!('customerId' in d) && !('customerName' in d)))
         && L is list
         && linesOk(L, maxAdjust())
-        && d.totalMinor is int && d.totalMinor == sumOf(L, 'lineTotalMinor')
+        // The total is the lines' sum, or (when the till rounded the bill to the nearest ten rupees) the sum plus a
+        // round-off of at most half that step: the total is then a whole multiple of ten rupees.
+        && d.totalMinor is int && d.totalMinor == sumOf(L, 'lineTotalMinor') + (('roundOffMinor' in d) ? d.roundOffMinor : 0)
+        && (!('roundOffMinor' in d) || (d.roundOffMinor is int && d.roundOffMinor >= -499 && d.roundOffMinor <= 500 && d.totalMinor > 0 && d.totalMinor % 1000 == 0))
         && d.totalGrams is int && d.totalGrams >= 0
         && d.totalPieces is int && d.totalPieces >= 0;
     }

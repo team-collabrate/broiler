@@ -21,6 +21,8 @@ export interface SavedSale {
   createdAt: Date;
   lines: CartLine[];
   totalMinor: number;
+  /** The rounding added to the lines' sum to make `totalMinor` (negative when rounded down); absent when not rounded. */
+  roundOffMinor?: number;
   totalGrams: number;
   totalPieces: number;
   paymentMethod: PaymentMethod;
@@ -50,6 +52,10 @@ export function toBillInput(sale: SavedSale): BillInput {
     ...(sale.totalGrams > 0 && { totalWeight: formatWeight(sale.totalGrams) }),
     ...(sale.totalPieces > 0 && { totalPieces: formatQty(sale.totalPieces) }),
     total: formatMoney(sale.totalMinor),
+    ...(sale.roundOffMinor && {
+      subtotal: formatMoney(sale.totalMinor - sale.roundOffMinor),
+      roundOff: `${sale.roundOffMinor > 0 ? "+" : "-"}${formatMoney(Math.abs(sale.roundOffMinor))}`,
+    }),
     paymentLabel: PAYMENT_LABELS[sale.paymentMethod],
     ...(sale.paymentMethod === "split" &&
       sale.cashAmountMinor !== undefined &&

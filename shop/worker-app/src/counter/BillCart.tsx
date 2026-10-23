@@ -10,7 +10,12 @@ const PAYMENT_GRID: PaymentMethod[] = ["cash", "upi", "credit", "split"];
 
 interface Props {
   lines: CartLine[];
+  /** What the customer pays: the lines' sum, rounded to ten rupees when round-off is on. */
   totalMinor: number;
+  /** Round-off is switched on, and by how much it changed the total (negative when rounded down). */
+  roundOn: boolean;
+  roundOffMinor: number;
+  onRoundChange: (on: boolean) => void;
   totalGrams: number;
   totalPieces: number;
   paymentMethod: PaymentMethod;
@@ -41,6 +46,9 @@ interface Props {
 export function BillCart({
   lines,
   totalMinor,
+  roundOn,
+  roundOffMinor,
+  onRoundChange,
   totalGrams,
   totalPieces,
   paymentMethod,
@@ -115,6 +123,23 @@ export function BillCart({
           <strong>{t.keepPacks}</strong>
         </span>
       </label>
+
+      <div className="ct-round">
+        <span className="ct-round__label">{t.roundTo}</span>
+        <button type="button" role="switch" aria-checked={roundOn} aria-label={t.roundTo} className={`ct-toggle${roundOn ? " is-on" : ""}`} disabled={submitting} onClick={() => onRoundChange(!roundOn)}>
+          <span className="ct-toggle__knob" aria-hidden="true" />
+          <span className="ct-toggle__text">{roundOn ? t.on : t.off}</span>
+        </button>
+      </div>
+      {roundOn && roundOffMinor !== 0 && (
+        <div className="ct-cart__roundoff">
+          <span>{t.roundOff}</span>
+          <span>
+            {roundOffMinor > 0 ? "+" : "-"}
+            {formatMoney(Math.abs(roundOffMinor))}
+          </span>
+        </div>
+      )}
 
       <div className="ct-cart__total">
         <span>{t.total(formatTotals(totalGrams, totalPieces))}</span>

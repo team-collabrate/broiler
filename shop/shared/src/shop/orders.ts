@@ -12,6 +12,7 @@ import {
   MAX_QTY,
   orderLineTotalMinor,
   PAYMENT_METHODS,
+  roundBillMinor,
   tidyCustomerName,
   UserError,
   type OrderLine,
@@ -32,6 +33,8 @@ export interface CreateOrderInput {
   split?: { upiMinor: number };
   /** Required for a `credit` bill: who it is on account for. A name seen before finds the same customer. */
   customer?: { name: string };
+  /** Round the bill to the nearest ten rupees. The lines keep their own prices; the difference is saved as `roundOffMinor`. */
+  roundOff?: boolean;
   /** The worker who was billing (up to 40 letters). Optional. */
 }
 
@@ -47,6 +50,8 @@ export interface CreatedOrder {
   soldAt: Date;
   /** Credit bills only: the customer's name as the book has it, which is what the bill should show. */
   customerName?: string;
+  /** How much the total was rounded (negative when rounded down); absent when it was not. */
+  roundOffMinor?: number;
 }
 
 /** A fresh order id. Make one per sale and keep it until the sale is saved. */
@@ -83,7 +88,7 @@ function checkLine(l: OrderLineInput): void {
  * after the customer had already walked away. See OFFLINE.md.
  */
 export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder> {
-  const { orderId, lines, paymentMethod, split, customer } = input;
+  const { orderId, lines, paymentMethod, split, customer, roundOff: roundIt } = input;
   if (lines.length === 0) throw new UserError("The bill needs at least one item");
   if (lines.length > MAX_ORDER_LINES) throw new UserError(`A bill can hold at most ${MAX_ORDER_LINES} items`);
   if (!PAYMENT_METHODS.includes(paymentMethod)) throw new UserError(`Unknown payment method: ${paymentMethod}`);
@@ -110,7 +115,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     ...(l.unit === "kg" && l.amountMinor === undefined && l.packs !== undefined && l.packs >= 2 && { packs: l.packs }),
     lineTotalMinor: orderLineTotalMinor(l),
   }));
-  const totalMinor = orderLines.reduce((sum, l) => sum + l.lineTotalMinor, 0);
+  const subtotalMinor = orderLines.reduce((sum, l) => sum + l.lineTotalMinor, 0);
+  const roundOffMinor = roundIt ? roundBillMinor(subtotalMinor) - subtotalMinor : 0;
+  const totalMinor = subtotalMinor + roundOffMinor;
   const totalGrams = orderLines.reduce((sum, l) => sum + l.grams, 0);
   const totalPieces = orderLines.reduce((sum, l) => sum + l.qty, 0);
 
@@ -145,6 +152,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     createdAt: serverTimestamp(),
     lines: orderLines,
     totalMinor,
+    ...(roundOffMinor !== 0 && { roundOffMinor }),
     totalGrams,
     totalPieces,
     paymentMethod,
@@ -177,7 +185,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
       throw error;
     }
     settleBillNo(orderId);
-    return { id: orderId, orderNo, device, label, totalMinor, soldAt: now };
+    return { id: orderId, orderNo, device, label, totalMinor, soldAt: now, ...(roundOffMinor !== 0 && { roundOffMinor }) };
   }
 
   // Credit: one transaction that saves the order and moves the customer's balance together. If it fails after it
@@ -194,6 +202,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
         totalMinor: data.totalMinor as number,
         soldAt: (data.soldAt as Timestamp | undefined)?.toDate() ?? now,
         customerName: (data.customerName as string | undefined) ?? customerName,
+        ...(typeof data.roundOffMinor === "number" && { roundOffMinor: data.roundOffMinor }),
       };
     }
     // Every read comes before the first write, as Firestore requires.
@@ -217,7 +226,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
     }
     const bookName = customerSnap.exists() ? (customerSnap.data().name as string) : customerName;
     tx.set(orderRef, orderData(bookName));
-    return { orderNo, day, device, totalMinor, soldAt: now, customerName: bookName };
+    return { orderNo, day, device, totalMinor, soldAt: now, customerName: bookName, ...(roundOffMinor !== 0 && { roundOffMinor }) };
   });
   settleBillNo(orderId);
   const { day: savedDay, ...rest } = saved;

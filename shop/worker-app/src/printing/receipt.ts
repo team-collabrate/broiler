@@ -32,6 +32,9 @@ export interface BillInput {
   totalPieces?: string;
   /** The bill total: `₹450.00`. */
   total: string;
+  /** Only when the bill was rounded to ten rupees: the lines' sum (`₹243.50`) and the difference (`-₹3.50`), printed above the total. */
+  subtotal?: string;
+  roundOff?: string;
   /** Payment method in the receipt's own language (receipts always print Tamil). */
   paymentLabel: string;
   /**
