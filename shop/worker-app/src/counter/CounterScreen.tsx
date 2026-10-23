@@ -36,6 +36,7 @@ import type { BillInput } from "../printing/receipt";
 import { prepareReceiptRaster } from "../printing/receiptCanvas";
 import { SAMPLE_BILLS } from "../printing/sampleBills";
 import { toBillInput } from "./bill";
+import { AdminSheet } from "./AdminSheet";
 import { BillCart } from "./BillCart";
 import { BillSheet } from "./BillSheet";
 import { useCounterCart } from "./cart";
@@ -59,10 +60,6 @@ const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_M
 
 /** Menu groups that appear in every tab. */
 const EVERY_TAB_GROUPS = ["excess"];
-
-/** The owner's admin app: the gear goes straight there (rates, reports, bills, credit). */
-const ADMIN_URL = "https://broiler-pos-admin.web.app";
-const goToAdmin = () => window.location.assign(ADMIN_URL);
 
 type Sheet = { item: MenuItem; editing?: CartLine; startMethod?: Method };
 
@@ -155,6 +152,7 @@ export function CounterScreen() {
   /** Repeated equal weights stay packs (2 × 250 g), as the bill is read. Always on unless the cashier unticks it. */
   const [keepPacks, setKeepPacks] = useState(true);
   const [printerOpen, setPrinterOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: "info" | "error" } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   // Split and credit each need a little more than a tap: the GPay amount, or who owes.
@@ -385,7 +383,7 @@ export function CounterScreen() {
 
   return (
     <div className="ct-screen">
-      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => (connected ? goToAdmin() : setNotice({ text: t.adminNeedsInternet, tone: "error" }))} />
+      <SideRail logoUrl="/logo.png" rateNeeded={rateNeeded} connected={connected} waiting={waiting} stale={stale} printer={printer.status !== "ready" ? "none" : printer.problem ? "problem" : "ok"} onPrinter={() => { setTestOutcome(null); setPrinterOpen(true); }} onRecent={() => setRecentOpen(true)} onAdmin={() => (connected ? setAdminOpen(true) : setNotice({ text: t.adminNeedsInternet, tone: "error" }))} />
       <div className="ct-body">
         <main className="ct-main">
           <SyncBanner outbox={outbox} stale={stale} onDismiss={dismissRefused} />
@@ -480,6 +478,8 @@ export function CounterScreen() {
           }}
         />
       )}
+
+      {adminOpen && <AdminSheet onClose={() => setAdminOpen(false)} />}
 
       {printerOpen && (
         <PrinterSheet

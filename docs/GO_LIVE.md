@@ -25,7 +25,7 @@ The Firebase command line can only switch sign-in methods *on*, so this is one c
 
 ## Before the first bill
 
-1. **Set today's rates.** The ⚙️ button (top right of the counter) opens the admin site, <https://broiler-pos-admin.web.app>. Sign in with the **managing PIN**,
+1. **Set today's rates.** The ⚙️ button (top right of the counter, tapped twice) opens the admin **inside the counter app** (the same site as <https://broiler-pos-admin.web.app>); **Back to billing** closes it and locks it again. Sign in with the **managing PIN**,
    open **விலை** (Rates), set each rate, **சேமி** (Save). The admin dashboard warns when today's rates are not all set.
 2. Install the app (`PRINTING.md`: *Build the Android app*, *Set up the tablet*), sign in with the **billing PIN**.
 3. Pair the BonKaso BKT05 (the **Bluetooth** version) and print the **test bill** and the **calibration sheet** (`PRINTING.md`).

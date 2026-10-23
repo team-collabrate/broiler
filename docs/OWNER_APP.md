@@ -16,5 +16,5 @@ Deploy: `npm run deploy:owner` (from `shop`).
 - **Screens by device:** a phone gets one column and a bottom tab bar; a tablet gets a tab column on the left and two-column screens.
 - **Reads on demand:** there are no live listeners. It reads when it opens, on **புதுப்பி** (Refresh), and when the phone is picked up after a minute. An app left open costs no reads.
 - **Old days:** bills are kept in full for 4 days; older days are rolled up into daily totals automatically.
-- **Counter link:** the ⚙️ on the counter opens this site.
+- **Counter link:** the ⚙️ on the counter (two taps) opens this site inside the counter app, in a frame. The app only lets the counter's own address frame it (`Content-Security-Policy: frame-ancestors` in `firebase.json`). Closing it signs the admin out.
 - **PINs:** the PIN is the account password (`broiler-<PIN>`). Change it with `node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner`.

@@ -22,7 +22,8 @@ const TABS: { key: Tab; label: string }[] = [
 const COUNTER_URL = "https://broiler-pos.web.app";
 const fromCounter = (() => {
   try {
-    return document.referrer.startsWith(COUNTER_URL);
+    // Not when the admin is shown inside the counter app: the counter has its own way back.
+    return window.self === window.top && document.referrer.startsWith(COUNTER_URL);
   } catch {
     return false;
   }

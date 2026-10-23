@@ -946,3 +946,98 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(0.96); }
 }
+
+/* ---------- PIN screen: the same look as the counter's ---------- */
+.ow-pin {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--color-bg);
+}
+.ow-pin__card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: 22px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 8px 30px rgba(31, 21, 18, 0.08);
+}
+.ow-pin__logo {
+  align-self: center;
+  width: 96px;
+  height: 116px;
+  object-fit: contain;
+}
+.ow-pin__title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+.ow-pin__subtitle {
+  margin: 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.ow-pin__dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 20px;
+}
+.ow-pin__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-accent);
+}
+.ow-pin__dot.is-on {
+  background: var(--color-accent);
+}
+.ow-pin__error {
+  min-height: 24px;
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+.ow-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+.ow-key {
+  height: 60px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ow-key:active {
+  background: var(--color-accent-soft);
+}
+
+/* A tablet held upright (about 700 to 900 px wide) is too narrow for two columns of cards: one column, side tabs kept. */
+@media (min-width: 700px) and (max-width: 899px) {
+  .ow-dash,
+  .ow-reports,
+  .ow-rates,
+  .ow-bills {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ow-tile__value,
+.ow-hero__total {
+  overflow-wrap: anywhere;
+}

@@ -38,6 +38,8 @@ export const t = {
   cutLabel: "Cut",
   howLabel: "How the customer asks",
   adminNeedsInternet: "Admin needs internet. Try again when it is back.",
+  backToBilling: "Back to billing",
+  loadingAdmin: "Opening Admin…",
   tapAgain: "Tap again for Admin",
   keepPacks: "தனித்தனியாக வை (2 × 250 கி)",
   methodWeight: "Weight",

@@ -1,13 +1,28 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { afterWrongPin, blockedForMs, isValidPin, MAX_PIN_LENGTH, MIN_PIN_LENGTH, NO_ATTEMPTS, parseAttempts, type AttemptState } from "@kumbakonam/shared/core";
+import { useEffect, useState } from "react";
+import {
+  afterWrongPin,
+  applyPinKey,
+  BACKSPACE_KEY,
+  blockedForMs,
+  isValidPin,
+  MAX_PIN_LENGTH,
+  MIN_PIN_LENGTH,
+  NO_ATTEMPTS,
+  parseAttempts,
+  type AttemptState,
+} from "@kumbakonam/shared/core";
 import { browserStore, signInWithPin } from "@kumbakonam/shared/shop";
 import { errorText } from "./fmt";
 
 const ATTEMPTS_KEY = "broiler.owner.pinAttempts";
 const store = browserStore();
 const WRONG_PIN_CODES = ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-login-credentials"];
+const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", BACKSPACE_KEY];
 
-/** The owner's sign-in: the managing PIN, and nothing else gets in. Five wrong tries in a row block it for 30 seconds. */
+/**
+ * The admin's PIN screen, laid out exactly like the counter's: logo, name, dots and a keypad, and the PIN goes in by
+ * itself at the fourth digit. Five wrong tries in a row block it for 30 seconds.
+ */
 export function SignIn() {
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,8 +38,23 @@ export function SignIn() {
     return () => clearInterval(timer);
   }, [waitMs]);
 
-  const submit = async (event?: FormEvent, typed: string = pin) => {
-    event?.preventDefault();
+  const press = (key: string) => {
+    if (busy || blockedForMs(attempts, Date.now()) > 0) return;
+    setError(null);
+    setPin((prev) => applyPinKey(prev, key));
+  };
+
+  // A keyboard works too (a computer).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (/^\d$/.test(e.key)) press(e.key);
+      else if (e.key === "Backspace") press(BACKSPACE_KEY);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const submit = async (typed: string) => {
     if (busy || !isValidPin(typed) || blockedForMs(attempts, Date.now()) > 0) return;
     setBusy(true);
     setError(null);
@@ -45,32 +75,40 @@ export function SignIn() {
     }
   };
 
+  // No sign-in button: the PIN goes in as soon as the last digit is typed.
+  useEffect(() => {
+    if (pin.length === MIN_PIN_LENGTH) void submit(pin);
+  }, [pin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dots = Math.max(MIN_PIN_LENGTH, pin.length);
+  const message = busy ? "உள்நுழைகிறது…" : waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? "\u00a0");
+
   return (
-    <main className="ow-signin">
-      <form className="ow-signin__card" onSubmit={(e) => void submit(e)}>
-        <img className="ow-signin__logo" src="/logo.png" alt="" />
-        <h1 className="ow-signin__title">HONEY BROILERS</h1>
-        <p className="ow-signin__sub">நிர்வாகம். PIN போடவும்.</p>
-        <input
-          className="ow-signin__pin"
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="off"
-          autoFocus
-          maxLength={MAX_PIN_LENGTH}
-          aria-label="PIN"
-          value={pin}
-          onChange={(e) => {
-            const next = e.target.value.replace(/\D/g, "");
-            setPin(next);
-            if (next.length === MIN_PIN_LENGTH) void submit(undefined, next);
-          }}
-        />
-        <p className="ow-signin__error" role="alert">
-          {busy ? "உள்நுழைகிறது…" : waitMs > 0 ? `அதிக முறை தவறு. ${Math.ceil(waitMs / 1000)} வினாடி காத்திருக்கவும்.` : (error ?? " ")}
+    <main className="ow-pin">
+      <div className="ow-pin__card">
+        <img className="ow-pin__logo" src="/logo.png" alt="" />
+        <h1 className="ow-pin__title">HONEY BROILERS</h1>
+        <p className="ow-pin__subtitle">நிர்வாகம். PIN போடவும்.</p>
+        <div className="ow-pin__dots" aria-label={`${pin.length} / ${MAX_PIN_LENGTH}`} aria-live="polite">
+          {Array.from({ length: dots }, (_, i) => (
+            <span key={i} className={`ow-pin__dot${i < pin.length ? " is-on" : ""}`} />
+          ))}
+        </div>
+        <p className="ow-pin__error" role="alert">
+          {message}
         </p>
-      </form>
+        <div className="ow-keypad">
+          {KEYS.map((key, i) =>
+            key === "" ? (
+              <span key={`gap-${i}`} />
+            ) : (
+              <button key={key} type="button" className="ow-key" aria-label={key === BACKSPACE_KEY ? "அழி" : key} onClick={() => press(key)}>
+                {key}
+              </button>
+            ),
+          )}
+        </div>
+      </div>
     </main>
   );
 }
