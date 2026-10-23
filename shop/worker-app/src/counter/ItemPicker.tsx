@@ -42,10 +42,9 @@ function familiesOf(items: MenuItem[]): Family[] {
   return families.sort((a, b) => rank(a.key) - rank(b.key));
 }
 
-/** The short label of a variant on the switch: Bone, Boneless, With skin, Skinless, and உயிர் (uyir) for live. */
+/** The short label of a cut on the switch, in Tamil: தோலுடன், தோலில்லா, எலும்புடன், எலும்பில்லா, உயிர். */
 function variantLabel(item: MenuItem): string {
-  if (item.variant === "live") return "உயிர்";
-  if (item.variant) return VARIANT_LABELS[item.variant].name.replace(/^With bone$/, "Bone");
+  if (item.variant) return VARIANT_LABELS[item.variant].nameTa;
   const tail = itemName(item).split(" - ")[1];
   return tail ?? item.name;
 }
