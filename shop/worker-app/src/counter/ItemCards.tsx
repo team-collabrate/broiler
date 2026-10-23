@@ -10,11 +10,11 @@ const shortRate = (minor: number) => (minor % 100 === 0 ? `${CURRENCY_SYMBOL}${m
 /** How long a finger must stay down to count as a long press. */
 const LONG_PRESS_MS = 500;
 
-/** What one tap puts on the bill: the item's usual count (or weight), at today's rate. */
+/** What one tap puts on the bill: one piece (or the item's usual weight), at today's rate. The count is changed with a long press. */
 function usualLine(item: MenuItem): OrderLineInput {
   const base = { itemId: item.id, name: itemName(item), category: item.category, unit: item.unit, rateMinor: item.rateMinor, listRateMinor: item.rateMinor };
   return item.unit === "piece"
-    ? { ...base, grams: 0, qty: Math.max(1, item.defaultQty) }
+    ? { ...base, grams: 0, qty: 1 }
     : { ...base, grams: item.defaultGrams, qty: 0 };
 }
 

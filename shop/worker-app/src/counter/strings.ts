@@ -38,7 +38,7 @@ export const t = {
   cutLabel: "Cut",
   howLabel: "How the customer asks",
   adminNeedsInternet: "Admin needs internet. Try again when it is back.",
-  othersHint: "Tap to add. Press and hold to change the count.",
+  othersHint: "Tap to add one. Press and hold to change the count.",
   updateAppNow: "Update app now",
   discount: "Discount",
   discountTitle: "Discount",
