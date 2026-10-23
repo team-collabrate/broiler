@@ -374,7 +374,7 @@ export function CounterScreen() {
       <div className="ct-catalog">
         <CounterTabs categories={tabs} selected={category} onSelect={setCategoryKey} labelFor={labelFor} />
         {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : category === "other" ? (
-          <ItemCards items={visibleItems} onSelect={(item) => setSheet({ item })} />
+          <ItemCards items={visibleItems} onAdd={addPreset} onCustomize={(item) => setSheet({ item })} />
         ) : (
           <ItemPicker items={visibleItems} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
         )}
