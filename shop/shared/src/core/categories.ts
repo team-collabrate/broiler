@@ -76,7 +76,7 @@ export function normalizeCategories(raw: unknown): Category[] {
 }
 
 export const VARIANT_LABELS: Record<Variant, { name: string; nameTa: string }> = {
-  live: { name: 'Live', nameTa: 'உயிருடன்' },
+  live: { name: 'Live', nameTa: 'உயிர்' },
   skin: { name: 'With skin', nameTa: 'தோலுடன்' },
   skinless: { name: 'Skinless', nameTa: 'தோலில்லா' },
   bone: { name: 'With bone', nameTa: 'எலும்புடன்' },

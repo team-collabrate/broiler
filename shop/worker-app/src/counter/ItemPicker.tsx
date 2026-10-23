@@ -42,8 +42,9 @@ function familiesOf(items: MenuItem[]): Family[] {
   return families.sort((a, b) => rank(a.key) - rank(b.key));
 }
 
-/** The short label of a variant on the switch: Bone, Boneless, With skin, Skinless, Live. */
+/** The short label of a variant on the switch: Bone, Boneless, With skin, Skinless, and உயிர் (uyir) for live. */
 function variantLabel(item: MenuItem): string {
+  if (item.variant === "live") return "உயிர்";
   if (item.variant) return VARIANT_LABELS[item.variant].name.replace(/^With bone$/, "Bone");
   const tail = itemName(item).split(" - ")[1];
   return tail ?? item.name;
