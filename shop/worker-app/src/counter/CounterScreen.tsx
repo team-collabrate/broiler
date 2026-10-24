@@ -360,7 +360,7 @@ export function CounterScreen() {
    * Fix a bill's payment: the bill is deleted and the same items are billed again with the new payment (and, for a
    * split, the new halves), then printed. If the new bill cannot be made the items go back on the screen.
    */
-  const replaceBill = async (old: BillInput, method: PaymentMethod, upiMinor: number) => {
+  const replaceBill = async (old: BillInput, method: PaymentMethod, upiMinor: number, customerName?: string) => {
     const { fix, restore } = old;
     if (!fix || !restore) throw new Error("This bill cannot be changed here");
     await voidOrder(old.orderId);
@@ -371,16 +371,18 @@ export function CounterScreen() {
         lines: restore,
         paymentMethod: method,
         ...(method === "split" && { split: { upiMinor } }),
+        ...(method === "credit" && customerName && { customer: { name: customerName } }),
         ...(fix.discountMinor && { discountMinor: fix.discountMinor }),
         roundOff: fix.roundOff,
       });
-      const { isCopy: _copy, paymentDetail: _detail, ...rest } = old;
+      const { isCopy: _copy, paymentDetail: _detail, customerName: _customer, ...rest } = old;
       const bill: BillInput = {
         ...rest,
         orderId: created.id,
         billNo: created.label,
         createdAt: created.soldAt,
         paymentLabel: PAYMENT_LABELS[method],
+        ...(method === "credit" && { customerName: created.customerName ?? customerName ?? "" }),
         ...(method === "split" && { paymentDetail: billText.splitDetail(formatMoney(created.totalMinor - upiMinor), formatMoney(upiMinor)) }),
         fix: { ...fix, totalMinor: created.totalMinor },
       };
@@ -594,8 +596,8 @@ export function CounterScreen() {
             await voidOrder(orderId);
             markDeleted(orderId);
           }}
-          onReplace={async (bill, method, upiMinor) => {
-            await replaceBill(bill, method, upiMinor);
+          onReplace={async (bill, method, upiMinor, customerName) => {
+            await replaceBill(bill, method, upiMinor, customerName);
             setRecentOpen(false);
           }}
           canFix={cart.lines.length === 0}

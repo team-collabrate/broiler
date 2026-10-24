@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { describeError, formatMoney, PAYMENT_LABELS, splitPayment, type OrderLineInput, type PaymentMethod, type RecentEntry } from "@kumbakonam/shared/core";
 import type { BillInput } from "../printing/receipt";
+import { CreditModal } from "./CreditModal";
 import { SplitModal } from "./SplitModal";
 import { t } from "./strings";
 
@@ -16,7 +17,7 @@ interface Props {
   /** Deletes a bill. Rejects with the reason to show. */
   onDelete: (orderId: string) => Promise<void>;
   /** Bills the payment of which can be changed in place: deletes the bill and bills the same items again. Rejects with the reason to show. */
-  onReplace: (bill: BillInput, method: PaymentMethod, upiMinor: number) => Promise<void>;
+  onReplace: (bill: BillInput, method: PaymentMethod, upiMinor: number, customerName?: string) => Promise<void>;
   /** The screen is empty, so a bill can be put back on it to be fixed. */
   canFix: boolean;
   /** Puts the items of a deleted bill back on the screen. */
@@ -42,14 +43,15 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
   const [error, setError] = useState<string | null>(null);
   const [fixing, setFixing] = useState(false);
   // Changing how a bill was paid: the bill being changed, the payment chosen, and the GPay half of a split.
-  const [paying, setPaying] = useState<{ entry: RecentEntry<BillInput>; method: PaymentMethod; upiMinor: number } | null>(null);
+  const [paying, setPaying] = useState<{ entry: RecentEntry<BillInput>; method: PaymentMethod; upiMinor: number; customerName: string } | null>(null);
   const [splitOpen, setSplitOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && !splitOpen && (paying ? setPaying(null) : confirming ? setConfirming(null) : onClose());
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !busy && !splitOpen && !creditOpen && (paying ? setPaying(null) : confirming ? setConfirming(null) : onClose());
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, confirming, busy, paying, splitOpen]);
+  }, [onClose, confirming, busy, paying, splitOpen, creditOpen]);
 
   const now = Date.now();
   const deletable = new Set(
@@ -76,15 +78,15 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
   };
 
   /** The payment a bill was made with, from its printed label. */
-  const methodOf = (bill: BillInput): PaymentMethod | null => (["cash", "upi", "split"] as const).find((m) => PAYMENT_LABELS[m] === bill.paymentLabel) ?? null;
+  const methodOf = (bill: BillInput): PaymentMethod | null => (["cash", "upi", "split", "credit"] as const).find((m) => PAYMENT_LABELS[m] === bill.paymentLabel) ?? null;
   const startFix = (entry: RecentEntry<BillInput>) => {
     setError(null);
     const method = methodOf(entry.payload);
     if (method && entry.payload.fix && entry.payload.restore) {
-      setPaying({ entry, method, upiMinor: 0 });
+      setPaying({ entry, method, upiMinor: 0, customerName: entry.payload.customerName ?? "" });
       return;
     }
-    // Credit and older bills: only the items can be changed.
+    // Older bills (made before this was kept): only the items can be changed.
     setFixing(true);
     setConfirming(entry);
   };
@@ -93,14 +95,15 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
     setBusy(true);
     setError(null);
     try {
-      await onReplace(paying.entry.payload, paying.method, paying.method === "split" ? paying.upiMinor : 0);
+      await onReplace(paying.entry.payload, paying.method, paying.method === "split" ? paying.upiMinor : 0, paying.method === "credit" ? paying.customerName : undefined);
     } catch (e) {
       setError(t.deleteFailed(describeError(e)));
       setBusy(false);
     }
   };
   const payingTotal = paying?.entry.payload.fix?.totalMinor ?? 0;
-  const payingSame = paying !== null && paying.method === methodOf(paying.entry.payload) && paying.method !== "split";
+  const payingSame =
+    paying !== null && paying.method === methodOf(paying.entry.payload) && paying.method !== "split" && (paying.method !== "credit" || paying.customerName === (paying.entry.payload.customerName ?? ""));
 
   return (
     <div className="ct-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
@@ -120,19 +123,24 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
             <div className="ct-confirm">
               <p className="ct-confirm__text">{t.fixPaymentPick}</p>
               <div className="ct-fixpay" role="group" aria-label={t.fixPaymentPick}>
-                {(["cash", "upi", "split"] as const).map((m) => (
+                {(["cash", "upi", "split", "credit"] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
                     className={`ct-btn ct-fixpay__opt${paying.method === m ? " is-on" : ""}`}
                     aria-pressed={paying.method === m}
                     disabled={busy}
-                    onClick={() => (m === "split" ? setSplitOpen(true) : setPaying({ ...paying, method: m, upiMinor: 0 }))}
+                    onClick={() => (m === "split" ? setSplitOpen(true) : m === "credit" ? setCreditOpen(true) : setPaying({ ...paying, method: m, upiMinor: 0 }))}
                   >
                     {PAYMENT_LABELS[m]}
                   </button>
                 ))}
               </div>
+              {paying.method === "credit" && paying.customerName && (
+                <p className="ct-confirm__text">
+                  <strong>{t.fixCreditFor(paying.customerName)}</strong>
+                </p>
+              )}
               {paying.method === "split" && paying.upiMinor > 0 && (
                 <p className="ct-confirm__text">
                   <strong>{t.fixSplitSet(formatMoney(splitPayment(payingTotal, paying.upiMinor).cashMinor), formatMoney(paying.upiMinor))}</strong>
@@ -228,7 +236,7 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
               <button
                 type="button"
                 className="ct-btn ct-btn--primary"
-                disabled={busy || !connected || payingSame || (paying.method === "split" && paying.upiMinor <= 0)}
+                disabled={busy || !connected || payingSame || (paying.method === "split" && paying.upiMinor <= 0) || (paying.method === "credit" && !paying.customerName)}
                 onClick={() => void replace()}
               >
                 {busy ? t.deleting : t.fixReplace}
@@ -253,6 +261,18 @@ export function RecentBillsSheet({ bills, deleted, waiting, connected, onOpen, o
           )}
         </footer>
       </div>
+      {creditOpen && paying && (
+        <CreditModal
+          totalMinor={payingTotal}
+          current={paying.customerName || null}
+          onCancel={() => setCreditOpen(false)}
+          onChoose={(name) => {
+            setPaying({ ...paying, method: "credit", upiMinor: 0, customerName: name });
+            setCreditOpen(false);
+          }}
+        />
+      )}
+
       {splitOpen && paying && (
         <SplitModal
           totalMinor={payingTotal}

@@ -166,6 +166,7 @@ export const t = {
   fixConfirm: "Delete and fix",
   fixPaymentPick: "Change how it was paid",
   fixPaymentWarning: "This bill is deleted and a new bill with the same items is made and printed with the new payment. Needs internet.",
+  fixCreditFor: (name: string) => `On credit for ${name}`,
   fixItemsInstead: "Change the items instead",
   fixReplace: "Replace bill",
   fixSplitSet: (cash: string, upi: string) => `Cash ${cash} + UPI ${upi}`,
