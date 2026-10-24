@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { CURRENCY_SYMBOL, formatMoney, itemName, type MenuItem, type OrderLineInput } from "@kumbakonam/shared/core";
+import { CustomWeightPanel } from "./CustomWeightPanel";
 import { unitSuffix } from "./fmt";
 import { productImageUrl } from "./images";
 import { t } from "./strings";
@@ -83,6 +84,7 @@ export function ItemCards({ items, onAdd, onCustomize }: { items: MenuItem[]; on
           <ItemCard key={item.id} item={item} onAdd={onAdd} onCustomize={onCustomize} />
         ))}
       </div>
+      <CustomWeightPanel onAdd={onAdd} />
       <p className="ct-hint ct-icards__hint">{t.othersHint}</p>
     </>
   );
