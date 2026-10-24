@@ -1350,7 +1350,7 @@ button {
   overflow-y: auto;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  background: #e9e4dc;
+  background: #d9e5dc;
 }
 .ct-bill__image {
   width: 100%;
@@ -1537,8 +1537,8 @@ button {
 .ct-pick {
   --ink: #1f1512;
   --ink-2: #6b5a52;
-  --line: #eee3d3;
-  --tint: #fdf1ee;
+  --line: #d9e5dc;
+  --tint: #e4f4e9;
   --lift: 0 1px 2px rgba(31, 21, 18, 0.06), 0 6px 18px rgba(31, 21, 18, 0.05);
   --lift-lg: 0 1px 2px rgba(31, 21, 18, 0.05), 0 14px 40px rgba(31, 21, 18, 0.08);
   flex: 1;
@@ -1577,7 +1577,7 @@ button {
   display: block;
   height: 120px;
   overflow: hidden;
-  background: #f3ece2;
+  background: #edf3ef;
 }
 .ct-fcard__pic[hidden] {
   display: none;
@@ -1673,7 +1673,7 @@ button {
   gap: 4px;
   padding: 4px;
   border-radius: 16px;
-  background: #f2eadf;
+  background: #edf3ef;
 }
 .ct-switch {
   flex: none;
@@ -1737,7 +1737,7 @@ button {
 .ct-square__sub {
   padding: 4px 16px;
   border-radius: 999px;
-  background: #f6efe6;
+  background: #edf3ef;
   font-size: 1.0625rem;
   font-weight: 600;
   color: var(--ink-2);
@@ -1766,7 +1766,7 @@ button {
   min-height: 60px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: #faf6f0;
+  background: #f4f8f5;
   color: var(--ink-2);
   font-size: 1.125rem;
   font-weight: 600;
@@ -1779,7 +1779,7 @@ button {
   line-height: 1;
 }
 .ct-pick__other:active:not(:disabled) {
-  background: #f0e8dc;
+  background: #edf3ef;
   color: var(--ink);
 }
 .ct-pick button:focus-visible {
@@ -1809,7 +1809,7 @@ button {
   --font-family: "Inter Variable", "Noto Sans Tamil", "Roboto", system-ui, sans-serif;
 }
 .ct-main {
-  background: #f6efe4;
+  background: #edf3ef;
 }
 .ct-pick {
   gap: 24px;
@@ -1955,7 +1955,7 @@ button {
   height: auto;
   display: grid;
   place-items: center;
-  background: linear-gradient(160deg, #f3ebdf, #ebe1d2);
+  background: linear-gradient(160deg, #edf3ef, #d9e5dc);
 }
 .ct-fcard__pic[hidden] {
   display: none;
@@ -2307,7 +2307,7 @@ button {
   gap: 10px;
   padding: 0 0 16px;
   overflow: hidden;
-  border: 1px solid #eee3d3;
+  border: 1px solid #d9e5dc;
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(31, 21, 18, 0.06), 0 6px 18px rgba(31, 21, 18, 0.05);
@@ -2324,7 +2324,7 @@ button {
   display: block;
   height: 110px;
   overflow: hidden;
-  background: #f3ece2;
+  background: #edf3ef;
 }
 .ct-icard__pic[hidden] {
   display: none;
@@ -2364,7 +2364,7 @@ button {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #fdf1ee;
+  background: #e4f4e9;
   color: var(--color-accent);
   font-size: 1.75rem;
   line-height: 1;
@@ -2505,7 +2505,7 @@ button {
   bottom: 0;
   height: 64px;
   border-radius: 0 0 20px 20px;
-  background: linear-gradient(to bottom, rgba(246, 239, 228, 0), #f6efe4);
+  background: linear-gradient(to bottom, rgba(246, 239, 228, 0), #edf3ef);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
@@ -2523,7 +2523,7 @@ button {
   display: grid;
   place-items: center;
   transform: translateX(-50%);
-  border: 1px solid #eee3d3;
+  border: 1px solid #d9e5dc;
   border-radius: 50%;
   background: #fff;
   color: var(--color-accent);
@@ -2804,7 +2804,7 @@ button {
   height: 32px;
   border: 0;
   border-radius: 999px;
-  background: #cfc4b6;
+  background: #c2ccc5;
   color: #fff;
   font-family: inherit;
   font-size: 0.75rem;
@@ -2926,5 +2926,5 @@ button {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: #fff;
-  box-shadow: 0 3px 10px rgba(215, 25, 32, 0.3);
+  box-shadow: 0 3px 10px rgba(22, 128, 60, 0.3);
 }

@@ -34,8 +34,8 @@ export default defineConfig({
         // install (PWABuilder flags a manifest with no id).
         id: "/",
         description: "Broiler chicken and mutton shop: counter billing",
-        theme_color: "#D71920",
-        background_color: "#FFFAF2",
+        theme_color: "#16803C",
+        background_color: "#f7fbf8",
         display: "standalone",
         orientation: "any",
         start_url: "/",

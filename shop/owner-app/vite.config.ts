@@ -17,8 +17,8 @@ export default defineConfig({
         // Stable identity separate from start_url, so the installed app survives a future start_url change.
         id: "/",
         description: "Honey Broilers: sales, bills and credit for the owner",
-        theme_color: "#D71920",
-        background_color: "#FFFAF2",
+        theme_color: "#16803C",
+        background_color: "#f7fbf8",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
