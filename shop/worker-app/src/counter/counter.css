@@ -3004,3 +3004,22 @@ button {
 .ct-wbox__pad .ct-key {
   min-height: 46px;
 }
+
+/* Fix a bill's payment: the three ways to pay as big buttons. */
+.ct-fixpay {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ct-fixpay__opt {
+  min-height: 56px;
+  font-size: 18px;
+  background: #fff;
+  border: 2px solid var(--color-border, #d9e5dc);
+}
+.ct-fixpay__opt.is-on {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-dark);
+  font-weight: 700;
+}

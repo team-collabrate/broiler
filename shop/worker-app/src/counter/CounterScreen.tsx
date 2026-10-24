@@ -29,7 +29,8 @@ import {
   useServerConnection,
   voidOrder,
 } from "@kumbakonam/shared/shop";
-import { isRateStale, NO_ADJUST_LIMIT, roundBillMinor } from "@kumbakonam/shared/core";
+import { isRateStale, NO_ADJUST_LIMIT, PAYMENT_LABELS, roundBillMinor } from "@kumbakonam/shared/core";
+import { billText } from "../printing/billText";
 import { browserStore } from "@kumbakonam/shared/shop";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
 import type { BillInput } from "../printing/receipt";
@@ -331,7 +332,11 @@ export function CounterScreen() {
       setCreditName(null);
       // The sale is saved and the bill is kept in the recent list; now the paper. If the printer is missing or refuses,
       // the bill shows on screen with the reason and a Print again button, so a failed print is never a lost sale.
-      rememberBill({ ...bill, restore: lines.map(({ key: _key, ...rest }) => rest) });
+      rememberBill({
+        ...bill,
+        restore: lines.map(({ key: _key, ...rest }) => rest),
+        fix: { totalMinor: created.totalMinor, ...(created.discountMinor && { discountMinor: created.discountMinor }), roundOff: roundOn },
+      });
       if (!print) {
         setNotice({ text: t.saved(created.label), tone: "info" });
         return;
@@ -342,6 +347,43 @@ export function CounterScreen() {
       setNotice({ text: t.saleError(describeError(e)), tone: "error" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /**
+   * Fix a bill's payment: the bill is deleted and the same items are billed again with the new payment (and, for a
+   * split, the new halves), then printed. If the new bill cannot be made the items go back on the screen.
+   */
+  const replaceBill = async (old: BillInput, method: PaymentMethod, upiMinor: number) => {
+    const { fix, restore } = old;
+    if (!fix || !restore) throw new Error("This bill cannot be changed here");
+    await voidOrder(old.orderId);
+    markDeleted(old.orderId);
+    try {
+      const created = await createOrder({
+        orderId: newOrderId(),
+        lines: restore,
+        paymentMethod: method,
+        ...(method === "split" && { split: { upiMinor } }),
+        ...(fix.discountMinor && { discountMinor: fix.discountMinor }),
+        roundOff: fix.roundOff,
+      });
+      const { isCopy: _copy, paymentDetail: _detail, ...rest } = old;
+      const bill: BillInput = {
+        ...rest,
+        orderId: created.id,
+        billNo: created.label,
+        createdAt: created.soldAt,
+        paymentLabel: PAYMENT_LABELS[method],
+        ...(method === "split" && { paymentDetail: billText.splitDetail(formatMoney(created.totalMinor - upiMinor), formatMoney(upiMinor)) }),
+        fix: { ...fix, totalMinor: created.totalMinor },
+      };
+      playSavedSound();
+      rememberBill(bill);
+      queuePrint(bill);
+    } catch (e) {
+      if (cart.lines.length === 0) restore.forEach((line) => cart.add(line));
+      throw e;
     }
   };
 
@@ -545,6 +587,10 @@ export function CounterScreen() {
           onDelete={async (orderId) => {
             await voidOrder(orderId);
             markDeleted(orderId);
+          }}
+          onReplace={async (bill, method, upiMinor) => {
+            await replaceBill(bill, method, upiMinor);
+            setRecentOpen(false);
           }}
           canFix={cart.lines.length === 0}
           onFix={(restore) => {

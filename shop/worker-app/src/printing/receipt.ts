@@ -49,4 +49,6 @@ export interface BillInput {
   isCopy?: boolean;
   /** The items as they were rung up, kept in the recent list so a wrong bill can be put back on the screen and fixed. Not printed. */
   restore?: OrderLineInput[];
+  /** What it takes to bill this sale again with another payment (Fix in the recent bills): its total and how it was reduced. Not printed. */
+  fix?: { totalMinor: number; discountMinor?: number; roundOff: boolean };
 }
