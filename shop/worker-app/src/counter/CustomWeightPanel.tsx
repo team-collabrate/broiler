@@ -30,7 +30,7 @@ function parseKg(text: string): number | null {
  * price fixed for that whole bird, in rupees. The line charges exactly that price; the per-kilo rate on it is only
  * worked out from the two. It sits under the Others cards.
  */
-export function CustomWeightPanel({ onAdd }: { onAdd: (line: OrderLineInput) => void }) {
+export function CustomWeightPanel({ onAdd, span = 3 }: { onAdd: (line: OrderLineInput) => void; span?: number }) {
   const [field, setField] = useState<"weight" | "rate">("weight");
   const [weight, setWeight] = useState("");
   const [rate, setRate] = useState("");
@@ -40,7 +40,11 @@ export function CustomWeightPanel({ onAdd }: { onAdd: (line: OrderLineInput) => 
   const ready = grams !== null && amountMinor !== null;
   const press = (key: string) => {
     if (key === CLEAR_KEY) return field === "weight" ? setWeight("") : setRate("");
-    return field === "weight" ? setWeight((p) => applyWeightKey(p, key)) : setRate((p) => applyRupeesKey(p, key));
+    if (field === "rate") return setRate((p) => applyRupeesKey(p, key));
+    const next = applyWeightKey(weight, key);
+    setWeight(next);
+    // Three decimals is as fine as the weight goes: on to the price.
+    if (/\.\d{3}$/.test(next)) setField("rate");
   };
   const add = () => {
     if (grams === null || amountMinor === null) return;
@@ -52,7 +56,7 @@ export function CustomWeightPanel({ onAdd }: { onAdd: (line: OrderLineInput) => 
   };
 
   return (
-    <section className="ct-wbox" aria-label={t.customWeightName}>
+    <section className="ct-wbox" aria-label={t.customWeightName} style={{ gridColumn: `span ${span}` }}>
       <div className="ct-wbox__form">
         <h3 className="ct-wbox__title">{t.customWeightName}</h3>
         <button type="button" className={`ct-wbox__field${field === "weight" ? " is-active" : ""}`} aria-pressed={field === "weight"} onClick={() => setField("weight")}>
@@ -68,10 +72,15 @@ export function CustomWeightPanel({ onAdd }: { onAdd: (line: OrderLineInput) => 
         </button>
         <button type="button" className="ct-btn ct-btn--primary ct-wbox__add" disabled={!ready} onClick={add}>
           {t.customAdd}
+          {ready && (
+            <span className="ct-wbox__sum">
+              {weight} kg · ₹{rate}
+            </span>
+          )}
         </button>
       </div>
       <div className="ct-wbox__pad">
-        <Keypad leftKey="." onKey={press} />
+        <Keypad leftKey={field === "weight" ? "." : "C"} onKey={press} />
       </div>
     </section>
   );

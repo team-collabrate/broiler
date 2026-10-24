@@ -79,12 +79,13 @@ function ItemCard({ item, onAdd, onCustomize }: { item: MenuItem; onAdd: (line: 
 export function ItemCards({ items, onAdd, onCustomize }: { items: MenuItem[]; onAdd: (line: OrderLineInput) => void; onCustomize: (item: MenuItem) => void }) {
   return (
     <>
-      <div className="ct-icards">
+      <div className="ct-icards" style={{ gridTemplateRows: `repeat(${Math.ceil(items.length / 3) + (items.length % 3 === 1 ? 0 : 1)}, minmax(0, 1fr))` }}>
         {items.map((item) => (
           <ItemCard key={item.id} item={item} onAdd={onAdd} onCustomize={onCustomize} />
         ))}
+        {/* The live-weight box fills the space left in the last row of cards (the rest of the row, or a row of its own). */}
+        <CustomWeightPanel onAdd={onAdd} span={items.length % 3 === 1 ? 2 : 3} />
       </div>
-      <CustomWeightPanel onAdd={onAdd} />
       <p className="ct-hint ct-icards__hint">{t.othersHint}</p>
     </>
   );
