@@ -248,7 +248,7 @@ export function ItemSheet({ item, editing, maxAdjustMinor, onCancel, onConfirm, 
                     ? t.rateLocked
                     : adjusted !== 0
                       ? `${t.listRate(formatRate(list, item.unit))} · ${adjusted > 0 ? "+" : "−"}${formatMoney(Math.abs(adjusted))}`
-                      : t.adjustLimit(formatMoney(maxAdjustMinor))}
+                      : t.listRate(formatRate(list, item.unit))}
                 </span>
               </Stepper>
             </div>

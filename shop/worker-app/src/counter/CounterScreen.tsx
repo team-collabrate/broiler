@@ -24,13 +24,12 @@ import {
   resumeOutbox,
   seedBillNumbers,
   subscribeCategories,
-  subscribeMaxAdjust,
   subscribeMenu,
   useOutbox,
   useServerConnection,
   voidOrder,
 } from "@kumbakonam/shared/shop";
-import { DEFAULT_MAX_ADJUST_MINOR, isRateStale, roundBillMinor } from "@kumbakonam/shared/core";
+import { isRateStale, NO_ADJUST_LIMIT, roundBillMinor } from "@kumbakonam/shared/core";
 import { browserStore } from "@kumbakonam/shared/shop";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
 import type { BillInput } from "../printing/receipt";
@@ -136,10 +135,8 @@ export function CounterScreen() {
   const [allCategories, setAllCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [items, setItems] = useState<MenuItem[] | null>(null);
   const [menuError, setMenuError] = useState<string | null>(null);
-  const [maxAdjustMinor, setMaxAdjustMinor] = useState(DEFAULT_MAX_ADJUST_MINOR);
 
   useEffect(() => subscribeCategories(setAllCategories), []);
-  useEffect(() => subscribeMaxAdjust(setMaxAdjustMinor), []);
   useEffect(
     () =>
       subscribeMenu(
@@ -469,7 +466,7 @@ export function CounterScreen() {
           item={sheet.item}
           editing={sheet.editing}
           startMethod={sheet.startMethod}
-          maxAdjustMinor={maxAdjustMinor}
+          maxAdjustMinor={NO_ADJUST_LIMIT}
           onCancel={() => setSheet(null)}
           onConfirm={confirmSheet}
         />

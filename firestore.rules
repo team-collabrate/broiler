@@ -43,18 +43,12 @@ service cloud.firestore {
       allow write: if isOwner() && request.resource.data.list is list && request.resource.data.list.size() <= 30;
     }
 
-    function maxAdjust() {
-      return exists(/databases/$(database)/documents/settings/pricing)
-        ? get(/databases/$(database)/documents/settings/pricing).data.maxAdjustMinor
-        : 2000;
-    }
-
     // Each request may evaluate at most 1000 expressions, and rules cannot loop, so an order's lines are checked at
     // fixed positions and an order holds at most 5 lines (MAX_ORDER_LINES in shop/shared/src/core/sale.ts). Positions
-    // an order does not have cost nothing. Per line the rules check the owner's price limit, that a line is a weight or a count, and that its total is its rate times its weight or count (or exactly the amount it was billed for).
-    function validLine(l, maxAdj) {
+    // an order does not have cost nothing. Per line the rules check that a line is a weight or a count, and that its total is its rate times its weight or count (or exactly the amount it was billed for).
+    function validLine(l) {
       return l.lineTotalMinor is int && l.lineTotalMinor >= 0 && l.rateMinor > 0
-        && math.abs(l.rateMinor - l.listRateMinor) <= maxAdj && l.unit in ['kg', 'piece']
+        && l.unit in ['kg', 'piece']
         && l.grams is int && l.qty is int
         && (l.unit == 'piece' ? (l.qty >= 1 && l.grams == 0) : (l.grams >= 1 && l.qty == 0))
         && ('amountMinor' in l
@@ -64,13 +58,13 @@ service cloud.firestore {
             : math.abs(l.lineTotalMinor - math.round(l.rateMinor * l.grams / 1000.0)) <= 1));
     }
 
-    function linesOk(L, maxAdj) {
+    function linesOk(L) {
       return L.size() >= 1 && L.size() <= 5
-        && validLine(L[0], maxAdj)
-        && (L.size() < 2 || (validLine(L[1], maxAdj)
-        && (L.size() < 3 || (validLine(L[2], maxAdj)
-        && (L.size() < 4 || (validLine(L[3], maxAdj)
-        && (L.size() < 5 || (validLine(L[4], maxAdj)))))))));
+        && validLine(L[0])
+        && (L.size() < 2 || (validLine(L[1])
+        && (L.size() < 3 || (validLine(L[2])
+        && (L.size() < 4 || (validLine(L[3])
+        && (L.size() < 5 || (validLine(L[4])))))))));
     }
 
     // The sum of one field over the order's lines.
@@ -113,7 +107,7 @@ service cloud.firestore {
             && d.customerName is string && d.customerName.size() > 0 && d.customerName.size() <= 120)
           : (!('customerId' in d) && !('customerName' in d)))
         && L is list
-        && linesOk(L, maxAdjust())
+        && linesOk(L)
         // The total is the lines' sum, or (when the till rounded the bill to the nearest ten rupees) the sum plus a
         // round-off of at most half that step: the total is then a whole multiple of ten rupees.
         && d.totalMinor is int && d.totalMinor == s - d.get('discountMinor', 0) + d.get('roundOffMinor', 0)

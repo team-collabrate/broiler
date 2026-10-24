@@ -167,11 +167,10 @@ describe('orders', () => {
     await assertFails(setDoc(doc(counter(), 'orders', 'd8'), order({ totalMinor: 26000, discountMinor: -2000 }, lines(24000)))); // a negative discount raises the bill
     await assertFails(setDoc(doc(counter(), 'orders', 'd9'), order({ totalMinor: 23999.5, discountMinor: 0.5 }, lines(24000)))); // not whole paise
   });
-  test('a rate may move from the list rate only within the owner\'s limit', async () => {
+  test('a rate may be moved freely from the list rate, but stays above zero', async () => {
     await assertSucceeds(setDoc(doc(counter(), 'orders', 'a'), order({}, [line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
-    await assertFails(setDoc(doc(counter(), 'orders', 'b'), order({}, [line({ rateMinor: 99000, lineTotalMinor: 99000 })])));
-    await seed((db) => setDoc(doc(db, 'settings', 'pricing'), { maxAdjustMinor: 0 }));
-    await assertFails(setDoc(doc(counter(), 'orders', 'c'), order({}, [line({ rateMinor: 23500, lineTotalMinor: 23500 })])));
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'b'), order({}, [line({ rateMinor: 99000, lineTotalMinor: 99000 })])));
+    await assertFails(setDoc(doc(counter(), 'orders', 'c'), order({}, [line({ rateMinor: 0, lineTotalMinor: 0 })])));
   });
   test('a line must be priced by its own weight or count (or be exactly the amount it was billed for)', async () => {
     let n = 0; // a fresh order id each time: an order cannot be written twice

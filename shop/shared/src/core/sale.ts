@@ -177,8 +177,12 @@ export function orderLineTotalMinor(line: PricedLine): number {
 /** The counter raises or lowers a sale's rate in steps of this many paise (₹5). */
 export const ADJUST_STEP_MINOR = 500;
 
-/** How far the counter may move a rate from the list rate unless the owner sets another limit (₹20). */
+/** How far the counter may move a rate from the list rate unless the owner sets another limit (₹20). Not used by the
+ * counter any more: it is free to change a rate (it stays above zero). */
 export const DEFAULT_MAX_ADJUST_MINOR = 2000;
+
+/** No limit on moving a rate: what the counter passes where a limit is asked for. */
+export const NO_ADJUST_LIMIT = 1_000_000_000;
 
 /** The counter's adjustment limit from stored data: a whole number of steps, never negative; the default if unusable. */
 export function normalizeMaxAdjust(value: unknown): number {
