@@ -61,12 +61,12 @@ const MENU = [
   // Chicken
   kg('naatukoli-kari', 'Naatukoli Kari', 'நாட்டுக்கோழி கறி', 'chicken', 'naatukoli', null, 45000, 1000),
   kg('broiler-with-skin', 'Broiler Chicken - With Skin', 'பிராய்லர் கோழி - தோலுடன்', 'chicken', 'broiler', 'skin', 24000, 1000),
-  kg('broiler-skinless', 'Broiler Chicken - Without Skin', 'பிராய்லர் கோழி - தோலில்லா', 'chicken', 'broiler', 'skinless', 26000, 500),
+  kg('broiler-skinless', 'Broiler Chicken - Without Skin', 'பிராய்லர் கோழி - தோல் இல்லாமல்', 'chicken', 'broiler', 'skinless', 26000, 500),
   kg('broiler-live', 'Broiler Chicken - Uyir Ooda', 'பிராய்லர் கோழி - உயிரோடு', 'chicken', 'broiler', 'live', 14000, 1000),
   piece('kadai', 'Kadai', 'காடை', 'other', 'kadai', null, 6000, 2),
   // Mutton
   kg('mutton-bone', 'Mutton - With Bone', 'மட்டன் - எலும்புடன்', 'mutton', 'mutton', 'bone', 80000, 500),
-  kg('mutton-boneless', 'Mutton - Without Bone', 'மட்டன் - எலும்பில்லா', 'mutton', 'mutton', 'boneless', 95000, 500),
+  kg('mutton-boneless', 'Mutton - Without Bone', 'மட்டன் - எலும்பு இல்லாமல்', 'mutton', 'mutton', 'boneless', 95000, 500),
   kg('kodal', 'Kodal', 'குடல்', 'mutton', 'kodal', null, 20000, 500),
   kg('eral', 'Eral', 'ஈரல்', 'mutton', 'eral', null, 90000, 250),
   piece('blood', 'Blood', 'இரத்தம்', 'mutton', 'blood', null, 2000),
