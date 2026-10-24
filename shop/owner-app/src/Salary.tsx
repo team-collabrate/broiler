@@ -266,6 +266,16 @@ function WorkerSheet({ worker, entries, balance, onClose, onChanged }: { worker:
   return (
     <Sheet title={worker.name} subtitle={balanceWords(balance)} onClose={onClose} busy={busy}>
       <div className="ow-stack">
+        <div className="ow-pay__row">
+          <p className="ow-text ow-field--grow">
+            ஒரு நாள் சம்பளம்: <strong>{formatMoney(worker.dayWageMinor)}</strong>
+          </p>
+          <button type="button" className="ow-btn ow-btn--small" onClick={() => setEditing(true)}>
+            ✎ மாற்று
+          </button>
+        </div>
+        <p className="ow-text ow-text--muted">புதிய சம்பளம் இனி போடும் நாட்களுக்கு மட்டும். பழைய பதிவுகள் மாறாது.</p>
+
         <section className="ow-pay" aria-label="நாள் பதிவு">
           <h3 className="ow-card__title">நாள் பதிவு</h3>
           <label className="ow-field">
