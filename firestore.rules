@@ -210,6 +210,31 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // The labour salary book: daily-wage workers and what each day earned, was paid or was lent. Only the owner's
+    // admin reads or writes it; the counter has no access. A wrong entry can be deleted (a balance is worked out from the entries).
+    match /labourers/{labourerId} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['name', 'dayWageMinor', 'openingMinor', 'active'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
+        && request.resource.data.dayWageMinor is int && request.resource.data.dayWageMinor >= 0 && request.resource.data.dayWageMinor <= 100000000
+        && request.resource.data.openingMinor is int && request.resource.data.openingMinor >= -100000000 && request.resource.data.openingMinor <= 100000000
+        && request.resource.data.active is bool;
+    }
+    match /labourEntries/{entryId} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['labourerId', 'dayKey', 'kind', 'earnedMinor', 'paidMinor', 'advanceMinor', 'note', 'createdAt'])
+        && request.resource.data.keys().hasAll(['labourerId', 'dayKey', 'kind', 'earnedMinor', 'paidMinor', 'advanceMinor'])
+        && request.resource.data.labourerId is string && request.resource.data.labourerId.size() > 0
+        && request.resource.data.dayKey is string && request.resource.data.dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.kind in ['work', 'leave', 'double', 'vehicle', 'other']
+        && request.resource.data.earnedMinor is int && request.resource.data.earnedMinor >= 0 && request.resource.data.earnedMinor <= 100000000
+        && request.resource.data.paidMinor is int && request.resource.data.paidMinor >= 0 && request.resource.data.paidMinor <= 100000000
+        && request.resource.data.advanceMinor is int && request.resource.data.advanceMinor >= 0 && request.resource.data.advanceMinor <= 100000000
+        && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 120));
+    }
+
     // One document per day, written by the owner's app when a day falls out of the 4 days of full bills (document id
     // "<day>", for example "2026-10-21"): the day's totals, so weeks and months can be shown without reading every
     // bill, and so the bills can then be removed. Written once and never changed: a summary that could be edited

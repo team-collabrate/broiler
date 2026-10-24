@@ -551,3 +551,39 @@ describe('daily totals (dailySummaries)', () => {
     await assertFails(setDoc(doc(owner(), 'dailySummaries', '2026-10-15'), noItems));
   });
 });
+
+describe('labour salary book (labourers, labourEntries)', () => {
+  const worker = { name: 'Bala', dayWageMinor: 70000, openingMinor: 0, active: true };
+  const day = { labourerId: 'w1', dayKey: '2026-10-24', kind: 'work', earnedMinor: 70000, paidMinor: 60000, advanceMinor: 0, createdAt: serverTimestamp() };
+  test('only the owner reads or writes the book; the counter has no access', async () => {
+    await assertSucceeds(setDoc(doc(owner(), 'labourers', 'w1'), worker));
+    await assertSucceeds(setDoc(doc(owner(), 'labourEntries', 'e1'), day));
+    await assertSucceeds(getDoc(doc(owner(), 'labourers', 'w1')));
+    await assertSucceeds(getDocs(collection(owner(), 'labourEntries')));
+    await assertFails(setDoc(doc(counter(), 'labourers', 'w2'), worker));
+    await assertFails(setDoc(doc(counter(), 'labourEntries', 'e2'), day));
+    await assertFails(getDoc(doc(counter(), 'labourers', 'w1')));
+    await assertFails(getDocs(collection(counter(), 'labourEntries')));
+    await assertFails(setDoc(doc(nobody(), 'labourers', 'w3'), worker));
+  });
+  test('a wrong entry can be deleted by the owner only', async () => {
+    await seed((db) => setDoc(doc(db, 'labourEntries', 'e1'), { ...day, createdAt: Timestamp.now() }));
+    await assertFails(deleteDoc(doc(counter(), 'labourEntries', 'e1')));
+    await assertSucceeds(deleteDoc(doc(owner(), 'labourEntries', 'e1')));
+  });
+  test('amounts are whole and never negative, the kind is one of the five, and the day is a date', async () => {
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'a'), { ...day, earnedMinor: -1 }));
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'b'), { ...day, paidMinor: 10.5 }));
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'c'), { ...day, advanceMinor: -5000 }));
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'd'), { ...day, kind: 'holiday' }));
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'f'), { ...day, dayKey: '24.10.26' }));
+    await assertFails(setDoc(doc(owner(), 'labourEntries', 'g'), { ...day, surprise: 1 }));
+    await assertSucceeds(setDoc(doc(owner(), 'labourEntries', 'h'), { ...day, kind: 'leave', earnedMinor: 0, paidMinor: 0 }));
+  });
+  test('a worker has a name, a whole day wage, and an opening amount that may be negative (an advance)', async () => {
+    await assertFails(setDoc(doc(owner(), 'labourers', 'x1'), { ...worker, name: '' }));
+    await assertFails(setDoc(doc(owner(), 'labourers', 'x2'), { ...worker, dayWageMinor: -1 }));
+    await assertFails(setDoc(doc(owner(), 'labourers', 'x3'), { ...worker, active: 'yes' }));
+    await assertSucceeds(setDoc(doc(owner(), 'labourers', 'x4'), { ...worker, openingMinor: -1130000 }));
+  });
+});

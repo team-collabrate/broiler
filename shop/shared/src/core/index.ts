@@ -14,3 +14,4 @@ export * from './outbox';
 export * from './pinLock';
 export * from './printRecovery';
 export * from './recentBills';
+export * from './labour';

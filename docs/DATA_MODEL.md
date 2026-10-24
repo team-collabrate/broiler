@@ -67,6 +67,12 @@ hold" test in `scripts/rules` fails if a change makes 5 lines too costly.
 - The counter may not read receipts, so a payment retried after a lost answer is recognised by the customer's own `lastPaymentId` (the till reuses one receipt id per payment). A balance can have paise (a bill total is in paise), so the credit book's "முழுவதும்" pays the exact balance, not a rounded rupee amount.
 - A receipt holds `customerId`, `customerName`, `amountMinor`, `method` (`cash` or `upi`), `dayKey`, `createdAt`. Receipts cannot be edited or deleted.
 
+## `labourers/{id}` and `labourEntries/{id}` (the labour salary book)
+- Owner only: the counter cannot read or write either. A worker is `{ name, dayWageMinor, openingMinor, active }` (`openingMinor` is what was owed, or lent when negative, before the book started; a worker who has left is `active: false`, never deleted).
+- A day is `{ labourerId, dayKey, kind: work|leave|double|vehicle|other, earnedMinor, paidMinor, advanceMinor, note?, createdAt }`.
+- The balance is never stored: `openingMinor + Σ(earnedMinor − paidMinor − advanceMinor)` (`labourBalance` in `shared/src/core/labour.ts`). Positive: the shop owes the worker; negative: an advance not yet worked off. A wrong entry is deleted and the balance corrects itself.
+- `scripts/import-labour.mjs` loads the sheets of "Labour salary account.xlsx" (run without `--write` to compare balances first).
+
 ## `settings`
 - `pricing`: `{ maxAdjustMinor }`: how far the counter may move a sale's rate from the list rate.
 - `categories`: `{ list: [{ key, name, nameTa, image }] }`: the counter tabs, in order.

@@ -4,17 +4,19 @@ import { Bills } from "./Bills";
 import { Credit } from "./Credit";
 import { Dashboard } from "./Dashboard";
 import { Rates } from "./Rates";
+import { Salary } from "./Salary";
 import { Reports } from "./Reports";
 import { Notice, Sheet, TabIcon } from "./ui";
 import { timeText } from "./fmt";
 
-type Tab = "dashboard" | "reports" | "bills" | "credit" | "rates";
+type Tab = "dashboard" | "reports" | "bills" | "credit" | "salary" | "rates";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "dashboard", label: "முகப்பு" },
   { key: "reports", label: "கணக்கு" },
   { key: "bills", label: "பில்" },
   { key: "credit", label: "கடன்" },
+  { key: "salary", label: "சம்பளம்" },
   { key: "rates", label: "விலை" },
 ];
 
@@ -69,6 +71,7 @@ export function Shell({ onLogout }: { onLogout: () => void }) {
             {tab === "reports" && <Reports data={data} />}
             {tab === "bills" && <Bills data={data} />}
             {tab === "credit" && <Credit data={data} />}
+            {tab === "salary" && <Salary />}
             {tab === "rates" && <Rates data={data} />}
           </>
         )}

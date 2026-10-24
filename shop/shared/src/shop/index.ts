@@ -13,3 +13,4 @@ export * from "./billCounter";
 export * from "./outbox";
 export * from "./connection";
 export * from "./storage";
+export * from "./labour";

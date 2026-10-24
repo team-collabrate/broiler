@@ -68,7 +68,7 @@ export function BarChart({ bars, labelEvery = 1, format, caption }: { bars: Bar[
 }
 
 /** The small line icons of the tab bar. */
-export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "credit" | "rates" }) {
+export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "credit" | "rates" | "salary" }) {
   const paths: Record<typeof name, ReactNode> = {
     dashboard: (
       <>
@@ -97,6 +97,13 @@ export function TabIcon({ name }: { name: "dashboard" | "reports" | "bills" | "c
       <>
         <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
         <circle cx="7" cy="7" r="1.2" />
+      </>
+    ),
+    salary: (
+      <>
+        <circle cx="9" cy="8" r="3.2" />
+        <path d="M3 20v-1a6 6 0 0 1 12 0v1" />
+        <path d="M17 11h4M19 9v4" />
       </>
     ),
     credit: (

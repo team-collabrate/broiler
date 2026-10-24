@@ -18,3 +18,6 @@ Deploy: `npm run deploy:owner` (from `shop`).
 - **Old days:** bills are kept in full for 4 days; older days are rolled up into daily totals automatically.
 - **Counter link:** the ⚙️ on the counter (two taps) opens this site inside the counter app, in a frame. The app only lets the counter's own address frame it (`Content-Security-Policy: frame-ancestors` in `firebase.json`). Closing it signs the admin out.
 - **PINs:** the PIN is the account password (`broiler-<PIN>`). Change it with `node --env-file=shop/worker-app/.env scripts/change-pin.mjs owner`.
+
+## சம்பளம் (the labour salary book)
+A tab for the daily-wage workers: the list shows each worker's balance (what the shop owes them, or the advance they owe back) and this week's days; tap a name to record a day (வேலை, லீவு, இரட்டை, வண்டி or மற்றது), what was paid and any advance, see the new balance before saving, read the day-by-day list and delete a wrong entry. "புதிய ஆள்" adds a worker (name, day wage, opening amount); a worker who has left moves to "விட்டவர்கள்" and keeps their history. See DATA_MODEL.md for the records.
