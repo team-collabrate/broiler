@@ -6,6 +6,7 @@ import {
   adjustLine,
   canAddLine,
   roundBillMinor,
+  roundStepMinor,
   MAX_ORDER_LINES,
   adjustmentMinor,
   applyQtyKey,
@@ -579,4 +580,13 @@ test('round-off never turns a small bill into a free one', () => {
   assert.equal(roundBillMinor(499), 499);
   assert.equal(roundBillMinor(500), 1000); // ₹5 rounds up to ₹10
   assert.equal(roundBillMinor(0), 0);
+});
+
+test('a bill of eggs only rounds to the nearest rupee, any other bill to ten rupees', () => {
+  assert.equal(roundStepMinor([{ itemId: 'egg' }, { itemId: 'egg' }]), 100);
+  assert.equal(roundStepMinor([{ itemId: 'egg' }, { itemId: 'masala' }]), 1000);
+  assert.equal(roundStepMinor([]), 1000);
+  assert.equal(roundBillMinor(650, 100), 700); // ₹6.50 to ₹7
+  assert.equal(roundBillMinor(649, 100), 600); // ₹6.49 to ₹6
+  assert.equal(roundBillMinor(40, 100), 40); // never rounds away to nothing
 });

@@ -43,6 +43,8 @@ export const t = {
   customRate: "விலை (₹)",
   customAmount: "தொகை",
   customAdd: "பில்லில் சேர்",
+  extraNamesLabel: "Name for the extra",
+  extraNamesHint: "Drag a name up onto the title above, or just tap it.",
   othersHint: "Tap to add one. Press and hold to change the count.",
   updateAppNow: "Update app now",
   discount: "Discount",

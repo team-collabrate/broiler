@@ -68,16 +68,74 @@ interface Props {
   onAdd: (line: OrderLineInput) => void;
   /** Opens the full sheet for any other weight, amount or count. */
   onOther: (item: MenuItem, method: Method) => void;
+  /** The names the extra (கூடுதல்) card can be given in this tab, dragged onto it (or tapped). None: it stays கூடுதல். */
+  extraNames?: string[];
 }
 
-function FamilyCard({ family, item, selected, onSelect }: { family: Family; item: MenuItem; selected: boolean; onSelect: () => void }) {
+/** The kind that is the extra: its card can be renamed with the names for this tab. */
+const EXTRA_GROUP = "excess";
+
+/** The row of names to drag onto the extra card. A tap picks one too. */
+function ExtraNames({ names, current, onPick }: { names: string[]; current: string | null; onPick: (name: string | null) => void }) {
+  const [drag, setDrag] = useState<{ name: string; x: number; y: number } | null>(null);
+  const start = (e: React.PointerEvent, name: string) => {
+    const sx = e.clientX;
+    const sy = e.clientY;
+    let moved = false;
+    const end = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", end);
+      delete document.body.dataset.extraDrag;
+      setDrag(null);
+    };
+    const move = (ev: PointerEvent) => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+      moved = true;
+      document.body.dataset.extraDrag = "1";
+      setDrag({ name, x: ev.clientX, y: ev.clientY });
+    };
+    const up = (ev: PointerEvent) => {
+      end();
+      if (!moved) return onPick(name === current ? null : name);
+      if (document.elementFromPoint(ev.clientX, ev.clientY)?.closest("[data-extra-drop]")) onPick(name);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", end);
+  };
+  return (
+    <div className="ct-extras" role="group" aria-label={t.extraNamesLabel}>
+      <p className="ct-extras__hint">{t.extraNamesHint}</p>
+      <div className="ct-extras__chips">
+        {names.map((name) => (
+          <button key={name} type="button" className={`ct-extras__chip${name === current ? " is-on" : ""}`} aria-pressed={name === current} onPointerDown={(e) => start(e, name)}>
+            {name}
+          </button>
+        ))}
+      </div>
+      {drag && (
+        <span className="ct-extras__ghost" style={{ left: drag.x, top: drag.y }} aria-hidden="true">
+          {drag.name}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function FamilyCard({ family, item, selected, onSelect, drop = false }: { family: Family; item: MenuItem; selected: boolean; onSelect: () => void; drop?: boolean }) {
   const [photo, setPhoto] = useState<"loading" | "ok" | "missing">("loading");
+  const ref = useRef<HTMLButtonElement>(null);
+  // The chosen card is kept in view in the column of cards (the extra is last, below the fold).
+  useEffect(() => {
+    if (selected) ref.current?.scrollIntoView({ block: "nearest" });
+  }, [selected]);
   // The kind's own photo (public/families/<group>.jpg) first; failing that, the selected cut's product photo.
   const kindPhoto = `/families/${encodeURIComponent(family.key)}.jpg`;
   const [src, setSrc] = useState(kindPhoto);
   const rate = item.rateMinor > 0 ? `${item.unit === "kg" ? "1 × 1 kg" : "1 × 1 pc"} · ${shortRate(item.rateMinor)}` : t.setRate;
   return (
-    <button type="button" className={`ct-fcard${selected ? " is-on" : ""}`} aria-pressed={selected} onClick={onSelect}>
+    <button ref={ref} type="button" className={`ct-fcard${selected ? " is-on" : ""}`} aria-pressed={selected} onClick={onSelect} {...(drop && { "data-extra-drop": true })}>
       {/* The photo slot is always there; the product photo covers it once it has loaded. */}
       <span className="ct-fcard__pic">
         <svg className="ct-fcard__ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -101,11 +159,13 @@ function FamilyCard({ family, item, selected, onSelect }: { family: Family; item
  * asks (by weight or by amount), and four big squares add the common weights or amounts with one tap. Anything else
  * goes through "Other", which opens the full sheet.
  */
-export function ItemPicker({ items, onAdd, onOther }: Props) {
+export function ItemPicker({ items, onAdd, onOther, extraNames = [] }: Props) {
   const families = useMemo(() => familiesOf(items), [items]);
   const [familyKey, setFamilyKey] = useState<string | null>(null);
   const [variantByFamily, setVariantByFamily] = useState<Record<string, string>>({});
   const [mode, setMode] = useState<"weight" | "amount">("weight");
+  // The name given to the extra card in this tab (null: கூடுதல்).
+  const [extraName, setExtraName] = useState<string | null>(null);
 
   // A small down arrow shows while more cards are hidden below the ones on screen.
   const listRef = useRef<HTMLDivElement>(null);
@@ -122,19 +182,26 @@ export function ItemPicker({ items, onAdd, onOther }: Props) {
 
   const family = families.find((f) => f.key === familyKey) ?? families[0];
   if (!family) return null;
-  const item = family.items.find((i) => i.id === variantByFamily[family.key]) ?? family.items[0];
+  const plainItem = family.items.find((i) => i.id === variantByFamily[family.key]) ?? family.items[0];
+  const renamable = family.key === EXTRA_GROUP && extraNames.length > 0;
+  // The extra under a name of its own is a separate item to the bill and the reports (excess-ஈரல்), named as dropped.
+  const item: MenuItem = renamable && extraName ? { ...plainItem, id: `${plainItem.id}-${extraName}`, nameTa: extraName } : plainItem;
+  const onAddHere = (line: OrderLineInput) => {
+    onAdd(line);
+    if (renamable) setExtraName(null);
+  };
 
   const available = ways(item);
   const activeMode = available.includes(mode) ? mode : available[0];
   const piece = item.unit === "piece";
   const ready = item.rateMinor > 0;
 
-  const addWeight = (grams: number) => onAdd({ ...lineBase(item), grams, qty: 0 });
+  const addWeight = (grams: number) => onAddHere({ ...lineBase(item), grams, qty: 0 });
   const addAmount = (rupees: number) => {
     const amountMinor = rupees * 100;
-    onAdd({ ...lineBase(item), grams: gramsForAmount(amountMinor, item.rateMinor), qty: 0, amountMinor });
+    onAddHere({ ...lineBase(item), grams: gramsForAmount(amountMinor, item.rateMinor), qty: 0, amountMinor });
   };
-  const addCount = (qty: number) => onAdd({ ...lineBase(item), grams: 0, qty });
+  const addCount = (qty: number) => onAddHere({ ...lineBase(item), grams: 0, qty });
 
   // Each tile: a big figure with a small unit (or ₹ in front), what it comes to, and a + that says "tap to add".
   type Tile = { key: number; prefix?: string; num: string; unit?: string; sub: string; add: () => void };
@@ -152,7 +219,9 @@ export function ItemPicker({ items, onAdd, onOther }: Props) {
       <div className="ct-pick__cards" role="group" aria-label={t.kindsLabel} ref={listRef} onScroll={checkMore}>
         {families.map((f) => {
           const shown = f.items.find((v) => v.id === variantByFamily[f.key]) ?? f.items[0];
-          return <FamilyCard key={f.key} family={f} item={shown} selected={f.key === family.key} onSelect={() => setFamilyKey(f.key)} />;
+          const canRename = f.key === EXTRA_GROUP && extraNames.length > 0;
+          const named = canRename && extraName ? { ...f, title: extraName } : f;
+          return <FamilyCard key={f.key} family={named} item={shown} selected={f.key === family.key} onSelect={() => setFamilyKey(f.key)} drop={canRename} />;
         })}
       </div>
       {moreBelow && (
@@ -165,10 +234,12 @@ export function ItemPicker({ items, onAdd, onOther }: Props) {
       </div>
 
       <section className="ct-pick__panel" aria-label={family.title}>
-        <header className="ct-pick__head">
-          <h2 className="ct-pick__title">{family.title}</h2>
+        <header className="ct-pick__head" {...(renamable && { "data-extra-drop": true })}>
+          <h2 className="ct-pick__title">{renamable && extraName ? extraName : family.title}</h2>
           <span className="ct-pick__rate">{ready ? `${formatMoney(item.rateMinor)}${unitSuffix(item.unit)}` : t.setRate}</span>
         </header>
+
+        {renamable && <ExtraNames names={extraNames} current={extraName} onPick={setExtraName} />}
 
         {family.items.length > 1 && (
           <div className="ct-switch" role="radiogroup" aria-label={t.cutLabel}>

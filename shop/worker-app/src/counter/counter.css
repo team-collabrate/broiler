@@ -3023,3 +3023,56 @@ button {
   color: var(--color-accent-dark);
   font-weight: 700;
 }
+
+/* The names to drag onto the extra (கூடுதல்) card in Chicken and Mutton. */
+.ct-extras {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+.ct-extras__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted, #5a6a60);
+}
+.ct-extras__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.ct-extras__chip {
+  min-height: 46px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  background: #fff;
+  border: 2px solid var(--color-border, #d9e5dc);
+  border-radius: 999px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.ct-extras__chip.is-on {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.ct-extras__ghost {
+  position: fixed;
+  z-index: 90;
+  transform: translate(-50%, -120%);
+  padding: 10px 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-accent-dark);
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+[data-extra-drag] [data-extra-drop] {
+  outline: 3px dashed var(--color-accent);
+  outline-offset: 2px;
+}

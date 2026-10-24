@@ -476,9 +476,20 @@ export const ROUND_STEP_MINOR = 1000;
  * The bill total rounded to the nearest ₹10: a last rupee digit of 0 to 4 goes down, 5 to 9 goes up (₹243.50 becomes
  * ₹240, ₹245 becomes ₹250, ₹247 becomes ₹250). A bill that would round away to nothing is left as it is.
  */
-export function roundBillMinor(totalMinor: number): number {
-  const rounded = Math.round(totalMinor / ROUND_STEP_MINOR) * ROUND_STEP_MINOR;
+export function roundBillMinor(totalMinor: number, stepMinor: number = ROUND_STEP_MINOR): number {
+  const rounded = Math.round(totalMinor / stepMinor) * stepMinor;
   return rounded > 0 ? rounded : totalMinor;
+}
+
+/** A bill of eggs only is rounded to the nearest rupee, not to ten rupees. */
+export const ROUND_STEP_EGG_MINOR = 100;
+
+/** The item id of the egg (முட்டை) on the menu. */
+export const EGG_ITEM_ID = 'egg';
+
+/** The round-off step for these lines: one rupee when every line is an egg, otherwise ten rupees. */
+export function roundStepMinor(lines: { itemId: string }[]): number {
+  return lines.length > 0 && lines.every((l) => l.itemId === EGG_ITEM_ID) ? ROUND_STEP_EGG_MINOR : ROUND_STEP_MINOR;
 }
 
 export function cartTotals(lines: CartLine[]): { totalMinor: number; totalGrams: number; totalPieces: number } {

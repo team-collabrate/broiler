@@ -152,6 +152,8 @@ describe('orders', () => {
     await assertFails(setDoc(doc(counter(), 'orders', 'r3'), order({ totalMinor: 24000, roundOffMinor: -300 }, lines(24350)))); // does not add up
     await assertFails(setDoc(doc(counter(), 'orders', 'r4'), order({ totalMinor: 24300, roundOffMinor: -50 }, lines(24350)))); // not a whole ten rupees
     await assertFails(setDoc(doc(counter(), 'orders', 'r5'), order({ totalMinor: 25000, roundOffMinor: 1000 }, lines(24000)))); // moved by more than half a step
+    await assertSucceeds(setDoc(doc(counter(), 'orders', 'r7'), order({ totalMinor: 24400, roundOffMinor: -49 }, lines(24449)))); // ₹244.49 to the nearest rupee (eggs)
+    await assertFails(setDoc(doc(counter(), 'orders', 'r8'), order({ totalMinor: 24500, roundOffMinor: 51 }, lines(24449)))); // a rupee step moves at most half a rupee
     await assertFails(setDoc(doc(counter(), 'orders', 'r6'), order({ totalMinor: 24000, roundOffMinor: -350.5 }, lines(24350.5)))); // not whole paise
     await assertFails(setDoc(doc(counter(), 'orders', 'r7'), order({ totalMinor: 24350, roundOffMinor: 0 }, lines(24350)))); // a round-off still has to land on ten rupees
   });

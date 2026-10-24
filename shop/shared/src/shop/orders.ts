@@ -13,6 +13,7 @@ import {
   orderLineTotalMinor,
   PAYMENT_METHODS,
   roundBillMinor,
+  roundStepMinor,
   tidyCustomerName,
   UserError,
   type OrderLine,
@@ -126,7 +127,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreatedOrder
   }
   // The discount comes off first; the round-off then works on what is left.
   const netMinor = subtotalMinor - discountMinor;
-  const roundOffMinor = roundIt ? roundBillMinor(netMinor) - netMinor : 0;
+  const roundOffMinor = roundIt ? roundBillMinor(netMinor, roundStepMinor(lines)) - netMinor : 0;
   const totalMinor = netMinor + roundOffMinor;
   const totalGrams = orderLines.reduce((sum, l) => sum + l.grams, 0);
   const totalPieces = orderLines.reduce((sum, l) => sum + l.qty, 0);

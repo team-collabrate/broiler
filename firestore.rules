@@ -113,7 +113,8 @@ service cloud.firestore {
         && d.totalMinor is int && d.totalMinor == s - d.get('discountMinor', 0) + d.get('roundOffMinor', 0)
         // A flat discount is a whole positive amount, always less than the bill (so a bill is never free).
         && (!('discountMinor' in d) || (d.discountMinor is int && d.discountMinor >= 1 && d.discountMinor < s))
-        && (!('roundOffMinor' in d) || (d.roundOffMinor is int && d.roundOffMinor >= -499 && d.roundOffMinor <= 500 && d.totalMinor > 0 && d.totalMinor % 1000 == 0))
+        && (!('roundOffMinor' in d) || (d.roundOffMinor is int && d.roundOffMinor >= -499 && d.roundOffMinor <= 500 && d.totalMinor > 0
+          && (d.totalMinor % 1000 == 0 || (d.totalMinor % 100 == 0 && d.roundOffMinor >= -49 && d.roundOffMinor <= 50))))
         && d.totalGrams is int && d.totalGrams >= 0
         && d.totalPieces is int && d.totalPieces >= 0;
     }

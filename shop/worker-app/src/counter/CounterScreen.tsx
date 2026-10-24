@@ -29,7 +29,7 @@ import {
   useServerConnection,
   voidOrder,
 } from "@kumbakonam/shared/shop";
-import { isRateStale, NO_ADJUST_LIMIT, PAYMENT_LABELS, roundBillMinor } from "@kumbakonam/shared/core";
+import { isRateStale, NO_ADJUST_LIMIT, PAYMENT_LABELS, roundBillMinor, roundStepMinor } from "@kumbakonam/shared/core";
 import { billText } from "../printing/billText";
 import { browserStore } from "@kumbakonam/shared/shop";
 import { usePrinter, type PrinterProblem, type PrintResult } from "../hooks/usePrinter";
@@ -62,6 +62,12 @@ const SHOW_DRAFT_MENU = import.meta.env.DEV && import.meta.env.VITE_SHOW_DRAFT_M
 
 /** Menu groups that appear in every tab. */
 const EVERY_TAB_GROUPS = ["excess"];
+
+/** What the extra (கூடுதல்) card can be named in the Chicken and the Mutton tab: the parts sold on the side. In Others it stays கூடுதல். */
+const EXTRA_NAMES: Record<string, string[]> = {
+  chicken: ["ஈரல்", "எலும்பு", "சில்லறை"],
+  mutton: ["சுவரொட்டி", "கால்", "மூளை", "தலை", "நுரையீரல்"],
+};
 
 /** Where the tablet remembers whether round-off is on. */
 const ROUND_KEY = "broiler.roundOff";
@@ -102,7 +108,7 @@ export function CounterScreen() {
   const [discountSet, setDiscountSet] = useState(0);
   const discountMinor = discountSet > 0 && discountSet < cart.totalMinor ? discountSet : 0;
   const netMinor = cart.totalMinor - discountMinor;
-  const payableMinor = roundOn ? roundBillMinor(netMinor) : netMinor;
+  const payableMinor = roundOn ? roundBillMinor(netMinor, roundStepMinor(cart.lines)) : netMinor;
   const roundOffMinor = payableMinor - netMinor;
   const [discountOpen, setDiscountOpen] = useState(false);
   // An empty bill has no discount: the next customer starts clean.
@@ -441,7 +447,7 @@ export function CounterScreen() {
         {visibleItems.length === 0 ? <p className="ct-message">{t.categoryEmpty}</p> : category === "other" ? (
           <ItemCards items={visibleItems} onAdd={addPreset} onCustomize={(item) => setSheet({ item })} />
         ) : (
-          <ItemPicker items={visibleItems} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
+          <ItemPicker key={category} items={visibleItems} extraNames={EXTRA_NAMES[category ?? ""]} onAdd={addPreset} onOther={(item, method) => setSheet({ item, startMethod: method })} />
         )}
       </div>
     );
