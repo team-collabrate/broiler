@@ -42,11 +42,11 @@ function familiesOf(items: MenuItem[]): Family[] {
   return families.sort((a, b) => rank(a.key) - rank(b.key));
 }
 
-/** The short label of a cut on the switch, in Tamil: தோலுடன், தோலில்லா, எலும்புடன், எலும்பில்லா, உயிர். */
+/** The short label of a cut on the switch: the words after the dash in the item's Tamil name (பிராய்லர் கோழி - போன்லெஸ் gives போன்லெஸ்), so the switch and the bill always read the same. */
 function variantLabel(item: MenuItem): string {
-  if (item.variant) return VARIANT_LABELS[item.variant].nameTa;
   const tail = itemName(item).split(" - ")[1];
-  return tail ?? item.name;
+  if (tail) return tail;
+  return item.variant ? VARIANT_LABELS[item.variant].nameTa : item.name;
 }
 
 /** `₹450` for a whole-rupee rate, `₹450.50` when it has paise. */
