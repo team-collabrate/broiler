@@ -40,7 +40,7 @@ export const t = {
   adminNeedsInternet: "Admin needs internet. Try again when it is back.",
   customWeightName: "உயிர் எடை",
   customWeight: "எடை",
-  customRate: "விலை / கிலோ",
+  customRate: "விலை (₹)",
   customAmount: "தொகை",
   customAdd: "பில்லில் சேர்",
   othersHint: "Tap to add one. Press and hold to change the count.",
